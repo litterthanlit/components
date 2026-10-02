@@ -2,6 +2,41 @@
 
 import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 
+/* A tiny damped spring (the design system's createSpring, inlined so this
+   file stays copy-paste ready). It keeps velocity when the target changes,
+   so quick successive clicks flow into each other instead of restarting. */
+function createSpring(stiffness: number, damping: number, onUpdate: (value: number) => void) {
+  let value = 0, velocity = 0, target = 0, raf = 0, last = 0;
+  function frame(now: number) {
+    let dt = Math.min(0.064, last ? (now - last) / 1000 : 1 / 240);
+    last = now;
+    while (dt > 0) {
+      const h = Math.min(1 / 240, dt);
+      velocity += (-stiffness * (value - target) - damping * velocity) * h;
+      value += velocity * h;
+      dt -= h;
+    }
+    const resting = Math.abs(velocity) < 0.01 && Math.abs(value - target) < 0.01;
+    if (resting) value = target;
+    onUpdate(value);
+    raf = resting ? 0 : requestAnimationFrame(frame);
+    if (resting) last = 0;
+  }
+  return {
+    set(next: number) {
+      target = next;
+      if (!raf) raf = requestAnimationFrame(frame);
+    },
+    jump(next: number) {
+      cancelAnimationFrame(raf);
+      raf = last = velocity = 0;
+      value = target = next;
+      onUpdate(value);
+    },
+    stop: () => cancelAnimationFrame(raf),
+  };
+}
+
 type Option = { value: string; label: string };
 
 type SegmentedControlProps = {
@@ -11,27 +46,63 @@ type SegmentedControlProps = {
   label: string;
 };
 
+type Springs = { left: ReturnType<typeof createSpring>; width: ReturnType<typeof createSpring> } | null;
+
+function measure(list: HTMLElement | null, s: Springs, placed: { current: boolean }, animate: boolean) {
+  const active = list?.querySelector<HTMLElement>('[aria-checked="true"]');
+  const indicator = list?.querySelector<HTMLElement>("[data-indicator]");
+  if (!active || !indicator || !s) return;
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const move = animate && placed.current && !reduced ? "set" : "jump";
+  s.left[move](active.offsetLeft);
+  s.width[move](active.offsetWidth);
+  placed.current = true;
+  indicator.style.opacity = "1";
+}
+
 /**
- * A radio group with a single indicator that glides between options.
+ * A radio group with a single indicator that springs between options
+ * (position and width are separate springs, so it stretches slightly).
  * Follows the WAI-ARIA radio group pattern: one tab stop, arrow keys move
  * selection, Home/End jump to the ends.
  */
 export function SegmentedControl({ options, value, onChange, label }: SegmentedControlProps) {
   const listRef = useRef<HTMLDivElement>(null);
-  const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null);
+  const indicatorRef = useRef<HTMLSpanElement>(null);
+  const springs = useRef<Springs>(null);
+  const placed = useRef(false);
 
+  // Layout effect so the springs exist before the first measurement below.
+  useLayoutEffect(() => {
+    const el = indicatorRef.current!;
+    const left = createSpring(520, 40, (v) => (el.style.transform = `translateX(${v}px)`));
+    const width = createSpring(420, 34, (v) => (el.style.width = `${v}px`));
+    springs.current = { left, width };
+    return () => {
+      left.stop();
+      width.stop();
+      placed.current = false;
+    };
+  }, []);
+
+  // Spring to the selected option whenever the value changes.
+  useLayoutEffect(() => {
+    measure(listRef.current, springs.current, placed, true);
+  }, [value]);
+
+  // Snap (no spring) when the control itself resizes, e.g. fonts loading.
   useLayoutEffect(() => {
     const list = listRef.current;
     if (!list) return;
-    const measure = () => {
-      const active = list.querySelector<HTMLElement>('[aria-checked="true"]');
-      if (active) setIndicator({ left: active.offsetLeft, width: active.offsetWidth });
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
+    let width = list.offsetWidth;
+    const observer = new ResizeObserver(() => {
+      if (list.offsetWidth === width) return;
+      width = list.offsetWidth;
+      measure(list, springs.current, placed, false);
+    });
     observer.observe(list);
     return () => observer.disconnect();
-  }, [value]);
+  }, []);
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const index = options.findIndex((o) => o.value === value);
@@ -52,15 +123,14 @@ export function SegmentedControl({ options, value, onChange, label }: SegmentedC
       role="radiogroup"
       aria-label={label}
       onKeyDown={handleKeyDown}
-      className="relative inline-flex items-center rounded-full border border-border bg-surface-2 p-1"
+      className="relative inline-flex items-center rounded-full bg-panel p-1 shadow-[inset_0_0_0_1px_var(--line)]"
     >
-      {indicator && (
-        <span
-          aria-hidden
-          className="absolute inset-y-1 rounded-full bg-surface shadow-[0_1px_2px_rgb(0_0_0/0.08),0_0_0_1px_var(--border)] transition-[left,width] duration-500 ease-out-expo"
-          style={{ left: indicator.left, width: indicator.width }}
-        />
-      )}
+      <span
+        ref={indicatorRef}
+        data-indicator
+        aria-hidden
+        className="absolute inset-y-1 left-0 rounded-full bg-surface opacity-0 shadow-sm will-change-transform"
+      />
       {options.map((option) => {
         const checked = option.value === value;
         return (
@@ -71,8 +141,8 @@ export function SegmentedControl({ options, value, onChange, label }: SegmentedC
             aria-checked={checked}
             tabIndex={checked ? 0 : -1}
             onClick={() => onChange(option.value)}
-            className={`relative z-10 h-8 rounded-full px-4 text-[13px] font-medium transition-colors duration-300 ${
-              checked ? "text-fg" : "text-muted hover:text-fg"
+            className={`relative z-10 h-7 rounded-full px-3.5 text-meta font-medium transition-colors duration-(--duration-enter) ${
+              checked ? "text-ink" : "text-muted hover:text-ink"
             }`}
           >
             {option.label}
@@ -101,12 +171,11 @@ export default function Demo() {
     <div className="flex flex-col items-center gap-6">
       <SegmentedControl label="Billing period" options={plans} value={plan} onChange={setPlan} />
       <p className="flex flex-col items-center gap-1" aria-live="polite">
-        <span key={plan} className="animate-[fade-up_500ms_var(--ease-out-expo)] font-mono text-4xl tracking-tight text-fg">
+        <span key={plan} className="animate-enter font-mono text-display tracking-tight tabular-nums text-ink">
           {prices[plan].amount}
         </span>
-        <span className="text-xs text-subtle">{prices[plan].note}</span>
+        <span className="text-meta text-muted">{prices[plan].note}</span>
       </p>
-      <style>{`@keyframes fade-up{from{opacity:0;transform:translateY(6px);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}`}</style>
     </div>
   );
 }

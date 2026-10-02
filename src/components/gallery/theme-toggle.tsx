@@ -10,7 +10,7 @@ function subscribe(callback: () => void) {
   return () => observer.disconnect();
 }
 
-const getTheme = () => (document.documentElement.dataset.theme as Theme) ?? "dark";
+const getTheme = () => (document.documentElement.dataset.theme as Theme) ?? "light";
 
 export function setTheme(theme: Theme) {
   document.documentElement.dataset.theme = theme;
@@ -20,7 +20,7 @@ export function setTheme(theme: Theme) {
 }
 
 export function useTheme() {
-  return useSyncExternalStore(subscribe, getTheme, () => "dark" as Theme);
+  return useSyncExternalStore(subscribe, getTheme, () => "light" as Theme);
 }
 
 export function ThemeToggle({ className = "" }: { className?: string }) {
@@ -32,14 +32,14 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
       type="button"
       onClick={() => setTheme(next)}
       aria-label={`Switch to ${next} theme`}
-      className={`relative inline-grid size-9 place-items-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-fg ${className}`}
+      className={`relative inline-grid size-8 place-items-center rounded-md text-muted transition-colors duration-(--duration-exit) hover:bg-panel hover:text-ink hover:duration-(--duration-enter) ${className}`}
     >
       {/* Sun */}
       <svg
         aria-hidden
         viewBox="0 0 16 16"
         fill="none"
-        className="absolute size-4 transition-[transform,opacity] duration-500 ease-out-expo"
+        className="absolute size-[15px] transition-[transform,opacity] duration-(--duration-move) ease-out"
         style={{ opacity: theme === "light" ? 1 : 0, transform: theme === "light" ? "none" : "rotate(-90deg) scale(0.5)" }}
       >
         <circle cx="8" cy="8" r="2.75" stroke="currentColor" strokeWidth="1.3" />
@@ -55,7 +55,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
         aria-hidden
         viewBox="0 0 16 16"
         fill="none"
-        className="absolute size-4 transition-[transform,opacity] duration-500 ease-out-expo"
+        className="absolute size-[15px] transition-[transform,opacity] duration-(--duration-move) ease-out"
         style={{ opacity: theme === "dark" ? 1 : 0, transform: theme === "dark" ? "none" : "rotate(90deg) scale(0.5)" }}
       >
         <path

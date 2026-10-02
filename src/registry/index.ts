@@ -2,7 +2,7 @@
  * The registry: one entry per component. Order here is display order
  * (newest first reads best on a portfolio). To add a component:
  *   1. Drop `my-thing.tsx` in ./components with a default-exported Demo.
- *   2. Add an entry below.
+ *   2. Add an entry below (status: "new" adds the lime dot).
  *   3. Add one line to ./previews.tsx.
  */
 export type StageBackground = "grid" | "dots" | "glow" | "plain";
@@ -14,14 +14,58 @@ export type RegistryEntry = {
   tags: string[];
   /** ISO date — shown on cards and used for sorting. */
   date: string;
-  /** Featured entries take a wider tile on the home grid. */
-  featured?: boolean;
+  /** Shown as a lime dot + label, like "In progress" on litt.design. */
+  status?: "new" | "in-progress";
   background?: StageBackground;
   /** A short line for tweets / OG cards. */
   tagline?: string;
 };
 
 export const registry: RegistryEntry[] = [
+  {
+    slug: "gradient-card",
+    title: "Gradient Card",
+    description:
+      "Project cards with a live mesh gradient cover. Four colours drift on slow orbits through a noise-warped field, blended in linear light so the midpoints stay bright. Hover swirls the colours around the cursor; a click sends a pulse and crossfades to the next palette. Raw WebGL with film grain.",
+    tagline: "Mesh gradients that swirl around your cursor.",
+    tags: ["surface", "pointer", "webgl"],
+    date: "2026-10-02",
+    status: "new",
+    background: "plain",
+  },
+  {
+    slug: "agent-run",
+    title: "Agent Run",
+    description:
+      "One agent turn, start to finish. It thinks with a live timer, runs tool steps whose spinners turn into checkmarks that draw themselves, folds the work into “Thought for 4s”, then streams the answer behind a caret. Screen readers hear each phase, not every token.",
+    tagline: "Think, run tools, fold it away, stream the answer.",
+    tags: ["ai", "feedback", "motion", "a11y"],
+    date: "2026-10-02",
+    status: "new",
+    background: "dots",
+  },
+  {
+    slug: "agent-loaders",
+    title: "Agent Loaders",
+    description:
+      "Four ways to say an agent is working: a light sweeping across text, a 3×3 pixel wave, a terminal braille spinner and hopping dots. CSS keyframes from the design system, still under reduced motion, labelled for screen readers.",
+    tagline: "Shimmer, pixel wave, braille, dots.",
+    tags: ["ai", "feedback", "motion"],
+    date: "2026-10-02",
+    status: "new",
+    background: "grid",
+  },
+  {
+    slug: "dither-card",
+    title: "Dither Card",
+    description:
+      "Project cards with a live, ordered-dither cover. Hover lights the field under the cursor and speeds it up, a click sends a ripple through it, and keyboard focus lights it from the centre. Raw WebGL, drawn at a third of the resolution and scaled up pixel-perfect.",
+    tagline: "Bayer dithering that follows your cursor.",
+    tags: ["surface", "pointer", "webgl"],
+    date: "2026-10-02",
+    status: "new",
+    background: "plain",
+  },
   {
     slug: "spotlight-card",
     title: "Spotlight Card",
@@ -30,7 +74,7 @@ export const registry: RegistryEntry[] = [
     tagline: "Light that follows your cursor, zero re-renders.",
     tags: ["surface", "pointer", "css"],
     date: "2026-09-28",
-    featured: true,
+    status: "new",
     background: "dots",
   },
   {
@@ -41,6 +85,7 @@ export const registry: RegistryEntry[] = [
     tagline: "Stacked toasts that fan out on hover.",
     tags: ["feedback", "motion", "a11y"],
     date: "2026-09-24",
+    status: "new",
     background: "grid",
   },
   {
@@ -61,7 +106,6 @@ export const registry: RegistryEntry[] = [
     tagline: "Mechanical counter reels, any locale.",
     tags: ["data", "motion", "typography"],
     date: "2026-09-15",
-    featured: true,
     background: "glow",
   },
   {

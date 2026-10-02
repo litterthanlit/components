@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { previews } from "@/registry/previews";
+import { cn } from "@/design-system";
 import type { StageBackground } from "@/registry";
+import { previews } from "@/registry/previews";
 
 type PreviewProps = {
   slug: string;
@@ -14,7 +15,7 @@ type PreviewProps = {
   zoom?: number;
 };
 
-export function Preview({ slug, background = "grid", lazy = false, className = "", zoom }: PreviewProps) {
+export function Preview({ slug, background = "grid", lazy = false, className, zoom }: PreviewProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(!lazy);
   const Demo = previews[slug];
@@ -35,8 +36,8 @@ export function Preview({ slug, background = "grid", lazy = false, className = "
   }, [visible]);
 
   return (
-    <div ref={ref} className={`relative isolate flex items-center justify-center overflow-hidden stage-${background} ${className}`}>
-      {/* Faded border on the pattern so it sits behind the component, not around it. */}
+    <div ref={ref} className={cn("relative isolate flex items-center justify-center overflow-hidden bg-panel", className)}>
+      {/* Pattern fades out toward the edges so it sits behind the component. */}
       <div aria-hidden className={`pointer-events-none absolute inset-0 -z-10 stage-${background} stage-vignette`} />
       <div className="flex w-full items-center justify-center p-6" style={zoom ? { zoom } : undefined}>
         {visible && Demo ? <Demo /> : null}

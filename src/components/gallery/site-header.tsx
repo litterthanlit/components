@@ -1,68 +1,90 @@
 import Link from "next/link";
+import { Container, Dot } from "@/design-system";
 import { site } from "@/site.config";
+import { Logo } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
+
+const nav = [
+  { href: "/", label: "Components" },
+  { href: "/system", label: "System" },
+];
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-bg/70 backdrop-blur-xl backdrop-saturate-150">
-      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="group flex items-center gap-2.5 rounded-md text-sm font-medium tracking-tight">
-          <span aria-hidden className="relative grid size-5 place-items-center">
-            <span className="absolute inset-0 rounded-full bg-accent/20 transition-transform duration-500 ease-out-expo group-hover:scale-125" />
-            <span className="size-2 rounded-full bg-accent" />
-          </span>
-          {site.author}
-          <span className="text-subtle">/</span>
-          <span className="text-muted">{site.name}</span>
+    <header>
+      <Container className="flex h-20 items-center justify-between sm:h-24">
+        <Link href="/" aria-label={`${site.author}, ${site.name}`} className="-ml-1 rounded-md">
+          <Logo className="h-11 w-auto sm:h-12" />
         </Link>
-        <nav aria-label="Primary" className="flex items-center gap-1 text-sm">
-          <a
-            href={site.links.x}
-            target="_blank"
-            rel="noreferrer"
-            className="hidden rounded-full px-3 py-1.5 text-muted transition-colors hover:bg-surface-2 hover:text-fg sm:inline-flex"
-          >
-            X / Twitter
-          </a>
+        <nav aria-label="Primary" className="flex items-center gap-1 text-body">
+          {nav.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="rounded-md px-2 py-1 text-muted transition-colors duration-(--duration-exit) hover:text-ink hover:duration-(--duration-enter)"
+            >
+              {item.label}
+            </Link>
+          ))}
           <a
             href={site.links.portfolio}
             target="_blank"
             rel="noreferrer"
-            className="hidden rounded-full px-3 py-1.5 text-muted transition-colors hover:bg-surface-2 hover:text-fg sm:inline-flex"
+            className="hidden rounded-md px-2 py-1 text-muted transition-colors duration-(--duration-exit) hover:text-ink hover:duration-(--duration-enter) sm:inline-block"
           >
-            Portfolio
+            litt.design ↗
           </a>
-          <a
-            href={site.links.github}
-            target="_blank"
-            rel="noreferrer"
-            aria-label="Source on GitHub"
-            className="inline-grid size-9 place-items-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-fg"
-          >
-            <svg aria-hidden viewBox="0 0 16 16" className="size-4" fill="currentColor">
-              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z" />
-            </svg>
-          </a>
-          <ThemeToggle />
+          <ThemeToggle className="ml-1" />
         </nav>
-      </div>
+      </Container>
     </header>
   );
 }
 
+const footerLinks = [
+  { href: site.links.x, label: "X" },
+  { href: site.links.linkedin, label: "LinkedIn" },
+  { href: site.links.contra, label: "Contra" },
+  { href: site.links.github, label: "GitHub" },
+];
+
 export function SiteFooter() {
   return (
-    <footer className="mt-auto border-t border-border">
-      <div className="mx-auto flex max-w-7xl flex-col gap-2 px-4 py-8 text-xs text-subtle sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-        <p>
-          Designed &amp; built by {site.author}. Components are free to use.
-        </p>
-        <p className="font-mono">
-          <a href={site.links.x} target="_blank" rel="noreferrer" className="transition-colors hover:text-fg">
-            {site.handle}
-          </a>
-        </p>
-      </div>
+    <footer className="mt-auto">
+      <Container className="grid gap-10 pb-12 pt-28 sm:grid-cols-[1fr_auto] sm:items-end">
+        <div>
+          <p className="text-lead text-ink">
+            I build tools for creators.
+            <br />
+            <span className="text-muted">The craft is in what I leave out.</span>
+          </p>
+          <p className="mt-6 flex flex-wrap items-center gap-x-2 text-meta text-muted">
+            <span>Based in Europe, working remotely</span>
+            <span aria-hidden>·</span>
+            <span className="inline-flex items-center gap-1.5">
+              <Dot pulse />
+              Available for projects
+            </span>
+          </p>
+        </div>
+        <div className="flex flex-col gap-3 sm:items-end">
+          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-body">
+            {footerLinks.map((link) => (
+              <li key={link.label}>
+                <a
+                  href={link.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-muted transition-colors duration-(--duration-exit) hover:text-ink hover:duration-(--duration-enter)"
+                >
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p className="select-all font-mono text-meta text-muted">{site.email}</p>
+        </div>
+      </Container>
     </footer>
   );
 }

@@ -30,14 +30,14 @@ export function CopyButton({ value, label = "Copy to clipboard", className = "" 
     timer.current = setTimeout(() => setCopied(false), 1800);
   }
 
-  const icon = "absolute inset-0 m-auto size-4 transition-[opacity,transform,filter] duration-300 ease-out-expo";
+  const icon = "absolute inset-0 m-auto size-4 transition-[opacity,transform,filter] duration-(--duration-enter) ease-out";
 
   return (
     <button
       type="button"
       onClick={copy}
       aria-label={label}
-      className={`relative inline-grid size-8 place-items-center rounded-lg text-muted transition-colors hover:bg-surface-2 hover:text-fg active:scale-95 ${className}`}
+      className={`relative inline-grid size-8 place-items-center rounded-md text-muted transition-[background-color,color,transform] duration-(--duration-exit) ease-out hover:bg-panel hover:text-ink hover:duration-(--duration-enter) active:scale-[0.92] ${className}`}
     >
       <svg
         aria-hidden
@@ -53,7 +53,7 @@ export function CopyButton({ value, label = "Copy to clipboard", className = "" 
         aria-hidden
         viewBox="0 0 16 16"
         fill="none"
-        className={`${icon} text-accent`}
+        className={`${icon} text-accent-strong`}
         style={{ opacity: copied ? 1 : 0, transform: copied ? "none" : "scale(0.5)", filter: copied ? "none" : "blur(3px)" }}
       >
         <path
@@ -65,7 +65,7 @@ export function CopyButton({ value, label = "Copy to clipboard", className = "" 
           pathLength={1}
           strokeDasharray={1}
           strokeDashoffset={copied ? 0 : 1}
-          className="transition-[stroke-dashoffset] delay-100 duration-500 ease-out-expo"
+          className="transition-[stroke-dashoffset] delay-75 duration-(--duration-move) ease-out"
         />
       </svg>
       <span className="sr-only" role="status">
@@ -79,9 +79,9 @@ const command = "npx shadcn add spotlight-card";
 
 export default function Demo() {
   return (
-    <div className="flex w-full max-w-sm items-center gap-3 rounded-xl border border-border bg-surface py-1.5 pl-4 pr-1.5 font-mono text-[13px] shadow-[0_12px_32px_-16px_rgb(0_0_0/0.3)]">
+    <div className="flex w-full max-w-sm items-center gap-3 rounded-xl bg-surface py-1.5 pl-4 pr-1.5 font-mono text-[13px] shadow-md">
       <span aria-hidden className="select-none text-subtle">$</span>
-      <code className="min-w-0 flex-1 truncate text-fg">{command}</code>
+      <code className="min-w-0 flex-1 truncate text-ink">{command}</code>
       <CopyButton value={command} label="Copy install command" />
     </div>
   );

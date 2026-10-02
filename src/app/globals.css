@@ -1,123 +1,78 @@
 @import "tailwindcss";
-
-/* Class-based dark mode, driven by data-theme on <html>. */
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
-
-/*
- * Design tokens. Neutral monochrome base + one "signal" accent.
- * Every component in the registry reads from these, so a capture in
- * light or dark mode stays on-brand without per-component overrides.
- */
-:root {
-  --bg: #fafaf9;
-  --surface: #ffffff;
-  --surface-2: #f4f4f3;
-  --fg: #0c0c0c;
-  --muted: #5d5d5a;
-  --subtle: #9a9a96;
-  --border: #e6e6e3;
-  --border-strong: #d4d4d0;
-  --accent: #ff5a1f;
-  --accent-fg: #ffffff;
-  --grid-line: rgb(12 12 12 / 0.06);
-  --ring: rgb(255 90 31 / 0.45);
-  color-scheme: light;
-}
-
-[data-theme="dark"] {
-  --bg: #0a0a0a;
-  --surface: #121212;
-  --surface-2: #181818;
-  --fg: #f2f2f0;
-  --muted: #a3a3a0;
-  --subtle: #6b6b68;
-  --border: #232322;
-  --border-strong: #2f2f2d;
-  --accent: #ff6a33;
-  --accent-fg: #0a0a0a;
-  --grid-line: rgb(255 255 255 / 0.055);
-  --ring: rgb(255 106 51 / 0.5);
-  color-scheme: dark;
-}
-
-@theme inline {
-  --color-bg: var(--bg);
-  --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-fg: var(--fg);
-  --color-muted: var(--muted);
-  --color-subtle: var(--subtle);
-  --color-border: var(--border);
-  --color-border-strong: var(--border-strong);
-  --color-accent: var(--accent);
-  --color-accent-fg: var(--accent-fg);
-  --color-ring: var(--ring);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-}
+@import "../design-system/tokens.css";
 
 html {
-  background: var(--bg);
+  background: var(--canvas);
 }
 
+/* The canvas colour lives on <html>; body stays transparent so the
+   fixed .atmosphere layer (z-index -10) can show through. */
 body {
-  background: var(--bg);
-  color: var(--fg);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-  font-feature-settings: "ss01", "cv11";
+  color: var(--ink);
+  font-family: var(--font-geist-sans), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  letter-spacing: -0.006em;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
 }
 
 ::selection {
   background: var(--accent);
-  color: var(--accent-fg);
+  color: var(--accent-ink);
 }
 
 :focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
+}
+
+/* Soft colour washes behind the page, as on litt.design. */
+.atmosphere {
+  background:
+    radial-gradient(40rem 32rem at 8% -6%, rgb(255 214 214 / 0.35), transparent 70%),
+    radial-gradient(36rem 40rem at 96% 28%, rgb(214 228 255 / 0.4), transparent 70%),
+    radial-gradient(30rem 24rem at 30% 108%, rgb(226 255 214 / 0.25), transparent 70%);
+}
+[data-theme="dark"] .atmosphere {
+  background:
+    radial-gradient(40rem 32rem at 8% -6%, rgb(255 120 120 / 0.06), transparent 70%),
+    radial-gradient(36rem 40rem at 96% 28%, rgb(120 150 255 / 0.07), transparent 70%),
+    radial-gradient(30rem 24rem at 30% 108%, rgb(194 255 77 / 0.04), transparent 70%);
 }
 
 /* Stage backgrounds — shared by gallery cards, detail view and captures. */
 .stage-grid {
-  background-color: var(--bg);
+  background-color: var(--panel);
   background-image:
-    linear-gradient(var(--grid-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  background-size: 32px 32px;
+    linear-gradient(var(--pattern) 1px, transparent 1px),
+    linear-gradient(90deg, var(--pattern) 1px, transparent 1px);
+  background-size: 24px 24px;
   background-position: center center;
 }
 .stage-dots {
-  background-color: var(--bg);
-  background-image: radial-gradient(var(--grid-line) 1.2px, transparent 1.2px);
-  background-size: 18px 18px;
+  background-color: var(--panel);
+  background-image: radial-gradient(color-mix(in oklab, var(--ink) 14%, transparent) 1px, transparent 1px);
+  background-size: 16px 16px;
   background-position: center center;
 }
-.stage-dots { --grid-line: color-mix(in oklab, var(--fg) 16%, transparent); }
 .stage-plain {
-  background-color: var(--bg);
+  background-color: var(--panel);
 }
 .stage-glow {
-  background-color: var(--bg);
+  background-color: var(--panel);
   background-image:
-    radial-gradient(60% 50% at 50% 0%, color-mix(in oklab, var(--accent) 22%, transparent), transparent 70%),
-    radial-gradient(40% 40% at 85% 100%, color-mix(in oklab, var(--accent) 10%, transparent), transparent 70%);
+    radial-gradient(55% 45% at 50% 0%, color-mix(in oklab, var(--accent) 30%, transparent), transparent 75%),
+    radial-gradient(40% 40% at 50% 110%, color-mix(in oklab, var(--accent) 12%, transparent), transparent 70%);
 }
 .stage-vignette {
-  mask-image: radial-gradient(ellipse 75% 70% at 50% 50%, #000 40%, transparent 100%);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
+  mask-image: radial-gradient(ellipse 70% 65% at 50% 50%, #000 30%, transparent 100%);
 }
 
 /* Shiki dual themes */
@@ -130,5 +85,16 @@ body {
   color: var(--shiki-dark);
 }
 .code pre {
-  font-family: var(--font-mono), ui-monospace, monospace;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
