@@ -9,7 +9,7 @@ export const colors = {
     panel: "#f5f5f5",
     surface: "#ffffff",
     ink: "#0a0a0a",
-    muted: "#737373",
+    muted: "#707070",
     subtle: "#a3a3a3",
     line: "rgb(0 0 0 / 0.08)",
     "line-strong": "rgb(0 0 0 / 0.14)",
