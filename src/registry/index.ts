@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "gradient-card",
+    title: "Gradient Card",
+    description:
+      "Project cards with a live mesh gradient cover. Four colours drift on slow orbits through a noise-warped field, blended in linear light so the midpoints stay bright. Hover swirls the colours around the cursor; a click sends a pulse and crossfades to the next palette. Raw WebGL with film grain.",
+    tagline: "Mesh gradients that swirl around your cursor.",
+    tags: ["surface", "pointer", "webgl"],
+    date: "2026-10-02",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "agent-run",
     title: "Agent Run",
     description:
