@@ -121,7 +121,10 @@ function ToastItem({
       <div ref={measureRef} className="flex items-start gap-3 p-3.5">
         <span aria-hidden className="mt-[7px] size-1.5 shrink-0 rounded-full bg-accent shadow-[0_0_0_1px_rgb(0_0_0/0.06)]" />
         <div className="min-w-0 flex-1">
-          <p className="text-body font-medium text-ink">{toast.title}</p>
+          <p className="flex items-baseline justify-between gap-2">
+            <span className="truncate text-body font-medium text-ink">{toast.title}</span>
+            <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.04em] text-subtle">now</span>
+          </p>
           <p className="text-meta text-muted">{toast.body}</p>
         </div>
         <button

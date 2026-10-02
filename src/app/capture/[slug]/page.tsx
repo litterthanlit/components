@@ -48,12 +48,12 @@ export default async function CapturePage({ params, searchParams }: PageProps<"/
           <Preview slug={slug} background={background} zoom={zoom} className="h-full" />
         </div>
         {showLabel && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between px-8 pb-7 text-[15px]">
-            <p className="flex items-center gap-2.5 font-medium text-ink">
-              <Dot className="scale-125" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between px-8 pb-7">
+            <p className="flex items-center gap-3 font-display text-[2rem] leading-none text-ink">
+              {entry.status && <Dot className="scale-125" />}
               {entry.title}
             </p>
-            <p className="text-muted">{site.handle}</p>
+            <p className="font-mono text-[12px] uppercase tracking-[0.04em] text-muted">{site.handle}</p>
           </div>
         )}
       </div>

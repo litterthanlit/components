@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import { cn } from "../cn";
 
-/** Muted, sentence-case section label — "Selected work" on litt.design. */
+/** Section label in the mono voice: a slug line, not a headline. */
 export function SectionLabel({ children, className, id }: { children: ReactNode; className?: string; id?: string }) {
   return (
-    <h2 id={id} className={cn("text-body text-muted", className)}>
+    <h2 id={id} className={cn("font-mono text-label uppercase text-muted", className)}>
       {children}
     </h2>
   );

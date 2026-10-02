@@ -26,13 +26,14 @@ Personal details live in `src/site.config.ts`. They feed the header, footer, met
 src/design-system/
   tokens.css      colour, type scale, radius, elevation, motion (source of truth)
   tokens.ts       the same values for TypeScript: OG images and the /system page
-  primitives/     Button, IconButton, Badge, Dot, Kbd, Container, SectionLabel
+  primitives/     Button, IconButton, Badge, Dot, Kbd, Container, SectionLabel, Plate, Label, Halftone
   motion/         createSpring and spring presets
   index.ts        import { Button, Dot } from "@/design-system"
 ```
 
-- **Colour:** `canvas`, `panel` and `surface` grounds; `ink`, `muted` and `subtle` text; `line` hairlines; a single lime `accent`. Every token has a light and a dark value.
-- **Type:** Geist. `text-body` is 14px, `text-meta` 12px, with `lead`, `title` and `display` above them.
+- **Method:** every component is a proof pulled from the press. Metaphor: the print-shop proof sheet. Filter: halftone (`.halftone` / `<Halftone>`). Habit: crop marks around anything that frames a component (`.crop` / `<Plate>`). Volume: mid.
+- **Colour:** a four-hue legend. Paper (`canvas`, `panel`, `surface`), ink (`ink`, `muted`, `subtle`, `line`), lime `accent` = live, `proof` red = look here. For more emphasis, turn the density dial (dot opacity and pitch) instead of adding a hue.
+- **Type:** three voices. Instrument Serif for story (`font-display`, `text-headline`, `text-heading`), Geist for UI (`text-body` 14px, `text-meta` 12px), Geist Mono for metadata (`<Label>`, `text-label`).
 - **Motion:** `ease-out`, `ease-in-out`, `ease-drawer` and `ease-spring` curves, with `--duration-exit` (150ms), `--duration-enter` (210ms) and `--duration-move` (400ms).
 - **Physics:** `createSpring(initial, springs.snappy | gentle | bouncy, onUpdate)` runs a damped spring that writes straight to the DOM and keeps its velocity when interrupted. Use it for anything pointer-driven or interruptible. Siblings entering together are staggered by `--stagger` (50ms), capped at 8. Agent states use the `animate-shimmer`, `animate-wave`, `animate-hop` and `animate-caret` keyframes.
 - **Elevation:** `shadow-sm`, `shadow-md` and `shadow-lg` are a 1px ring plus a soft shadow.

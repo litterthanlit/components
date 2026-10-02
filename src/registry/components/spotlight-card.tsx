@@ -9,8 +9,9 @@ type SpotlightCardProps = {
 };
 
 /**
- * A surface whose border and fill pick up a soft light that follows the
- * pointer. Position is written to CSS variables on the element directly,
+ * A surface whose border and fill pick up a light that follows the pointer:
+ * the edge glows proof red and a halftone screen prints into the fill under
+ * the cursor. Position is written to CSS variables on the element directly,
  * so moving the mouse never triggers a React re-render.
  */
 export function SpotlightCard({ children, className = "", style }: SpotlightCardProps) {
@@ -39,17 +40,18 @@ export function SpotlightCard({ children, className = "", style }: SpotlightCard
         className="pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity duration-(--duration-exit) ease-out group-hover/spot:opacity-100 group-hover/spot:duration-(--duration-enter)"
         style={{
           background:
-            "radial-gradient(240px circle at var(--x) var(--y), var(--accent-strong), transparent 70%)",
+            "radial-gradient(240px circle at var(--x) var(--y), var(--proof), transparent 70%)",
         }}
       />
-      <div className="relative h-full rounded-[11px] bg-surface">
+      <div className="relative h-full rounded-[9px] bg-surface">
         {/* Fill light */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-[11px] opacity-0 transition-opacity duration-500 group-hover/spot:opacity-100"
+          className="pointer-events-none absolute inset-0 rounded-[9px] opacity-0 transition-opacity duration-500 group-hover/spot:opacity-100"
           style={{
-            background:
-              "radial-gradient(360px circle at var(--x) var(--y), color-mix(in oklab, var(--accent) 16%, transparent), transparent 60%)",
+            backgroundImage: "radial-gradient(color-mix(in oklab, var(--ink) 16%, transparent) 1.2px, transparent 1.6px)",
+            backgroundSize: "6px 6px",
+            maskImage: "radial-gradient(220px circle at var(--x) var(--y), #000, transparent 70%)",
           }}
         />
         <div className="relative">{children}</div>
@@ -64,12 +66,14 @@ const items = [
     body: "Run logic close to every user, with cold starts measured in single milliseconds.",
     stat: "12ms",
     label: "p50 latency",
+    region: "fra1",
   },
   {
     title: "Instant rollbacks",
     body: "Every deploy is immutable. Step back to any previous build in one click.",
     stat: "0.4s",
     label: "to restore",
+    region: "iad1",
   },
 ];
 
@@ -82,6 +86,7 @@ export default function Demo() {
             <div className="flex items-center gap-2">
               <span aria-hidden className="size-1.5 rounded-full bg-accent" />
               <h3 className="text-body font-medium text-ink">{item.title}</h3>
+              <span className="ml-auto font-mono text-[11px] uppercase tracking-[0.04em] text-muted">{item.region}</span>
             </div>
             <p className="text-body text-muted">{item.body}</p>
             <p className="mt-auto flex items-baseline gap-2 border-t border-line pt-4">

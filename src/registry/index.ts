@@ -70,7 +70,7 @@ export const registry: RegistryEntry[] = [
     slug: "spotlight-card",
     title: "Spotlight Card",
     description:
-      "A surface whose border and fill catch a soft light that follows the pointer. Coordinates are written to CSS variables, so tracking never re-renders React.",
+      "A surface that catches a light following the pointer: the edge glows proof red and a halftone screen prints into the fill. Coordinates are written to CSS variables, so tracking never re-renders React.",
     tagline: "Light that follows your cursor, zero re-renders.",
     tags: ["surface", "pointer", "css"],
     date: "2026-09-28",

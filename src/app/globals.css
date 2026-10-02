@@ -6,7 +6,7 @@ html {
 }
 
 /* The canvas colour lives on <html>; body stays transparent so the
-   fixed .atmosphere layer (z-index -10) can show through. */
+   fixed .atmosphere grain layer can show through. */
 body {
   color: var(--ink);
   font-family: var(--font-geist-sans), "Helvetica Neue", Helvetica, Arial, sans-serif;
@@ -33,21 +33,79 @@ h3 {
   outline-offset: 2px;
 }
 
-/* Soft colour washes behind the page, as on litt.design. */
+/* Paper grain over everything, like an uncoated stock. Replaces the old
+   pastel washes (rejected: extra hues with no meaning). */
 .atmosphere {
-  background:
-    radial-gradient(40rem 32rem at 8% -6%, rgb(255 214 214 / 0.35), transparent 70%),
-    radial-gradient(36rem 40rem at 96% 28%, rgb(214 228 255 / 0.4), transparent 70%),
-    radial-gradient(30rem 24rem at 30% 108%, rgb(226 255 214 / 0.25), transparent 70%);
+  background-image: var(--grain);
+  background-size: 160px 160px;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: multiply;
 }
 [data-theme="dark"] .atmosphere {
-  background:
-    radial-gradient(40rem 32rem at 8% -6%, rgb(255 120 120 / 0.06), transparent 70%),
-    radial-gradient(36rem 40rem at 96% 28%, rgb(120 150 255 / 0.07), transparent 70%),
-    radial-gradient(30rem 24rem at 30% 108%, rgb(194 255 77 / 0.04), transparent 70%);
+  mix-blend-mode: screen;
 }
 
-/* Stage backgrounds — shared by gallery cards, detail view and captures. */
+/* ─── The habit: crop marks ──────────────────────────────────────────────
+   Anything that holds a component sits inside four printer's crop marks.
+   They are drawn outside the box, so they never touch the content, and
+   turn proof red when the plate is active (hover or focus inside). */
+@property --crop {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: transparent;
+}
+.crop {
+  --crop: var(--line-strong);
+  --crop-len: 9px;
+  --crop-gap: 5px;
+  --crop-o: calc(var(--crop-len) + var(--crop-gap));
+  position: relative;
+  transition: --crop var(--duration-exit) var(--ease-out);
+}
+.crop::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--crop-o));
+  pointer-events: none;
+  background:
+    linear-gradient(var(--crop), var(--crop)) 0 var(--crop-o) / var(--crop-len) 1px no-repeat,
+    linear-gradient(var(--crop), var(--crop)) var(--crop-o) 0 / 1px var(--crop-len) no-repeat,
+    linear-gradient(var(--crop), var(--crop)) 100% var(--crop-o) / var(--crop-len) 1px no-repeat,
+    linear-gradient(var(--crop), var(--crop)) calc(100% - var(--crop-o)) 0 / 1px var(--crop-len) no-repeat,
+    linear-gradient(var(--crop), var(--crop)) 0 calc(100% - var(--crop-o)) / var(--crop-len) 1px no-repeat,
+    linear-gradient(var(--crop), var(--crop)) var(--crop-o) 100% / 1px var(--crop-len) no-repeat,
+    linear-gradient(var(--crop), var(--crop)) 100% calc(100% - var(--crop-o)) / var(--crop-len) 1px no-repeat,
+    linear-gradient(var(--crop), var(--crop)) calc(100% - var(--crop-o)) 100% / 1px var(--crop-len) no-repeat;
+}
+.crop-active,
+.group\/card:hover .crop,
+.group\/card:focus-within .crop {
+  --crop: var(--proof);
+  transition-duration: var(--duration-enter);
+}
+
+/* ─── The filter: halftone ───────────────────────────────────────────────
+   A real amplitude-modulated screen: a grey dot grid multiplied with a
+   grey image, then thresholded with contrast() so darker areas print
+   bigger dots. White drops out with multiply (screen + invert in dark),
+   so only ink lands on the paper. --dot is the screen pitch; opacity is
+   the density dial. Set the image with --ht-image. */
+.halftone {
+  --ht-image: radial-gradient(circle at 50% 50%, #000, #fff 70%);
+  background:
+    radial-gradient(closest-side, #777, #fff) 0 0 / var(--dot) var(--dot),
+    var(--ht-image);
+  background-blend-mode: multiply;
+  filter: contrast(18);
+  mix-blend-mode: multiply;
+}
+[data-theme="dark"] .halftone {
+  filter: contrast(18) invert(1);
+  mix-blend-mode: screen;
+}
+
+/* Stage backgrounds, shared by gallery plates, the detail view and captures.
+   Values stay grid / dots / glow / plain so capture URLs keep working. */
 .stage-grid {
   background-color: var(--panel);
   background-image:
@@ -58,18 +116,19 @@ h3 {
 }
 .stage-dots {
   background-color: var(--panel);
-  background-image: radial-gradient(color-mix(in oklab, var(--ink) 14%, transparent) 1px, transparent 1px);
-  background-size: 16px 16px;
+  background-image: radial-gradient(var(--pattern) 1.1px, transparent 1.5px);
+  background-size: var(--dot) var(--dot);
   background-position: center center;
 }
 .stage-plain {
   background-color: var(--panel);
 }
+/* "Bloom": a halftone falloff printed in ink, not a coloured glow. */
 .stage-glow {
   background-color: var(--panel);
-  background-image:
-    radial-gradient(55% 45% at 50% 0%, color-mix(in oklab, var(--accent) 30%, transparent), transparent 75%),
-    radial-gradient(40% 40% at 50% 110%, color-mix(in oklab, var(--accent) 12%, transparent), transparent 70%);
+  background-image: radial-gradient(color-mix(in oklab, var(--ink) 22%, transparent) 1.4px, transparent 1.8px);
+  background-size: var(--dot) var(--dot);
+  mask-image: radial-gradient(60% 55% at 50% 0%, #000, transparent 80%) !important;
 }
 .stage-vignette {
   mask-image: radial-gradient(ellipse 70% 65% at 50% 50%, #000 30%, transparent 100%);

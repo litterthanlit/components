@@ -12,7 +12,7 @@ export async function CodeBlock({ code, filename }: { code: string; filename: st
   return (
     <figure className="overflow-hidden rounded-xl bg-panel shadow-[inset_0_0_0_1px_var(--line)]">
       <figcaption className="flex items-center justify-between border-b border-line py-1 pl-4 pr-1">
-        <span className="font-mono text-meta text-muted">{filename}</span>
+        <span className="font-mono text-label text-muted">{filename}</span>
         <CopyButton value={code} label={`Copy ${filename}`} />
       </figcaption>
       <div

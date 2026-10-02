@@ -16,16 +16,16 @@ export default async function Image() {
         logo={logo}
         right={
           <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <OgDot /> {registry.length} components
+            <OgDot /> {registry.length} plates
           </span>
         }
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 880 }}>
-          <span style={{ fontSize: 64, fontWeight: 500, letterSpacing: -2.4, lineHeight: 1.08 }}>
-            Interface components, designed and built.
+          <span style={{ fontFamily: "Instrument Serif", fontSize: 92, letterSpacing: -2, lineHeight: 0.98 }}>
+            Small studies in motion, feedback &amp; touch.
           </span>
-          <span style={{ fontSize: 30, color: colors.light.muted, letterSpacing: -0.4, lineHeight: 1.4 }}>
-            Small studies in motion, feedback and touch.
+          <span style={{ fontSize: 28, color: colors.light.muted, letterSpacing: -0.4, lineHeight: 1.4 }}>
+            Interface components, pulled like proofs.
           </span>
         </div>
       </OgFrame>

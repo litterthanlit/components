@@ -358,7 +358,7 @@ export function DitherCard({ title, description, meta, href, pattern = "flow" }:
       </div>
       <div className="mt-3 flex items-baseline justify-between gap-3 px-0.5">
         <h3 className="text-body font-medium text-ink">{title}</h3>
-        {meta && <span className="shrink-0 text-meta tabular-nums text-muted">{meta}</span>}
+        {meta && <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.04em] tabular-nums text-muted">{meta}</span>}
       </div>
       <p className="mt-0.5 px-0.5 text-body text-muted">{description}</p>
       <span className="sr-only">(opens in a new tab)</span>

@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from "react";
 /** Artwork colours, not UI tokens: they look the same in both themes. */
 export const palettes = [
   { name: "Lime", colors: ["#c2ff4d", "#1f8a70", "#0b2b26", "#f4f7e8"] },
-  { name: "Dusk", colors: ["#ff8fb1", "#7a5cff", "#1b1446", "#ffd6a5"] },
+  { name: "Proof", colors: ["#e5402a", "#f4f2ed", "#141413", "#c9c3b6"] },
   { name: "Glacier", colors: ["#b8e1ff", "#3a6df0", "#0a1a3a", "#eaf6ff"] },
   { name: "Ember", colors: ["#ffb347", "#ff4e2a", "#3b0a12", "#fff1d6"] },
 ] as const;
@@ -385,7 +385,7 @@ export function GradientCard({ title, description, meta, palette = 0, seed = 0 }
       </button>
       <div className="mt-3 flex items-baseline justify-between gap-3 px-0.5">
         <h3 className="text-body font-medium text-ink">{title}</h3>
-        {meta && <span className="shrink-0 text-meta tabular-nums text-muted">{meta}</span>}
+        {meta && <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.04em] tabular-nums text-muted">{meta}</span>}
       </div>
       <p className="mt-0.5 px-0.5 text-body text-muted">{description}</p>
       <span className="sr-only" role="status">

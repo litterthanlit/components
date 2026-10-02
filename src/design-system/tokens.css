@@ -1,63 +1,78 @@
 /*
- * litt design system — tokens.
+ * litt design system: tokens.
  *
  * Source of truth for every colour, type size, radius, duration and curve
  * used by the gallery, the registry components and the capture frames.
- * Mirrored for TypeScript consumers (docs page, OG images) in ./tokens.ts —
- * change both together.
+ * Mirrored for TypeScript consumers (docs page, OG images) in ./tokens.ts.
+ * Change both together.
  *
- * Naming follows litt.design: canvas / panel / surface for grounds,
- * ink / muted / subtle for text, line for hairlines, a single lime accent.
+ * The method (see /system): every component is a proof pulled from the
+ * press. Metaphor: the print-shop proof sheet. Filter: halftone. Habit:
+ * crop marks around anything that holds a component.
+ *
+ * Colour is a legend, four hues and no more:
+ *   paper  (grounds)          ink   (text, rules, halftone)
+ *   lime   (live, shipped)    proof (markup, danger, "look here")
+ * Need more emphasis? Turn the density dial (--dot, opacity, grain) before
+ * reaching for a fifth hue.
  */
 
 /* Class-based dark mode, driven by data-theme on <html>. */
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root {
-  /* Grounds */
-  --canvas: #fafafa;
-  --panel: #f5f5f5;
-  --surface: #ffffff;
+  /* Grounds: uncoated paper, a shade warmer at each step down. */
+  --canvas: #f4f2ed;
+  --panel: #ebe8e1;
+  --surface: #fbfaf7;
   /* Text */
-  --ink: #0a0a0a;
-  --muted: #707070; /* litt.design uses #737373; nudged to hold 4.5:1 on panel */
-  --subtle: #a3a3a3;
-  /* Hairlines */
-  --line: rgb(0 0 0 / 0.08);
-  --line-strong: rgb(0 0 0 / 0.14);
-  /* Accent: lime is a fill, never text on light grounds. */
+  --ink: #141413;
+  --muted: #67645d; /* 4.5:1 on panel */
+  --subtle: #a29e94;
+  /* Rules */
+  --line: rgb(20 20 19 / 0.1);
+  --line-strong: rgb(20 20 19 / 0.2);
+  /* Legend: lime = live/shipped (a fill, never text on paper). */
   --accent: #c2ff4d;
-  --accent-ink: #0a0a0a;
+  --accent-ink: #141413;
   --accent-strong: #4d7c0f;
-  /* Semantic */
-  --danger: #d93036;
-  --focus: #4d7c0f;
+  /* Legend: proof red = markup, crop marks on hover, destructive. */
+  --proof: #e5402a;
+  --danger: #d1361f;
+  --focus: #e5402a;
   /* Delay between siblings in a staggered entrance. */
   --stagger: 50ms;
-  /* Stage pattern ink */
-  --pattern: rgb(0 0 0 / 0.07);
-  /* Elevation: a hairline ring + soft, low shadow (Vercel-style). */
-  --elevation-sm: 0 0 0 1px var(--line), 0 1px 2px rgb(0 0 0 / 0.04);
-  --elevation-md: 0 0 0 1px var(--line), 0 2px 4px rgb(0 0 0 / 0.04), 0 8px 16px -4px rgb(0 0 0 / 0.06);
-  --elevation-lg: 0 0 0 1px var(--line), 0 4px 8px rgb(0 0 0 / 0.04), 0 24px 48px -12px rgb(0 0 0 / 0.12);
+  /* Density dial: halftone ink and dot pitch. */
+  --pattern: rgb(20 20 19 / 0.09);
+  --dot: 6px;
+  /* Paper grain, as a tiled SVG noise. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-opacity: 0.22;
+  /* Elevation: a hairline ring + a low, warm shadow, like a sheet on a table. */
+  --elevation-sm: 0 0 0 1px var(--line), 0 1px 2px rgb(40 30 10 / 0.05);
+  --elevation-md: 0 0 0 1px var(--line), 0 2px 4px rgb(40 30 10 / 0.04), 0 10px 20px -6px rgb(40 30 10 / 0.08);
+  --elevation-lg: 0 0 0 1px var(--line), 0 4px 8px rgb(40 30 10 / 0.04), 0 28px 56px -14px rgb(40 30 10 / 0.16);
   color-scheme: light;
 }
 
+/* Darkroom: the same sheet, printed in negative. */
 [data-theme="dark"] {
-  --canvas: #0a0a0a;
-  --panel: #111111;
-  --surface: #171717;
-  --ink: #ededed;
-  --muted: #8f8f8f;
-  --subtle: #5c5c5c;
-  --line: rgb(255 255 255 / 0.08);
-  --line-strong: rgb(255 255 255 / 0.15);
+  --canvas: #0e0e0d;
+  --panel: #151513;
+  --surface: #1c1c1a;
+  --ink: #edebe5;
+  --muted: #9a968c;
+  --subtle: #5f5c55;
+  --line: rgb(237 235 229 / 0.09);
+  --line-strong: rgb(237 235 229 / 0.17);
   --accent: #c2ff4d;
-  --accent-ink: #0a0a0a;
+  --accent-ink: #141413;
   --accent-strong: #c2ff4d;
-  --danger: #ff6166;
-  --focus: #c2ff4d;
-  --pattern: rgb(255 255 255 / 0.06);
+  --proof: #ff5a3d;
+  --danger: #ff6a4d;
+  --focus: #ff5a3d;
+  --pattern: rgb(237 235 229 / 0.08);
+  --grain-opacity: 0.12;
   --elevation-sm: 0 0 0 1px var(--line), 0 1px 2px rgb(0 0 0 / 0.4);
   --elevation-md: 0 0 0 1px var(--line), 0 2px 4px rgb(0 0 0 / 0.3), 0 8px 16px -4px rgb(0 0 0 / 0.4);
   --elevation-lg: 0 0 0 1px var(--line), 0 4px 8px rgb(0 0 0 / 0.3), 0 24px 48px -12px rgb(0 0 0 / 0.6);
@@ -76,10 +91,13 @@
   --color-accent: var(--accent);
   --color-accent-ink: var(--accent-ink);
   --color-accent-strong: var(--accent-strong);
+  --color-proof: var(--proof);
   --color-danger: var(--danger);
   --color-focus: var(--focus);
 
   --font-sans: var(--font-geist-sans), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  /* Three voices: display (story), sans (product), mono (metadata). */
+  --font-display: var(--font-instrument-serif), "Iowan Old Style", Georgia, serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Type scale — small and precise. 14px body, 12px meta. */
@@ -98,11 +116,23 @@
   --text-display: 2rem;
   --text-display--line-height: 1.15;
   --text-display--letter-spacing: -0.035em;
+  /* Display voice: Instrument Serif, set large and tight. */
+  --text-headline: clamp(2.75rem, 7vw, 5.5rem);
+  --text-headline--line-height: 0.98;
+  --text-headline--letter-spacing: -0.025em;
+  --text-heading: 2.25rem;
+  --text-heading--line-height: 1.05;
+  --text-heading--letter-spacing: -0.015em;
+  /* Mono voice: micro-labels (build ids, dates, counts, units). */
+  --text-label: 0.6875rem;
+  --text-label--line-height: 1.4;
+  --text-label--letter-spacing: 0.04em;
 
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
+  /* Paper has a small corner. Radii stay tight and grow with size. */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
 
   --shadow-sm: var(--elevation-sm);
   --shadow-md: var(--elevation-md);
@@ -161,6 +191,18 @@
     }
     50% {
       opacity: 0;
+    }
+  }
+  --animate-ink: ink 1.6s var(--ease-in-out) infinite;
+  @keyframes ink {
+    0%,
+    100% {
+      opacity: 0.35;
+      transform: scale(0.85);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1);
     }
   }
   @keyframes enter {

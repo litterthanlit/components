@@ -7,7 +7,19 @@ import type { ComponentType } from "react";
  * Lazily-loaded demos, keyed by registry slug. Each demo is its own chunk,
  * so the home page only pays for what scrolls into view.
  */
-const loading = () => <div className="size-6 animate-pulse rounded-full bg-line" />;
+const loading = () => (
+  // Loading state: the plate inking up, a 3×3 screen of halftone dots.
+  <span role="status" aria-label="Loading demo" className="grid grid-cols-3 gap-1.5">
+    {Array.from({ length: 9 }, (_, i) => (
+      <span
+        key={i}
+        aria-hidden
+        className="size-1.5 animate-ink rounded-full bg-ink motion-reduce:animate-none motion-reduce:opacity-40"
+        style={{ animationDelay: `${((i % 3) + Math.floor(i / 3)) * 120}ms` }}
+      />
+    ))}
+  </span>
+);
 
 export const previews: Record<string, ComponentType> = {
   "gradient-card": dynamic(() => import("./components/gradient-card"), { loading }),

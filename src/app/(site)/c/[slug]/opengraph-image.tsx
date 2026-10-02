@@ -28,11 +28,11 @@ export default async function Image({ params }: { params: Promise<{ slug: string
         }
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 20, maxWidth: 900 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 20, fontSize: 80, fontWeight: 500, letterSpacing: -3, lineHeight: 1 }}>
-            <OgDot size={18} />
+          <span style={{ display: "flex", alignItems: "center", gap: 24, fontFamily: "Instrument Serif", fontSize: 112, letterSpacing: -2.5, lineHeight: 1 }}>
+            {entry?.status && <OgDot size={18} />}
             {entry?.title ?? site.name}
           </span>
-          <span style={{ fontSize: 32, color: colors.light.muted, letterSpacing: -0.4, lineHeight: 1.4 }}>
+          <span style={{ fontSize: 30, color: colors.light.muted, letterSpacing: -0.4, lineHeight: 1.4 }}>
             {entry?.tagline ?? site.description}
           </span>
         </div>
