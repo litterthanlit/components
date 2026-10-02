@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useRef, useState, type RefObject } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 
 /* ------------------------------------------------------------------------ */
 /* Light                                                                     */
@@ -26,15 +26,42 @@ export const forms = ["Ganzfeld", "Skyspace", "Oculus", "Afrum"] as const;
 export type Form = (typeof forms)[number];
 
 /**
- * What each room spills onto the wall outside it: which point in the
- * sequence dominates the frame, and how strongly it glows.
+ * What each room throws onto the gallery outside it: which point in the
+ * sequence dominates the frame, how bright that light is, and how much it
+ * bleaches toward white (Afrum's beam is nearly white).
  */
 const SPILL: Record<Form, { offset: number; strength: number; white: number }> = {
-  Ganzfeld: { offset: 0.25, strength: 0.9, white: 0 },
-  Skyspace: { offset: 0.5, strength: 0.75, white: 0 },
-  Oculus: { offset: 0.2, strength: 0.85, white: 0 },
-  Afrum: { offset: 0.25, strength: 0.42, white: 0.35 },
+  Ganzfeld: { offset: 0.25, strength: 1, white: 0 },
+  Skyspace: { offset: 0.5, strength: 0.85, white: 0 },
+  Oculus: { offset: 0.2, strength: 0.95, white: 0 },
+  Afrum: { offset: 0.25, strength: 0.5, white: 0.35 },
 };
+
+/** The room shader lights the gallery from at most this many works. */
+const MAX_WORKS = 4;
+
+/**
+ * Shared between the works and the gallery around them: each work writes
+ * the light it's throwing, and registers the element it's hung as, and
+ * RoomLight reads both every frame. Plain mutable data, outside React, so
+ * nothing re-renders at 60fps.
+ */
+export function createRoom() {
+  const spills = Array.from({ length: MAX_WORKS }, () => ({ color: [0, 0, 0], power: 0 }));
+  const targets: (HTMLElement | null)[] = Array(MAX_WORKS).fill(null);
+  return {
+    spills,
+    targets,
+    setSpill(i: number, color: number[], power: number) {
+      spills[i].color = color;
+      spills[i].power = power;
+    },
+    setTarget(i: number, el: HTMLElement | null) {
+      targets[i] = el;
+    },
+  };
+}
+export type Room = ReturnType<typeof createRoom>;
 
 /** sRGB hex → OKLab, so hue changes travel the short, even way round. */
 function hexToOklab(hex: string) {
@@ -78,7 +105,6 @@ function lightAt(stops: number[][], x: number) {
   return oklabToLinear(a.map((v, j) => v + (b[j] - v) * f));
 }
 
-const toSrgb = (c: number) => Math.round(255 * Math.min(1, c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055));
 
 /* ------------------------------------------------------------------------ */
 /* Shader                                                                    */
@@ -323,8 +349,9 @@ type LightFieldProps = {
   active?: boolean;
   /** Increment to swell the light from the centre (keyboard activation). */
   pulse?: number;
-  /** An element to light with what the room spills: its background and opacity are written each few frames. */
-  glow?: RefObject<HTMLElement | null>;
+  /** The gallery this work hangs in, and its place there; it reports the light it throws each frame. */
+  room?: Room;
+  index?: number;
   className?: string;
 };
 
@@ -340,7 +367,7 @@ const LIGHTS_STAGGER = 0.1;
  * is read from the parent element and tilts the view, so the opening
  * shifts against the room as if you moved your head.
  */
-export function LightField({ form = "Ganzfeld", colors, seed = 0, active = false, pulse = 0, glow, className = "" }: LightFieldProps) {
+export function LightField({ form = "Ganzfeld", colors, seed = 0, active = false, pulse = 0, room, index = 0, className = "" }: LightFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bridge = useRef({
     active,
@@ -418,7 +445,6 @@ export function LightField({ form = "Ganzfeld", colors, seed = 0, active = false
       visible: false,
       raf: 0,
       last: 0,
-      frames: 0,
     };
 
     // Ease-in-out cubic: light should arrive and settle, never snap.
@@ -438,17 +464,17 @@ export function LightField({ form = "Ganzfeld", colors, seed = 0, active = false
       gl!.uniform2f(uRes, canvas!.width, canvas!.height);
     }
 
-    // Light the wall outside the frame with what the room is showing now.
-    function paintGlow(current: number[][]) {
-      const el = glow?.current;
-      if (!el) return;
+    // Tell the gallery what light this room is throwing right now: the
+    // dominant colour, brighter while looked at, swelling with a click, and
+    // breathing with the Ganzfeld.
+    function report(current: number[][]) {
+      if (!room) return;
       let rgb = lightAt(current, state.time + spill.offset);
       if (spill.white) rgb = rgb.map((c) => c + (1 - c) * spill.white);
-      const [r, g, b] = rgb.map(toSrgb);
       const age = state.pulse[2];
       const swell = age >= 0 ? (1 - Math.exp(-age * 10)) * Math.exp(-age * 1.8) : 0;
-      el.style.background = `radial-gradient(closest-side, rgb(${r} ${g} ${b}), rgb(${r} ${g} ${b} / 0.4) 42%, rgb(${r} ${g} ${b} / 0.1) 72%, transparent)`;
-      el.style.opacity = String(state.lit * (spill.strength + state.hover * 0.18 + swell * 0.3));
+      const breathe = form === "Ganzfeld" ? 1 + 0.1 * Math.sin(state.clock * 0.698) : 1;
+      room.setSpill(index, rgb, state.lit * spill.strength * breathe * (1 + state.hover * 0.35 + swell * 0.8));
     }
 
     function draw() {
@@ -461,8 +487,7 @@ export function LightField({ form = "Ganzfeld", colors, seed = 0, active = false
       gl!.uniform1f(uHover, state.hover);
       gl!.uniform3fv(uPulse, state.pulse);
       gl!.drawArrays(gl!.TRIANGLES, 0, 3);
-      // The wall changes slowly; a few times a second is plenty.
-      if (reduced || state.frames++ % 3 === 0) paintGlow(current);
+      report(current);
     }
 
     function frame(now: number) {
@@ -582,10 +607,183 @@ export function LightField({ form = "Ganzfeld", colors, seed = 0, active = false
       host.removeEventListener("click", onTap);
       link.onColors = link.onActive = link.onPulse = () => {};
       gl.getExtension("WEBGL_lose_context")?.loseContext();
+      room?.setSpill(index, [0, 0, 0], 0);
     };
-  }, [seed, form, glow]);
+  }, [seed, form, room, index]);
 
   return <canvas ref={canvasRef} aria-hidden className={`block size-full bg-black ${className}`} />;
+}
+
+/* ------------------------------------------------------------------------ */
+/* RoomLight                                                                 */
+/* ------------------------------------------------------------------------ */
+
+/**
+ * The gallery itself, lit only by the works. Each work is an area light on
+ * the wall: a wide, soft falloff that reaches well past its frame, a
+ * tighter halo at the edge, and a little bloom that bleeds back over the
+ * frame so its hard edge softens into its own light. Each also throws a low
+ * pool onto the floor. Haze drifts through the room, so the spill thickens
+ * and thins as it passes. Composited with `screen`, so black adds nothing.
+ */
+const ROOM_FRAGMENT = `
+precision highp float;
+
+uniform vec2 uRes;
+uniform float uTime;
+uniform vec4 uRect[${MAX_WORKS}];   // centre xy, half-size wh, in canvas px (y up)
+uniform vec3 uColor[${MAX_WORKS}];  // linear
+uniform float uPower[${MAX_WORKS}];
+
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float noise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1, 0)), u.x), mix(hash(i + vec2(0, 1)), hash(i + vec2(1, 1)), u.x), u.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 4; i++) { v += a * noise(p); p = p * 2.03 + 1.7; a *= 0.5; }
+  return v;
+}
+float box(vec2 p, vec2 b) {
+  vec2 q = abs(p) - b;
+  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
+}
+
+void main() {
+  // Everything in room heights, so the light scales with the room.
+  float unit = uRes.y;
+  vec2 p = gl_FragCoord.xy / unit;
+  float haze = fbm(p * 1.6 + vec2(uTime * 0.04, -uTime * 0.025));
+  float wisp = fbm(p * vec2(2.2, 5.0) - vec2(uTime * 0.07, 0.0));
+  vec3 light = vec3(0.0);
+  for (int i = 0; i < ${MAX_WORKS}; i++) {
+    vec2 c = uRect[i].xy / unit;
+    vec2 h = uRect[i].zw / unit;
+    float size = h.x + h.y;
+    float d = box(p - c, h);
+    float o = max(d, 0.0);
+    float reach = 0.2 * size + 0.03;
+    float wall = 1.0 / (1.0 + 3.0 * (o / reach) * (o / reach));
+    float halo = exp(-o / 0.03);
+    // Bloom over the frame's own edge, fading a few pixels in.
+    float bleed = d < 0.0 ? exp(d / 0.005) : 1.0;
+    // A wide, low pool on the floor beneath.
+    float pool = exp(-pow((p.x - c.x) / (h.x * 2.4 + 0.06), 2.0)) * exp(-p.y / 0.09);
+    vec3 col = uColor[i] * uPower[i];
+    light += col * ((wall * 0.2 * (0.55 + 0.9 * haze) + halo * 0.24) * bleed + pool * 0.12 * (0.6 + 0.8 * wisp));
+  }
+  vec3 color = 1.0 - exp(-light * 1.25);
+  color = pow(color, vec3(1.0 / 2.2));
+  color += (hash(gl_FragCoord.xy) - 0.5) / 255.0;
+  gl_FragColor = vec4(max(color, 0.0), 1.0);
+}
+`;
+
+/**
+ * One canvas over the whole gallery, drawn at half resolution (its light
+ * has no edges to lose). Reads each work's position every frame, so it
+ * follows scrolling, swiping and resizing without any observers per work.
+ */
+export function RoomLight({ room, className = "" }: { room: Room; className?: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const gl = canvas.getContext("webgl", { antialias: false, alpha: false });
+    if (!gl) return;
+
+    const shader = (type: number, src: string) => {
+      const s = gl.createShader(type)!;
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      return s;
+    };
+    const program = gl.createProgram()!;
+    gl.attachShader(program, shader(gl.VERTEX_SHADER, VERTEX));
+    gl.attachShader(program, shader(gl.FRAGMENT_SHADER, ROOM_FRAGMENT));
+    gl.linkProgram(program);
+    gl.useProgram(program);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const aPos = gl.getAttribLocation(program, "aPos");
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+    const u = (n: string) => gl.getUniformLocation(program, n);
+    const uRes = u("uRes"), uTime = u("uTime"), uRect = u("uRect"), uColor = u("uColor"), uPower = u("uPower");
+    // Haze holds still under reduced motion; the light still follows the works.
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const rects = new Float32Array(MAX_WORKS * 4);
+    const colors = new Float32Array(MAX_WORKS * 3);
+    const powers = new Float32Array(MAX_WORKS);
+    let scale = 1, time = 0, last = 0, raf = 0, visible = false;
+
+    function resize() {
+      const rect = canvas!.getBoundingClientRect();
+      scale = Math.min(window.devicePixelRatio || 1, 2) * 0.5;
+      canvas!.width = Math.max(1, Math.round(rect.width * scale));
+      canvas!.height = Math.max(1, Math.round(rect.height * scale));
+      gl!.viewport(0, 0, canvas!.width, canvas!.height);
+      gl!.uniform2f(uRes, canvas!.width, canvas!.height);
+    }
+
+    function draw() {
+      const box = canvas!.getBoundingClientRect();
+      for (let i = 0; i < MAX_WORKS; i++) {
+        const el = room.targets[i];
+        if (!el) {
+          powers[i] = 0;
+          continue;
+        }
+        const r = el.getBoundingClientRect();
+        rects.set([(r.left + r.width / 2 - box.left) * scale, (box.bottom - r.top - r.height / 2) * scale, (r.width / 2) * scale, (r.height / 2) * scale], i * 4);
+        colors.set(room.spills[i].color, i * 3);
+        powers[i] = room.spills[i].power;
+      }
+      gl!.uniform4fv(uRect, rects);
+      gl!.uniform3fv(uColor, colors);
+      gl!.uniform1fv(uPower, powers);
+      gl!.uniform1f(uTime, time);
+      gl!.drawArrays(gl!.TRIANGLES, 0, 3);
+    }
+
+    function frame(now: number) {
+      const dt = Math.min(0.05, (now - (last || now)) / 1000);
+      last = now;
+      if (!reduced) time += dt;
+      draw();
+      raf = visible ? requestAnimationFrame(frame) : 0;
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      resize();
+      draw();
+    });
+    resizeObserver.observe(canvas);
+    const visibility = new IntersectionObserver(([entry]) => {
+      visible = entry.isIntersecting;
+      if (visible && !raf) {
+        last = 0;
+        raf = requestAnimationFrame(frame);
+      }
+    });
+    visibility.observe(canvas);
+    resize();
+
+    return () => {
+      cancelAnimationFrame(raf);
+      visible = false;
+      resizeObserver.disconnect();
+      visibility.disconnect();
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
+    };
+  }, [room]);
+
+  return <canvas ref={canvasRef} aria-hidden className={`pointer-events-none mix-blend-screen ${className}`} />;
 }
 
 /* ------------------------------------------------------------------------ */
@@ -612,11 +810,14 @@ type LightWorkProps = {
   artClassName?: string;
   /** Reports the work while it's hovered or focused, and null when it isn't. */
   onInspect?: (work: Inspected | null) => void;
+  /** The gallery it hangs in, lit by RoomLight, and its place there. */
+  room?: Room;
+  index?: number;
 };
 
 /**
- * One work in the exhibition: a room of light that spills its colour onto
- * the wall around it, with no label on the wall. Hover tilts the view and
+ * One work in the exhibition: a room of light, with no label on the wall.
+ * Hung in a `room`, it lights the gallery around it through RoomLight. Hover tilts the view and
  * the light brightens; clicking (or Enter/Space) swells it and drifts into
  * the next sequence.
  */
@@ -631,8 +832,9 @@ export function LightWork({
   className = "",
   artClassName = "w-full",
   onInspect,
+  room,
+  index: place = 0,
 }: LightWorkProps) {
-  const glowRef = useRef<HTMLSpanElement>(null);
   const [index, setIndex] = useState(light % sequences.length);
   const [focused, setFocused] = useState(false);
   const [looking, setLooking] = useState(false);
@@ -648,13 +850,11 @@ export function LightWork({
 
   return (
     <figure className={`relative m-0 ${className}`}>
-      {/* The wall outside the frame, lit by the room. Painted by LightField. */}
-      <span
-        ref={glowRef}
-        aria-hidden
-        className="pointer-events-none absolute -inset-[30%] -z-10 opacity-0 mix-blend-screen @xl:-inset-[48%]"
-      />
       <button
+        ref={(el) => {
+          room?.setTarget(place, el);
+          return () => room?.setTarget(place, null);
+        }}
         type="button"
         onClick={(e) => {
           setIndex((i) => (i + 1) % sequences.length);
@@ -669,7 +869,7 @@ export function LightWork({
         style={{ aspectRatio: ratio }}
         className={`relative block cursor-pointer overflow-hidden rounded-[2px] outline-offset-[6px] transition-[scale] duration-(--duration-exit) ease-out active:scale-[0.99] ${artClassName}`}
       >
-        <LightField form={form} colors={current.colors} seed={seed} active={focused} pulse={pulse} glow={glowRef} />
+        <LightField form={form} colors={current.colors} seed={seed} active={focused} pulse={pulse} room={room} index={place} />
       </button>
       <figcaption className="sr-only">
         {title}, {year}. {form}. Light, variable dimensions.
@@ -695,6 +895,7 @@ const works = [
 
 export default function Demo() {
   const [inspected, setInspected] = useState<Inspected | null>(null);
+  const [room] = useState(createRoom);
 
   return (
     // A darkened gallery in either theme: the light is the only thing lit.
@@ -702,8 +903,8 @@ export default function Demo() {
       aria-labelledby="light-rooms-title"
       className="@container relative isolate w-full max-w-4xl overflow-hidden rounded-2xl bg-[#060608] px-5 pb-6 pt-5 @md:px-8 @md:pb-8 @md:pt-7 @xl:px-12 @xl:pb-16 @xl:pt-10"
     >
-      {/* The floor: the faintest lift toward the bottom, so the room has a ground. */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-20 h-2/5 bg-linear-to-t from-white/[0.04] to-transparent" />
+      {/* The gallery's light, over everything and screened in: walls, floor, bloom. */}
+      <RoomLight room={room} className="absolute inset-0 z-10 size-full" />
       <header className="mb-4 flex items-baseline justify-between gap-6 @md:mb-6 @xl:mb-14">
         <h2 id="light-rooms-title" className="text-body font-medium text-white/90 @xl:text-lead">
           Rooms of Light
@@ -725,14 +926,16 @@ export default function Demo() {
           )}
         </p>
       </header>
-      {/* Wide: one wall, works centred on a line. Narrow: a swipeable row at one height. */}
-      <ol className="-mx-2 -my-10 flex snap-x snap-mandatory scroll-px-2 items-center gap-6 overflow-x-auto px-2 py-10 [scrollbar-width:none] @xl:m-0 @xl:grid @xl:grid-cols-4 @xl:gap-10 @xl:overflow-visible @xl:p-0">
+      {/* Wide: one wall, works centred on a line. Narrow: a swipeable row at one height, running to the room's edges. */}
+      <ol className="-mx-5 -my-10 flex snap-x snap-mandatory scroll-px-5 items-center gap-6 overflow-x-auto px-5 py-10 [scrollbar-width:none] @md:-mx-8 @md:scroll-px-8 @md:px-8 @xl:m-0 @xl:grid @xl:grid-cols-4 @xl:gap-10 @xl:overflow-visible @xl:p-0">
         {works.map((work, i) => (
           <li key={work.title} className="shrink-0 snap-start">
             <LightWork
               {...work}
               year="2026"
               seed={i}
+              room={room}
+              index={i}
               onInspect={(w) => setInspected((prev) => (w ? w : prev?.title === work.title ? null : prev))}
               artClassName="h-30 w-auto @md:h-48 @xl:h-auto @xl:w-full"
             />
