@@ -26,9 +26,9 @@ export const registry: RegistryEntry[] = [
     slug: "wireframe-card",
     title: "Wireframe Card",
     description:
-      "Project cards with an animated SVG cover: hairline wireframes in one-point perspective on black, lit by beams of coloured light that run along the lines into a glowing focal point. Three scenes: a tunnel streaming out of its vanishing point, a floor grid racing toward you, and boxes that draw and undraw themselves. The pointer tilts each layer at its own depth through CSS variables; a click replays the drawing. Plain SVG and CSS keyframes, paused off-screen and still under reduced motion.",
-    tagline: "Hairline wireframes lit by travelling light.",
-    tags: ["surface", "pointer", "svg", "motion"],
+      "Project cards with a live wireframe cover: a camera flying through an endless 3D lattice of hairlines, with glowing nodes where the lines meet and dust in the air. Additive light on black, depth fog, motion trails and bloom, in the spirit of TouchDesigner. Hover to fly faster and steer, click to warp. Plain Canvas 2D with depth-batched paths; stops off-screen and holds a still frame under reduced motion.",
+    tagline: "Fly through an endless lattice of light.",
+    tags: ["surface", "pointer", "canvas", "motion"],
     date: "2026-10-02",
     status: "new",
     background: "plain",
