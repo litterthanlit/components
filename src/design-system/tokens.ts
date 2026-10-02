@@ -77,5 +77,11 @@ export const motion = {
     { token: "duration-exit", ms: 150, use: "Leaving, closing, hover-out" },
     { token: "duration-enter", ms: 210, use: "Appearing, opening, hover-in" },
     { token: "duration-move", ms: 400, use: "Layout and position changes" },
+    { token: "stagger", ms: 50, use: "Delay between siblings entering together; cap at 8 items" },
+  ],
+  springs: [
+    { token: "snappy", stiffness: 520, damping: 40, use: "Follows input: indicators, toggles" },
+    { token: "gentle", stiffness: 170, damping: 22, use: "Settling into place" },
+    { token: "bouncy", stiffness: 260, damping: 12, use: "Playful returns: magnetic, dropped items" },
   ],
 } as const;

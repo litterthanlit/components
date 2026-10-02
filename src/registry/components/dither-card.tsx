@@ -379,8 +379,10 @@ const projects: (DitherCardProps & { pattern: DitherPattern })[] = [
 export default function Demo() {
   return (
     <div className="grid w-full max-w-2xl grid-cols-1 gap-4 sm:grid-cols-3">
-      {projects.map((project) => (
-        <DitherCard key={project.title} {...project} />
+      {projects.map((project, i) => (
+        <div key={project.title} className="animate-enter" style={{ animationDelay: `calc(${i} * var(--stagger))` }}>
+          <DitherCard {...project} />
+        </div>
       ))}
     </div>
   );

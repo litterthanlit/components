@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, type PointerEvent, type ReactNode } from "react";
+import { useRef, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 
 type SpotlightCardProps = {
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
 };
 
 /**
@@ -12,7 +13,7 @@ type SpotlightCardProps = {
  * pointer. Position is written to CSS variables on the element directly,
  * so moving the mouse never triggers a React re-render.
  */
-export function SpotlightCard({ children, className = "" }: SpotlightCardProps) {
+export function SpotlightCard({ children, className = "", style }: SpotlightCardProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   function handleMove(event: PointerEvent<HTMLDivElement>) {
@@ -29,6 +30,7 @@ export function SpotlightCard({ children, className = "" }: SpotlightCardProps) 
     <div
       ref={ref}
       onPointerMove={handleMove}
+      style={style}
       className={`group/spot relative isolate overflow-hidden rounded-xl bg-line p-px shadow-sm [--x:50%] [--y:-40%] ${className}`}
     >
       {/* Border light: sits under a 1px inset surface, so only the edge glows. */}
@@ -74,8 +76,8 @@ const items = [
 export default function Demo() {
   return (
     <div className="grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
-      {items.map((item) => (
-        <SpotlightCard key={item.title}>
+      {items.map((item, i) => (
+        <SpotlightCard key={item.title} className="animate-enter" style={{ animationDelay: `calc(${i} * var(--stagger))` }}>
           <article className="flex h-full flex-col gap-6 p-5">
             <div className="flex items-center gap-2">
               <span aria-hidden className="size-1.5 rounded-full bg-accent" />

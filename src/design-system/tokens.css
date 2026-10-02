@@ -32,6 +32,8 @@
   /* Semantic */
   --danger: #d93036;
   --focus: #4d7c0f;
+  /* Delay between siblings in a staggered entrance. */
+  --stagger: 50ms;
   /* Stage pattern ink */
   --pattern: rgb(0 0 0 / 0.07);
   /* Elevation: a hairline ring + soft, low shadow (Vercel-style). */

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { MotionDemo } from "@/components/system/motion-demo";
+import { SpringDemo } from "@/components/system/spring-demo";
 import { Badge, Button, Container, Dot, IconButton, Kbd, SectionLabel } from "@/design-system";
 import { colorRoles, colors, motion, radii, typeScale } from "@/design-system/tokens";
 
@@ -175,7 +176,7 @@ export default function SystemPage() {
 
         <Section id="motion" title="Motion" intro="Curves after Emil Kowalski, durations from litt.design. Ease out for anything triggered by the user.">
           <MotionDemo curves={motion.curves} />
-          <ul className="mt-6 grid gap-4 sm:grid-cols-3">
+          <ul className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {motion.durations.map((d) => (
               <li key={d.token}>
                 <p className="font-mono text-meta text-ink">
@@ -185,7 +186,20 @@ export default function SystemPage() {
               </li>
             ))}
           </ul>
+          <div className="mt-10">
+            <p className="text-body font-medium text-ink">Springs</p>
+            <p className="mb-4 mt-1 max-w-[560px] text-body text-muted">
+              Use a spring when motion follows the pointer or can be interrupted: magnetic elements, indicators,
+              anything dragged. Values go straight to the DOM through <code className={code}>createSpring</code>, so
+              nothing re-renders.
+            </p>
+            <SpringDemo />
+          </div>
           <ul className="mt-6 flex flex-col gap-1.5 text-body text-muted">
+            <li>
+              Stagger siblings that enter together by <code className={code}>--stagger</code> (50ms), capped at 8, so a
+              long list never waits on its last item.
+            </li>
             <li>Press feedback: <code className={code}>active:scale-[0.97]</code> on anything clickable.</li>
             <li>Hover in at enter speed, out at exit speed, so the UI never lags behind the pointer.</li>
             <li>Never animate from <code className={code}>scale(0)</code>. Start at 0.95 or more with opacity.</li>

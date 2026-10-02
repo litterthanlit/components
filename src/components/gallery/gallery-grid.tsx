@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { Dot, SectionLabel, cn } from "@/design-system";
 import { formatDate, type RegistryEntry } from "@/registry";
 import { Preview } from "./preview";
@@ -43,8 +43,13 @@ export function GalleryGrid({ entries, tags }: { entries: RegistryEntry[]; tags:
       </div>
 
       <ul className="mt-6 grid grid-cols-1 gap-x-5 gap-y-10 md:grid-cols-2">
-        {filtered.map((entry) => (
-          <li key={entry.slug} className="group/card flex animate-enter flex-col">
+        {filtered.map((entry, index) => (
+          // Keyed by filter too, so changing the filter replays the staggered entrance.
+          <li
+            key={`${active ?? "all"}:${entry.slug}`}
+            className="group/card flex animate-enter flex-col [animation-delay:calc(min(var(--i),8)*var(--stagger))]"
+            style={{ "--i": index } as CSSProperties}
+          >
             <Preview
               slug={entry.slug}
               background={entry.background}

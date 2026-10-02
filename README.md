@@ -27,12 +27,14 @@ src/design-system/
   tokens.css      colour, type scale, radius, elevation, motion (source of truth)
   tokens.ts       the same values for TypeScript: OG images and the /system page
   primitives/     Button, IconButton, Badge, Dot, Kbd, Container, SectionLabel
+  motion/         createSpring and spring presets
   index.ts        import { Button, Dot } from "@/design-system"
 ```
 
 - **Colour:** `canvas`, `panel` and `surface` grounds; `ink`, `muted` and `subtle` text; `line` hairlines; a single lime `accent`. Every token has a light and a dark value.
 - **Type:** Geist. `text-body` is 14px, `text-meta` 12px, with `lead`, `title` and `display` above them.
 - **Motion:** `ease-out`, `ease-in-out`, `ease-drawer` and `ease-spring` curves, with `--duration-exit` (150ms), `--duration-enter` (210ms) and `--duration-move` (400ms).
+- **Physics:** `createSpring(initial, springs.snappy | gentle | bouncy, onUpdate)` runs a damped spring that writes straight to the DOM and keeps its velocity when interrupted. Use it for anything pointer-driven or interruptible. Siblings entering together are staggered by `--stagger` (50ms), capped at 8.
 - **Elevation:** `shadow-sm`, `shadow-md` and `shadow-lg` are a 1px ring plus a soft shadow.
 
 If you change a value in `tokens.css`, mirror it in `tokens.ts`.
