@@ -31,7 +31,7 @@ src/design-system/
   index.ts        import { Button, Dot } from "@/design-system"
 ```
 
-- **Colour:** `canvas`, `panel` and `surface` grounds; `ink`, `muted` and `subtle` text; `line` hairlines; a single lime `accent`. Every token has a light and a dark value.
+- **Colour:** `canvas`, `panel` and `surface` grounds; `ink`, `muted` and `subtle` text; `line` hairlines; a single blue `accent` (`#384ECB`). Every token has a light and a dark value.
 - **Type:** Geist. `text-body` is 14px, `text-meta` 12px, with `lead`, `title` and `display` above them.
 - **Motion:** `ease-out`, `ease-in-out`, `ease-drawer` and `ease-spring` curves, with `--duration-exit` (150ms), `--duration-enter` (210ms) and `--duration-move` (400ms).
 - **Physics:** `createSpring(initial, springs.snappy | gentle | bouncy, onUpdate)` runs a damped spring that writes straight to the DOM and keeps its velocity when interrupted. Use it for anything pointer-driven or interruptible. Siblings entering together are staggered by `--stagger` (50ms), capped at 8. Agent states use the `animate-shimmer`, `animate-wave`, `animate-hop` and `animate-caret` keyframes.
@@ -42,7 +42,7 @@ If you change a value in `tokens.css`, mirror it in `tokens.ts`.
 ## Adding a component
 
 1. Create `src/registry/components/my-thing.tsx`. Export the component and a `default` `Demo` that shows it off. Style it with token classes only (`bg-surface`, `text-muted`, `shadow-md`, `ease-out`…) so it follows the theme. Keep demos at or under about 560px wide; capture frames scale them up.
-2. Add an entry to `src/registry/index.ts`: title, description, tagline, tags and date, plus optional `status: "new"` (adds the lime dot) and `background`.
+2. Add an entry to `src/registry/index.ts`: title, description, tagline, tags and date, plus optional `status: "new"` (adds the blue dot) and `background`.
 3. Add one line to `src/registry/previews.tsx`.
 
 The component page, OG image and capture route are generated from that entry.

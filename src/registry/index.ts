@@ -2,7 +2,7 @@
  * The registry: one entry per component. Order here is display order
  * (newest first reads best on a portfolio). To add a component:
  *   1. Drop `my-thing.tsx` in ./components with a default-exported Demo.
- *   2. Add an entry below (status: "new" adds the lime dot).
+ *   2. Add an entry below (status: "new" adds the blue dot).
  *   3. Add one line to ./previews.tsx.
  */
 export type StageBackground = "grid" | "dots" | "glow" | "plain";
@@ -14,7 +14,7 @@ export type RegistryEntry = {
   tags: string[];
   /** ISO date — shown on cards and used for sorting. */
   date: string;
-  /** Shown as a lime dot + label, like "In progress" on litt.design. */
+  /** Shown as a blue dot + label, like "In progress" on litt.design. */
   status?: "new" | "in-progress";
   background?: StageBackground;
   /** A short line for tweets / OG cards. */

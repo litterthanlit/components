@@ -192,7 +192,7 @@ export function DitherField({ pattern = "flow", pixel = 3, active = false, class
     function setColors() {
       gl!.uniform3fv(uInk, readColor(canvas!, "--ink", [0.04, 0.04, 0.04]));
       gl!.uniform3fv(uBg, readColor(canvas!, "--panel", [0.96, 0.96, 0.96]));
-      gl!.uniform3fv(uAccent, readColor(canvas!, "--accent-strong", [0.3, 0.49, 0.06]));
+      gl!.uniform3fv(uAccent, readColor(canvas!, "--accent-strong", [0.22, 0.31, 0.8]));
     }
 
     function resize() {

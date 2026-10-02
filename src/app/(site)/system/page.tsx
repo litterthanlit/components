@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 const principles = [
   { title: "Quiet by default", body: "Grey text, hairline borders, one weight change. The work should be the loudest thing on the page." },
-  { title: "One accent, used as a signal", body: "Lime marks status and moments of success. It is a fill, never body text on a light ground." },
+  { title: "One accent, used as a signal", body: "Blue marks status and moments of success. Use it as a fill or a link-weight highlight, never for body copy." },
   { title: "Motion responds, it doesn't perform", body: "Anything that reacts to input is fast and eases out. Exits are quicker than entrances." },
   { title: "Objects get a ring, not a box", body: "Raised things use a 1px ring plus a soft shadow. Flat areas use a panel tint, not a border." },
 ];
@@ -258,7 +258,7 @@ export default function SystemPage() {
               ["Sentence case everywhere", "“Selected work”, not “SELECTED WORK” or “Selected Work”."],
               ["Labels say what happens", "“Copy command”, then “Copied”. Not “Submit” or “OK”."],
               ["Short and plain", "Write it the way you'd say it to someone at the next desk."],
-              ["Parentheses for status", "“Carson (In progress)”. A lime dot comes with it."],
+              ["Parentheses for status", "“Carson (In progress)”. A blue dot comes with it."],
             ].map(([title, body]) => (
               <li key={title}>
                 <p className="font-medium text-ink">{title}</p>

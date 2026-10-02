@@ -7,7 +7,7 @@
  * change both together.
  *
  * Naming follows litt.design: canvas / panel / surface for grounds,
- * ink / muted / subtle for text, line for hairlines, a single lime accent.
+ * ink / muted / subtle for text, line for hairlines, a single blue accent.
  */
 
 /* Class-based dark mode, driven by data-theme on <html>. */
@@ -25,13 +25,13 @@
   /* Hairlines */
   --line: rgb(0 0 0 / 0.08);
   --line-strong: rgb(0 0 0 / 0.14);
-  /* Accent: lime is a fill, never text on light grounds. */
-  --accent: #c2ff4d;
-  --accent-ink: #0a0a0a;
-  --accent-strong: #4d7c0f;
+  /* Accent: blue fill with white ink (6.7:1); holds 4.5:1 as text on every light ground. */
+  --accent: #384ecb;
+  --accent-ink: #ffffff;
+  --accent-strong: #384ecb;
   /* Semantic */
   --danger: #d93036;
-  --focus: #4d7c0f;
+  --focus: #384ecb;
   /* Delay between siblings in a staggered entrance. */
   --stagger: 50ms;
   /* Stage pattern ink */
@@ -52,11 +52,12 @@
   --subtle: #5c5c5c;
   --line: rgb(255 255 255 / 0.08);
   --line-strong: rgb(255 255 255 / 0.15);
-  --accent: #c2ff4d;
-  --accent-ink: #0a0a0a;
-  --accent-strong: #c2ff4d;
+  --accent: #384ecb;
+  --accent-ink: #ffffff;
+  /* #384ecb is 2.9:1 on dark grounds; a lifted tint carries text and strokes (7.5:1). */
+  --accent-strong: #8a9af2;
   --danger: #ff6166;
-  --focus: #c2ff4d;
+  --focus: #8a9af2;
   --pattern: rgb(255 255 255 / 0.06);
   --elevation-sm: 0 0 0 1px var(--line), 0 1px 2px rgb(0 0 0 / 0.4);
   --elevation-md: 0 0 0 1px var(--line), 0 2px 4px rgb(0 0 0 / 0.3), 0 8px 16px -4px rgb(0 0 0 / 0.4);
