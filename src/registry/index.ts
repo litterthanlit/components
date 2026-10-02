@@ -23,12 +23,12 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
-    slug: "gradient-card",
-    title: "Gradient Card",
+    slug: "light-rooms",
+    title: "Light Rooms",
     description:
-      "Project cards whose covers are rooms of coloured light, after James Turrell: a Ganzfeld opening with no edge, a knife-edged Skyspace aperture, rings receding to an oculus, and an Afrum cube of projected light floating in a dark corner. Each runs a slow light sequence mixed in OKLab, so the field and the opening are always different hues and each deepens the other. Hover tilts the view and lets your eyes adjust; a click swells the light and drifts into the next sequence. Raw WebGL, tone mapped, no grain.",
-    tagline: "Turrell light fields for your project covers.",
-    tags: ["surface", "pointer", "webgl"],
+      "A small exhibition of four rooms of coloured light, after James Turrell: an edgeless Ganzfeld, a knife-edged Skyspace, rings receding to an oculus, and a cube of projected light floating in a dark corner. Each runs a slow light sequence mixed in OKLab, and the works hang at different sizes on a shared centre line with wall labels beneath. Hover tilts the view and lets your eyes adjust; a click swells the light and drifts into the next sequence. Raw WebGL, tone mapped, no grain.",
+    tagline: "Four rooms of light, after James Turrell.",
+    tags: ["art", "pointer", "webgl"],
     date: "2026-10-02",
     status: "new",
     background: "plain",

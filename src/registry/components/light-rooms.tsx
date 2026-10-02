@@ -7,11 +7,11 @@ import { useEffect, useRef, useState } from "react";
 /* ------------------------------------------------------------------------ */
 
 /**
- * Light sequences, not static palettes: the room cycles through these four
- * colours slowly, the way a skyspace drifts through dusk. Artwork colours,
- * not UI tokens, so they look the same in both themes.
+ * Light sequences: a room cycles through these four colours slowly, the way
+ * a skyspace drifts through dusk. Artwork colours, not UI tokens, so they
+ * look the same in both themes.
  */
-export const palettes = [
+export const sequences = [
   { name: "Twilight", colors: ["#2b1dff", "#8a2cff", "#ff2f8e", "#ff7b47"] },
   { name: "Blue Hour", colors: ["#0a2bff", "#2f8dff", "#a7d4ff", "#5a33ff"] },
   { name: "Ember", colors: ["#ff3a1c", "#ff8a1f", "#ff2a6a", "#a3104a"] },
@@ -161,7 +161,8 @@ float ring(vec2 p, float k, float aspect, vec2 view) {
   // Rings close up as they recede and climb, like looking up an atrium.
   float scale = 1.1 * pow(1.0 - depth * 0.84, 1.25);
   vec2 c = vec2(0.0, 0.13 * depth) - view * 0.16 * depth;
-  return length((p - c) / (vec2(aspect * 0.62, 0.66) * scale));
+  // Rings stay wider than tall, as when looking up, even in a portrait frame.
+  return length((p - c) / (vec2(max(aspect, 1.15) * 0.62, 0.66) * scale));
 }
 vec3 oculus(vec2 p, float aspect, vec2 view, float aa) {
   vec3 color = light(uTime + 0.5) * 0.12;
@@ -493,82 +494,86 @@ export function LightField({ form = "Ganzfeld", colors, seed = 0, active = false
 }
 
 /* ------------------------------------------------------------------------ */
-/* GradientCard                                                              */
+/* LightWork                                                                 */
 /* ------------------------------------------------------------------------ */
 
-type GradientCardProps = {
+type LightWorkProps = {
   title: string;
-  description: string;
-  meta?: string;
-  /** Which room the cover is. */
+  year: string;
+  /** Which room this work is. */
   form?: Form;
-  /** Index into `palettes` to start from. */
-  palette?: number;
+  /** Roman numeral or catalogue number shown on the wall label. */
+  number?: string;
+  /** CSS aspect ratio of the work, e.g. "4 / 5". */
+  ratio?: string;
+  /** Index into `sequences` to start from. */
+  light?: number;
   seed?: number;
+  /** Classes for the figure, e.g. to hang the label beside the work. */
+  className?: string;
+  /** Classes for the work itself; it fills its width by default. */
+  artClassName?: string;
 };
 
 /**
- * A project card whose cover is a room of coloured light. Hover tilts the
- * view and the light brightens; clicking (or Enter/Space) swells it and
- * drifts into the next sequence, named on a frosted chip.
+ * One work in the exhibition: a room of light with a wall label beneath it.
+ * Hover tilts the view and the light brightens; clicking (or Enter/Space)
+ * swells it and drifts into the next sequence, named on the label.
  */
-export function GradientCard({ title, description, meta, form = "Ganzfeld", palette = 0, seed = 0 }: GradientCardProps) {
-  const [index, setIndex] = useState(palette % palettes.length);
+export function LightWork({ title, year, form = "Ganzfeld", number, ratio = "4 / 5", light = 0, seed = 0, className = "", artClassName = "w-full" }: LightWorkProps) {
+  const [index, setIndex] = useState(light % sequences.length);
   const [focused, setFocused] = useState(false);
   const [pulse, setPulse] = useState(0);
-  const current = palettes[index];
-  const next = palettes[(index + 1) % palettes.length];
+  const current = sequences[index];
+  const next = sequences[(index + 1) % sequences.length];
 
   return (
-    // A size container, so the card compacts by its own width wherever it sits.
-    <article className="@container flex flex-col">
+    <figure className={`m-0 ${className}`}>
       <button
         type="button"
         onClick={(e) => {
-          setIndex((i) => (i + 1) % palettes.length);
+          setIndex((i) => (i + 1) % sequences.length);
           // Pointer clicks swell from the cursor; keyboard clicks (detail 0) from the centre.
           if (e.detail === 0) setPulse((n) => n + 1);
         }}
         onFocus={(e) => setFocused(e.currentTarget.matches(":focus-visible"))}
         onBlur={() => setFocused(false)}
-        aria-label={`${title} cover, ${form} in ${current.name} light. Switch to ${next.name}`}
-        className="group/gradient relative aspect-[4/3] cursor-pointer overflow-hidden rounded-xl outline-offset-4 transition-[scale] duration-(--duration-exit) ease-out active:scale-[0.98]"
+        aria-label={`${title}, ${form}, in ${current.name} light. Switch to ${next.name}`}
+        style={{ aspectRatio: ratio }}
+        className={`relative block cursor-pointer overflow-hidden rounded-md outline-offset-4 transition-[scale] duration-(--duration-exit) ease-out active:scale-[0.985] ${artClassName}`}
       >
         <LightField form={form} colors={current.colors} seed={seed} active={focused} pulse={pulse} />
-        <span aria-hidden className="pointer-events-none absolute inset-0 rounded-xl shadow-[inset_0_0_0_1px_rgb(0_0_0/0.08)]" />
-        <span
-          aria-hidden
-          className="absolute bottom-2.5 left-2.5 flex items-center gap-2 rounded-full bg-surface/70 py-1 pl-1.5 pr-1.5 text-meta @[11rem]:pr-2.5 font-medium text-ink shadow-sm backdrop-blur-md backdrop-saturate-150"
-        >
-          <span className="flex -space-x-1">
+        <span aria-hidden className="pointer-events-none absolute inset-0 rounded-md shadow-[inset_0_0_0_1px_rgb(0_0_0/0.08)]" />
+      </button>
+      {/* A wall label: number, title and year, then the room and its light. */}
+      <figcaption className="mt-4 grid grid-cols-1 gap-x-1 text-meta @xl:grid-cols-[1.5rem_1fr]">
+        <span className="tabular-nums text-muted">{number}</span>
+        <span className="text-body font-medium text-ink">
+          <cite className="not-italic">{title}</cite>
+          <span className="font-normal text-muted">, {year}</span>
+        </span>
+        <span className="mt-0.5 text-muted @xl:col-start-2">
+          {form}. Light<span className="hidden @xl:inline">, variable dimensions</span>.
+        </span>
+        <span className="mt-1.5 flex items-center @xl:col-start-2 gap-1.5 text-muted">
+          <span aria-hidden className="flex -space-x-0.5">
             {current.colors.map((c, i) => (
               <span
                 key={i}
-                className="size-3 rounded-full shadow-[0_0_0_1.5px_var(--surface)] transition-colors duration-(--duration-move)"
+                className="size-2 rounded-full shadow-[0_0_0_1px_var(--panel)] transition-colors duration-(--duration-move)"
                 style={{ background: c }}
               />
             ))}
           </span>
-          <span key={current.name} className="hidden animate-enter @[11rem]:inline">
+          <span key={current.name} className="animate-enter">
             {current.name}
           </span>
         </span>
-        <span
-          aria-hidden
-          className="absolute right-3 top-2.5 hidden text-meta font-medium @[9rem]:block tracking-wide text-white/75 mix-blend-plus-lighter"
-        >
-          {form}
-        </span>
-      </button>
-      <div className="mt-3 flex items-baseline justify-between gap-3 px-0.5">
-        <h3 className="text-body font-medium text-ink">{title}</h3>
-        {meta && <span className="hidden shrink-0 text-meta tabular-nums text-muted @[10rem]:inline">{meta}</span>}
-      </div>
-      <p className="mt-0.5 hidden px-0.5 text-body text-muted @[12rem]:block">{description}</p>
+      </figcaption>
       <span className="sr-only" role="status">
-        {current.name} light
+        {title} in {current.name} light
       </span>
-    </article>
+    </figure>
   );
 }
 
@@ -576,29 +581,45 @@ export function GradientCard({ title, description, meta, form = "Ganzfeld", pale
 /* Demo                                                                      */
 /* ------------------------------------------------------------------------ */
 
-const projects = [
-  { title: "Wavr", description: "Shader code in, motion graphics out.", meta: "2026", form: "Ganzfeld", palette: 0 },
-  { title: "Studio OS", description: "References in, shipped UI out.", meta: "2026", form: "Skyspace", palette: 1 },
-  { title: "Houston-MD", description: "A Markdown reader built for reading.", meta: "2026", form: "Oculus", palette: 2 },
-  { title: "Litt", description: "A studio site that stays out of the way.", meta: "2026", form: "Afrum", palette: 3 },
+/** Hung at different sizes on a shared centre line, the way a gallery wall is. */
+const works = [
+  { number: "I", title: "Held Breath", form: "Ganzfeld", ratio: "4 / 5", light: 0 },
+  { number: "II", title: "Open Ceiling", form: "Skyspace", ratio: "1 / 1", light: 1 },
+  { number: "III", title: "Inward", form: "Oculus", ratio: "3 / 4", light: 2 },
+  { number: "IV", title: "Solid Air", form: "Afrum", ratio: "5 / 4", light: 3 },
 ] as const;
 
 export default function Demo() {
   return (
-    // Layout follows the space the demo is given, not the viewport: a row of
-    // four when there's room, otherwise a swipeable row that snaps per card.
-    <div className="@container w-full max-w-3xl">
-      <div className="-m-2 flex snap-x snap-mandatory scroll-px-2 gap-4 overflow-x-auto p-2 [scrollbar-width:none] @xl:grid @xl:grid-cols-4 @xl:overflow-visible">
-        {projects.map((project, i) => (
-          <div
-            key={project.title}
-            className="w-[72%] shrink-0 snap-start animate-enter @xl:w-auto"
+    <section aria-labelledby="light-rooms-title" className="@container w-full max-w-3xl">
+      <header className="mb-5 flex @xl:mb-8 flex-wrap items-end justify-between gap-x-6 gap-y-1">
+        <div>
+          <p className="text-meta text-muted">Exhibition · Four rooms</p>
+          <h2 id="light-rooms-title" className="mt-1 text-title font-medium text-ink">
+            Rooms of Light
+          </h2>
+        </div>
+        <p className="hidden text-meta text-muted @xl:block">After James Turrell. Click a room to change its light.</p>
+      </header>
+      {/* Wide: one wall, works centred on a line with labels aligned below.
+          Narrow: a swipeable row of works at one height, labels beside them. */}
+      <ol className="-m-2 flex snap-x snap-mandatory scroll-px-2 gap-6 overflow-x-auto p-2 [scrollbar-width:none] @xl:grid @xl:grid-cols-4 @xl:grid-rows-[auto_auto] @xl:gap-y-0 @xl:overflow-visible">
+        {works.map((work, i) => (
+          <li
+            key={work.title}
+            className="shrink-0 snap-start animate-enter @xl:row-span-2 @xl:grid @xl:grid-rows-subgrid"
             style={{ animationDelay: `calc(${i} * var(--stagger))` }}
           >
-            <GradientCard {...project} seed={i} />
-          </div>
+            <LightWork
+              {...work}
+              year="2026"
+              seed={i}
+              artClassName="h-32 w-auto shrink-0 self-end @xl:h-auto @xl:w-full @xl:self-center"
+              className="flex gap-3 [&>figcaption]:mt-0 [&>figcaption]:w-32 [&>figcaption]:self-end @xl:row-span-2 @xl:grid @xl:grid-rows-subgrid @xl:gap-0 @xl:[&>figcaption]:mt-4 @xl:[&>figcaption]:w-auto @xl:[&>figcaption]:self-start"
+            />
+          </li>
         ))}
-      </div>
-    </div>
+      </ol>
+    </section>
   );
 }
