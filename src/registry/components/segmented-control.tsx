@@ -101,7 +101,7 @@ export default function Demo() {
     <div className="flex flex-col items-center gap-6">
       <SegmentedControl label="Billing period" options={plans} value={plan} onChange={setPlan} />
       <p className="flex flex-col items-center gap-1" aria-live="polite">
-        <span key={plan} className="animate-enter text-display font-medium tabular-nums text-ink">
+        <span key={plan} className="animate-enter font-mono text-display tracking-tight tabular-nums text-ink">
           {prices[plan].amount}
         </span>
         <span className="text-meta text-muted">{prices[plan].note}</span>

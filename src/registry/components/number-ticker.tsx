@@ -81,7 +81,7 @@ export default function Demo() {
       <div className="flex items-center justify-between">
         <p className="text-meta text-muted">Revenue, this week</p>
         <span
-          className={`inline-flex h-5 items-center rounded-full px-2 text-meta tabular-nums transition-colors duration-(--duration-enter) ${
+          className={`inline-flex h-5 items-center rounded-full px-2 font-mono text-meta tabular-nums transition-colors duration-(--duration-enter) ${
             up ? "bg-accent text-accent-ink" : "bg-danger/10 text-danger"
           }`}
         >

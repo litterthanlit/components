@@ -83,7 +83,7 @@ export default function Demo() {
             </div>
             <p className="text-body text-muted">{item.body}</p>
             <p className="mt-auto flex items-baseline gap-2 border-t border-line pt-4">
-              <span className="text-title font-medium tabular-nums text-ink">{item.stat}</span>
+              <span className="font-mono text-title tracking-tight tabular-nums text-ink">{item.stat}</span>
               <span className="text-meta text-muted">{item.label}</span>
             </p>
           </article>
