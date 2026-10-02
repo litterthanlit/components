@@ -2,7 +2,7 @@
  * The registry: one entry per component. Order here is display order
  * (newest first reads best on a portfolio). To add a component:
  *   1. Drop `my-thing.tsx` in ./components with a default-exported Demo.
- *   2. Add an entry below.
+ *   2. Add an entry below (status: "new" adds the lime dot).
  *   3. Add one line to ./previews.tsx.
  */
 export type StageBackground = "grid" | "dots" | "glow" | "plain";
@@ -14,8 +14,8 @@ export type RegistryEntry = {
   tags: string[];
   /** ISO date — shown on cards and used for sorting. */
   date: string;
-  /** Featured entries take a wider tile on the home grid. */
-  featured?: boolean;
+  /** Shown as a lime dot + label, like "In progress" on litt.design. */
+  status?: "new" | "in-progress";
   background?: StageBackground;
   /** A short line for tweets / OG cards. */
   tagline?: string;
@@ -30,7 +30,7 @@ export const registry: RegistryEntry[] = [
     tagline: "Light that follows your cursor, zero re-renders.",
     tags: ["surface", "pointer", "css"],
     date: "2026-09-28",
-    featured: true,
+    status: "new",
     background: "dots",
   },
   {
@@ -41,6 +41,7 @@ export const registry: RegistryEntry[] = [
     tagline: "Stacked toasts that fan out on hover.",
     tags: ["feedback", "motion", "a11y"],
     date: "2026-09-24",
+    status: "new",
     background: "grid",
   },
   {
@@ -61,7 +62,6 @@ export const registry: RegistryEntry[] = [
     tagline: "Mechanical counter reels, any locale.",
     tags: ["data", "motion", "typography"],
     date: "2026-09-15",
-    featured: true,
     background: "glow",
   },
   {

@@ -52,12 +52,12 @@ export function SegmentedControl({ options, value, onChange, label }: SegmentedC
       role="radiogroup"
       aria-label={label}
       onKeyDown={handleKeyDown}
-      className="relative inline-flex items-center rounded-full border border-border bg-surface-2 p-1"
+      className="relative inline-flex items-center rounded-full bg-panel p-1 shadow-[inset_0_0_0_1px_var(--line)]"
     >
       {indicator && (
         <span
           aria-hidden
-          className="absolute inset-y-1 rounded-full bg-surface shadow-[0_1px_2px_rgb(0_0_0/0.08),0_0_0_1px_var(--border)] transition-[left,width] duration-500 ease-out-expo"
+          className="absolute inset-y-1 rounded-full bg-surface shadow-sm transition-[left,width] duration-(--duration-move) ease-out"
           style={{ left: indicator.left, width: indicator.width }}
         />
       )}
@@ -71,8 +71,8 @@ export function SegmentedControl({ options, value, onChange, label }: SegmentedC
             aria-checked={checked}
             tabIndex={checked ? 0 : -1}
             onClick={() => onChange(option.value)}
-            className={`relative z-10 h-8 rounded-full px-4 text-[13px] font-medium transition-colors duration-300 ${
-              checked ? "text-fg" : "text-muted hover:text-fg"
+            className={`relative z-10 h-7 rounded-full px-3.5 text-meta font-medium transition-colors duration-(--duration-enter) ${
+              checked ? "text-ink" : "text-muted hover:text-ink"
             }`}
           >
             {option.label}
@@ -101,12 +101,11 @@ export default function Demo() {
     <div className="flex flex-col items-center gap-6">
       <SegmentedControl label="Billing period" options={plans} value={plan} onChange={setPlan} />
       <p className="flex flex-col items-center gap-1" aria-live="polite">
-        <span key={plan} className="animate-[fade-up_500ms_var(--ease-out-expo)] font-mono text-4xl tracking-tight text-fg">
+        <span key={plan} className="animate-enter text-display font-medium tabular-nums text-ink">
           {prices[plan].amount}
         </span>
-        <span className="text-xs text-subtle">{prices[plan].note}</span>
+        <span className="text-meta text-muted">{prices[plan].note}</span>
       </p>
-      <style>{`@keyframes fade-up{from{opacity:0;transform:translateY(6px);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}`}</style>
     </div>
   );
 }

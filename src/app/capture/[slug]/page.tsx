@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Preview } from "@/components/gallery/preview";
+import { Dot } from "@/design-system";
 import { getEntry, type StageBackground } from "@/registry";
 import { site } from "@/site.config";
 
@@ -37,10 +38,10 @@ export default async function CapturePage({ params, searchParams }: PageProps<"/
   const showLabel = query.label !== "0";
 
   return (
-    <main className="grid min-h-screen place-items-center bg-[color-mix(in_oklab,var(--bg)_88%,var(--fg))]">
+    <main className="grid min-h-screen place-items-center bg-[color-mix(in_oklab,var(--canvas)_90%,var(--ink))]">
       <div
         id="capture-frame"
-        className="relative overflow-hidden bg-bg"
+        className="relative overflow-hidden bg-panel"
         style={{ width, height }}
       >
         <div className="absolute inset-0">
@@ -48,11 +49,11 @@ export default async function CapturePage({ params, searchParams }: PageProps<"/
         </div>
         {showLabel && (
           <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between px-8 pb-7 text-[15px]">
-            <p className="flex items-center gap-2.5 font-medium tracking-tight text-fg">
-              <span aria-hidden className="size-2 rounded-full bg-accent" />
+            <p className="flex items-center gap-2.5 font-medium text-ink">
+              <Dot className="scale-125" />
               {entry.title}
             </p>
-            <p className="font-mono text-[13px] text-subtle">{site.handle}</p>
+            <p className="text-muted">{site.handle}</p>
           </div>
         )}
       </div>

@@ -47,7 +47,7 @@ export function ToastStack({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: 
       <ol
         role="status"
         aria-live="polite"
-        className="relative transition-[height] duration-500 ease-out-expo"
+        className="relative transition-[height] duration-(--duration-move) ease-out"
         style={{ height: expanded ? expandedHeight : collapsedHeight }}
       >
         {ordered.map((toast, index) => {
@@ -115,20 +115,20 @@ function ToastItem({
         transform: mounted ? style.transform : "translateY(-24px) scale(0.96)",
         opacity: mounted ? style.opacity : 0,
       }}
-      className="absolute inset-x-0 top-0 origin-top overflow-hidden rounded-xl border border-border bg-surface/90 shadow-[0_12px_32px_-12px_rgb(0_0_0/0.3)] backdrop-blur-md transition-[transform,opacity,height] duration-500 ease-out-expo"
+      className="absolute inset-x-0 top-0 origin-top overflow-hidden rounded-xl bg-surface shadow-lg transition-[transform,opacity,height] duration-(--duration-move) ease-out"
     >
       {/* Measured at natural height; the <li> may be clipped shorter while collapsed. */}
       <div ref={measureRef} className="flex items-start gap-3 p-3.5">
-        <span aria-hidden className="mt-1.5 size-1.5 shrink-0 rounded-full bg-accent" />
+        <span aria-hidden className="mt-[7px] size-1.5 shrink-0 rounded-full bg-accent shadow-[0_0_0_1px_rgb(0_0_0/0.06)]" />
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-medium text-fg">{toast.title}</p>
-          <p className="mt-0.5 text-xs leading-relaxed text-muted">{toast.body}</p>
+          <p className="text-body font-medium text-ink">{toast.title}</p>
+          <p className="text-meta text-muted">{toast.body}</p>
         </div>
         <button
           type="button"
           onClick={() => onDismiss(toast.id)}
           aria-label={`Dismiss: ${toast.title}`}
-          className="-m-1 rounded-md p-1 text-subtle transition-colors hover:bg-surface-2 hover:text-fg"
+          className="-m-1 rounded-sm p-1 text-muted transition-colors duration-(--duration-exit) hover:bg-panel hover:text-ink hover:duration-(--duration-enter)"
         >
           <svg aria-hidden viewBox="0 0 16 16" className="size-3.5" fill="none">
             <path d="m4 4 8 8m0-8-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -170,7 +170,7 @@ export default function Demo() {
       <button
         type="button"
         onClick={add}
-        className="h-9 shrink-0 rounded-full border border-border bg-surface px-4 text-[13px] font-medium text-fg shadow-sm transition-colors hover:border-border-strong active:scale-[0.98]"
+        className="h-9 shrink-0 rounded-md bg-surface px-3.5 text-body font-medium text-ink shadow-sm transition-transform duration-(--duration-exit) ease-out active:scale-[0.97]"
       >
         Send notification
       </button>

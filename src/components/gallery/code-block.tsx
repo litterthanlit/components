@@ -10,13 +10,13 @@ export async function CodeBlock({ code, filename }: { code: string; filename: st
   });
 
   return (
-    <figure className="overflow-hidden rounded-2xl border border-border bg-surface">
-      <figcaption className="flex items-center justify-between border-b border-border py-1.5 pl-4 pr-1.5">
-        <span className="font-mono text-xs text-muted">{filename}</span>
+    <figure className="overflow-hidden rounded-xl bg-panel shadow-[inset_0_0_0_1px_var(--line)]">
+      <figcaption className="flex items-center justify-between border-b border-line py-1 pl-4 pr-1">
+        <span className="font-mono text-meta text-muted">{filename}</span>
         <CopyButton value={code} label={`Copy ${filename}`} />
       </figcaption>
       <div
-        className="code max-h-[36rem] overflow-auto text-[13px] leading-relaxed [&_pre]:min-w-max [&_pre]:p-5 [&_pre]:!bg-transparent"
+        className="code max-h-[32rem] overflow-auto text-[12.5px] leading-[1.7] [&_pre]:min-w-max [&_pre]:p-4 [&_pre]:!bg-transparent"
         dangerouslySetInnerHTML={{ __html: html }}
       />
     </figure>

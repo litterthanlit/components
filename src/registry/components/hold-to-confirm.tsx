@@ -39,7 +39,7 @@ export function HoldToConfirm({ onConfirm, children, duration = 1200, className 
 
   const fill = {
     clipPath: holding ? "inset(0 0 0 0)" : "inset(0 100% 0 0)",
-    transition: `clip-path ${holding ? duration : 200}ms ${holding ? "linear" : "var(--ease-out-expo)"}`,
+    transition: `clip-path ${holding ? duration : 200}ms ${holding ? "linear" : "var(--ease-out)"}`,
   };
 
   return (
@@ -60,12 +60,12 @@ export function HoldToConfirm({ onConfirm, children, duration = 1200, className 
       }}
       onContextMenu={(e) => e.preventDefault()}
       aria-describedby={hintId}
-      className={`relative h-11 select-none overflow-hidden rounded-full border border-border bg-surface px-6 text-sm font-medium text-fg transition-transform duration-200 [-webkit-touch-callout:none] active:scale-[0.97] ${className}`}
+      className={`relative h-10 select-none overflow-hidden rounded-full bg-surface px-5 text-body font-medium text-ink shadow-sm transition-transform duration-(--duration-exit) ease-out [-webkit-touch-callout:none] active:scale-[0.97] ${className}`}
     >
       <span className="inline-flex items-center gap-2">{children}</span>
       <span
         aria-hidden
-        className="absolute inset-0 flex items-center justify-center gap-2 bg-accent text-accent-fg"
+        className="absolute inset-0 flex items-center justify-center gap-2 bg-danger text-canvas"
         style={fill}
       >
         {children}
@@ -103,7 +103,7 @@ export default function Demo() {
   return (
     <div className="flex flex-col items-center gap-4">
       {deleted ? (
-        <p role="status" className="flex h-11 items-center gap-2 text-sm font-medium text-fg">
+        <p role="status" className="flex h-10 animate-enter items-center gap-2 text-body font-medium text-ink">
           <span aria-hidden className="size-1.5 rounded-full bg-accent" />
           Project deleted
         </p>
@@ -113,7 +113,7 @@ export default function Demo() {
           Hold to delete
         </HoldToConfirm>
       )}
-      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-subtle">Press &amp; hold</p>
+      <p className="text-meta text-muted">Press and hold</p>
     </div>
   );
 }

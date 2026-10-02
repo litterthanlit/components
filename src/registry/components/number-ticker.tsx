@@ -8,7 +8,7 @@ function Digit({ value, delay }: { value: number; delay: number }) {
   return (
     <span className="relative inline-block h-[1em] w-[0.62em] overflow-hidden leading-none">
       <span
-        className="absolute inset-x-0 top-0 flex flex-col transition-transform duration-[900ms] ease-out-expo"
+        className="absolute inset-x-0 top-0 flex flex-col transition-transform duration-[800ms] ease-out"
         style={{ transform: `translateY(-${value * 10}%)`, transitionDelay: `${delay}ms` }}
       >
         {DIGITS.map((d) => (
@@ -77,18 +77,18 @@ export default function Demo() {
   const up = delta >= 0;
 
   return (
-    <div className="w-full max-w-xs rounded-2xl border border-border bg-surface p-5 shadow-[0_20px_40px_-24px_rgb(0_0_0/0.35)]">
+    <div className="w-full max-w-xs rounded-xl bg-surface p-5 shadow-md">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-muted">Revenue · this week</p>
+        <p className="text-meta text-muted">Revenue, this week</p>
         <span
-          className={`rounded-full px-2 py-0.5 font-mono text-[11px] transition-colors ${
-            up ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-accent/10 text-accent"
+          className={`inline-flex h-5 items-center rounded-full px-2 text-meta tabular-nums transition-colors duration-(--duration-enter) ${
+            up ? "bg-accent text-accent-ink" : "bg-danger/10 text-danger"
           }`}
         >
           {up ? "▲" : "▼"} {Math.abs(delta).toLocaleString("en-US")}
         </span>
       </div>
-      <p className="mt-3 text-4xl font-medium tracking-tight text-fg">
+      <p className="mt-2 text-[2.25rem] font-medium tracking-[-0.04em] text-ink">
         <NumberTicker value={value} format={{ style: "currency", currency: "USD", maximumFractionDigits: 0 }} />
       </p>
     </div>

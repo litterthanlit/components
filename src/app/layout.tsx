@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     template: `%s — ${site.author}`,
   },
   description: site.description,
-  openGraph: { type: "website", siteName: `${site.author} / ${site.name}` },
+  openGraph: { type: "website", siteName: `${site.name} — ${site.author}` },
   twitter: { card: "summary_large_image", creator: site.handle },
 };
 
@@ -36,7 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      data-theme="dark"
+      data-theme="light"
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >

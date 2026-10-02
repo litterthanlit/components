@@ -5,6 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CodeBlock } from "@/components/gallery/code-block";
 import { DetailStage } from "@/components/gallery/detail-stage";
+import { Badge, Container, Dot, SectionLabel } from "@/design-system";
 import { formatDate, getEntry, getNeighbors, registry } from "@/registry";
 
 export const dynamicParams = false;
@@ -31,81 +32,60 @@ export default async function ComponentPage({ params }: PageProps<"/c/[slug]">) 
   const number = String(registry.indexOf(entry) + 1).padStart(2, "0");
 
   return (
-    <article className="mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
-      <nav aria-label="Breadcrumb" className="pt-8">
+    <Container>
+      <article className="pt-8 sm:pt-12">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 rounded-full py-1 text-sm text-muted transition-colors hover:text-fg"
+          className="inline-flex items-center gap-1 rounded-md text-body text-muted transition-colors duration-(--duration-exit) hover:text-ink hover:duration-(--duration-enter)"
         >
-          <svg aria-hidden viewBox="0 0 16 16" fill="none" className="size-3.5">
-            <path d="M13 8H3m0 0 4-4M3 8l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          Index
+          ← Components
         </Link>
-      </nav>
 
-      <header className="grid grid-cols-1 gap-8 pb-10 pt-10 lg:grid-cols-12 lg:pt-16">
-        <div className="lg:col-span-7">
-          <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-subtle">No. {number}</p>
-          <h1 className="mt-4 text-4xl font-medium tracking-[-0.04em] text-fg sm:text-5xl">{entry.title}</h1>
-          <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted">{entry.description}</p>
-        </div>
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 self-end border-t border-border pt-5 text-sm lg:col-span-4 lg:col-start-9">
-          <div>
-            <dt className="text-xs text-subtle">Published</dt>
-            <dd className="mt-1 text-fg">
-              <time dateTime={entry.date}>{formatDate(entry.date)}</time>
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-subtle">Stack</dt>
-            <dd className="mt-1 text-fg">React · Tailwind</dd>
-          </div>
-          <div className="col-span-2">
-            <dt className="sr-only">Tags</dt>
-            <dd className="flex flex-wrap gap-1.5">
-              {entry.tags.map((tag) => (
-                <span key={tag} className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted">
-                  {tag}
-                </span>
-              ))}
-            </dd>
-          </div>
-        </dl>
-      </header>
-
-      <DetailStage slug={slug} initial={entry.background} />
-
-      <section aria-labelledby="source-heading" className="mt-16 grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-3">
-          <h2 id="source-heading" className="text-sm font-medium text-fg">
-            Source
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-muted">
-            One file, no dependencies beyond React and Tailwind. Copy it into your project and adjust the tokens.
+        <header className="max-w-[560px] pb-10 pt-10">
+          <p className="flex items-center gap-2 text-meta text-muted">
+            {entry.status && <Dot />}
+            <span className="tabular-nums">No. {number}</span>
+            <span aria-hidden>·</span>
+            <time dateTime={entry.date}>{formatDate(entry.date)}</time>
           </p>
-        </div>
-        <div className="min-w-0 lg:col-span-9">
-          <CodeBlock code={source} filename={filename} />
-        </div>
-      </section>
+          <h1 className="mt-2 text-title font-medium text-ink">{entry.title}</h1>
+          <p className="mt-2 text-body text-muted">{entry.description}</p>
+          <ul aria-label="Tags" className="mt-4 flex flex-wrap gap-1.5">
+            {entry.tags.map((tag) => (
+              <li key={tag}>
+                <Badge>{tag}</Badge>
+              </li>
+            ))}
+          </ul>
+        </header>
 
-      <nav aria-label="More components" className="mt-20 grid grid-cols-2 gap-4 border-t border-border pt-6">
-        {prev ? (
-          <Link href={`/c/${prev.slug}`} className="group rounded-lg">
-            <span className="text-xs text-subtle">← Previous</span>
-            <span className="mt-1 block text-sm font-medium text-fg group-hover:text-accent">{prev.title}</span>
-          </Link>
-        ) : (
-          <span />
-        )}
-        {next && (
-          <Link href={`/c/${next.slug}`} className="group rounded-lg text-right">
-            <span className="text-xs text-subtle">Next →</span>
-            <span className="mt-1 block text-sm font-medium text-fg group-hover:text-accent">{next.title}</span>
-          </Link>
-        )}
-      </nav>
-    </article>
+        <DetailStage slug={slug} initial={entry.background} />
+
+        <section aria-labelledby="source-heading" className="mt-20">
+          <div className="mb-4 flex items-baseline justify-between gap-4">
+            <SectionLabel id="source-heading">Source</SectionLabel>
+            <p className="text-meta text-muted">One file. React and Tailwind, nothing else.</p>
+          </div>
+          <CodeBlock code={source} filename={filename} />
+        </section>
+
+        <nav aria-label="More components" className="mt-20 grid grid-cols-2 gap-4 border-t border-line pt-5">
+          {prev ? (
+            <Link href={`/c/${prev.slug}`} className="group rounded-md">
+              <span className="text-meta text-muted">Previous</span>
+              <span className="block text-body font-medium text-ink">← {prev.title}</span>
+            </Link>
+          ) : (
+            <span />
+          )}
+          {next && (
+            <Link href={`/c/${next.slug}`} className="group rounded-md text-right">
+              <span className="text-meta text-muted">Next</span>
+              <span className="block text-body font-medium text-ink">{next.title} →</span>
+            </Link>
+          )}
+        </nav>
+      </article>
+    </Container>
   );
 }

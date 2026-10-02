@@ -49,12 +49,12 @@ export function MagneticButton({
       ref={ref}
       onPointerMove={handleMove}
       onPointerLeave={handleLeave}
-      className={`relative inline-flex h-12 items-center justify-center rounded-full bg-fg px-7 text-sm font-medium text-bg shadow-[0_1px_0_0_rgb(255_255_255/0.15)_inset,0_10px_30px_-10px_rgb(0_0_0/0.5)] transition-[transform,box-shadow] duration-500 ease-spring will-change-transform hover:duration-150 hover:ease-out active:scale-[0.97] ${className}`}
+      className={`relative inline-flex h-10 items-center justify-center rounded-full bg-ink px-5 text-body font-medium text-canvas shadow-[0_1px_0_0_rgb(255_255_255/0.12)_inset,0_8px_24px_-8px_rgb(0_0_0/0.35)] transition-transform duration-(--duration-move) ease-spring will-change-transform hover:duration-(--duration-enter) hover:ease-out active:scale-[0.97] ${className}`}
       {...props}
     >
       <span
         ref={labelRef}
-        className="inline-flex items-center gap-2 transition-transform duration-500 ease-spring will-change-transform"
+        className="inline-flex items-center gap-2 transition-transform duration-(--duration-move) ease-spring will-change-transform"
       >
         {children}
       </span>
@@ -71,7 +71,7 @@ export default function Demo() {
           <path d="M3 8h10m0 0L9 4m4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </MagneticButton>
-      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-subtle">Move your cursor near</p>
+      <p className="text-meta text-muted">Move your cursor close to it</p>
     </div>
   );
 }
