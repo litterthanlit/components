@@ -74,6 +74,12 @@ const STYLES = `
 .wf-scan { animation: wf-scan 2.8s cubic-bezier(0.65, 0, 0.35, 1) infinite alternate both; }
 @keyframes wf-scan { from { transform: translateY(0); } to { transform: translateY(72px); } }
 
+.wf-fade {
+  animation: wf-fade 900ms ease-out both;
+  animation-delay: calc(var(--i, 0) * 70ms + 300ms);
+}
+@keyframes wf-fade { from { opacity: 0; } }
+
 .wf-pulse { animation: wf-pulse 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes wf-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.6); } }
 
@@ -85,7 +91,13 @@ const STYLES = `
 [data-paused="true"] * { animation-play-state: paused !important; }
 
 @media (prefers-reduced-motion: reduce) {
-  .wf-draw, .wf-cycle, .wf-scan, .wf-pulse { animation: none; stroke-dashoffset: 0; }
+  .wf-draw, .wf-cycle, .wf-scan, .wf-fade {
+  animation: wf-fade 900ms ease-out both;
+  animation-delay: calc(var(--i, 0) * 70ms + 300ms);
+}
+@keyframes wf-fade { from { opacity: 0; } }
+
+.wf-pulse { animation: none; stroke-dashoffset: 0; }
   .wf-fly { animation: none; opacity: 0.5; transform: scale(var(--still, 0.5)); }
   .wf-floor { animation: none; opacity: 0.5; transform: translateY(var(--still, 0px)); }
   .wf-depth { transition: none; }
@@ -109,10 +121,42 @@ const hair = (opacity: number, width = 0.75) =>
     pathLength: 1,
   }) as const;
 
+/** Dashed construction lines can't use the dash draw-in, so they fade in instead. */
+const dash = (opacity: number) =>
+  ({
+    stroke: "currentColor",
+    strokeWidth: 0.75,
+    strokeOpacity: opacity,
+    strokeDasharray: "2 3",
+    fill: "none",
+    vectorEffect: "non-scaling-stroke",
+    className: "wf-fade",
+  }) as const;
+
 const i = (n: number) => ({ "--i": n }) as CSSProperties;
 const z = (n: number) => ({ "--z": n }) as CSSProperties;
+const MONO = "var(--font-geist-mono), ui-monospace, Menlo, monospace";
 
-/** Two faint guides that cross at the scene's focal point, like a crosshair. */
+/** Tiny monospaced annotation, like the notes on a technical drawing. */
+function Label({ x, y, children, anchor = "start", delay = 8 }: { x: number; y: number; children: string; anchor?: "start" | "middle" | "end"; delay?: number }) {
+  return (
+    <text x={x} y={y} textAnchor={anchor} fontSize={7} fontFamily={MONO} letterSpacing="0.06em" fill="currentColor" fillOpacity={0.55} className="wf-fade" style={i(delay)}>
+      {children}
+    </text>
+  );
+}
+
+/** A small circled crosshair marking a vanishing point. */
+function Cross({ at, r = 6 }: { at: P; r?: number }) {
+  return (
+    <g className="wf-fade" style={i(6)}>
+      <circle cx={at.x} cy={at.y} r={r} {...hair(0.35)} pathLength={undefined} />
+      <path d={`M${at.x - r * 1.8} ${at.y}H${at.x + r * 1.8}M${at.x} ${at.y - r * 1.8}V${at.y + r * 1.8}`} {...hair(0.35)} pathLength={undefined} />
+    </g>
+  );
+}
+
+/** Two faint guides that cross at the scene's focal point. */
 function Guides({ at }: { at: P }) {
   return (
     <g className="wf-depth" style={z(4)}>
@@ -122,18 +166,55 @@ function Guides({ at }: { at: P }) {
   );
 }
 
-/** Rectangles stream out of the vanishing point; rays run to the corners. */
-function Tunnel() {
+/** Corner registration marks with a dimension ruler down the right edge. */
+function Frame({ figure, vp }: { figure: string; vp: P }) {
+  const m = 16;
+  const k = 7;
+  const corners = `M${m} ${m + k}V${m}H${m + k}M${W - m - k} ${m}H${W - m}V${m + k}M${W - m} ${H - m - k}V${H - m}H${W - m - k}M${m + k} ${H - m}H${m}V${H - m - k}`;
+  let ruler = "";
+  for (let y = 60; y <= 240; y += 6) ruler += `M${W - m} ${y}h${(y - 60) % 30 === 0 ? -6 : -3}`;
+  return (
+    <g className="wf-depth" style={z(2)}>
+      <path d={corners} {...hair(0.55)} className="wf-draw" />
+      <path d={ruler} {...hair(0.3)} className="wf-draw" style={i(2)} />
+      <Label x={W - m - 2} y={30} anchor="end">{`VP ${vp.x}·${vp.y}`}</Label>
+      <Label x={m + 6} y={H - m - 6}>{figure}</Label>
+      <Label x={W - m - 10} y={H - m - 6} anchor="end">400×300</Label>
+    </g>
+  );
+}
+
+/** Rectangles stream out of the vanishing point through fixed depth frames. */
+function Tunnel({ meshId }: { meshId: string }) {
   const vp: P = { x: 200, y: 150 };
+  const at = (k: number) => ({ x: vp.x - vp.x * k, y: vp.y - vp.y * k, width: W * k, height: H * k });
   const corners: P[] = [
     { x: 0, y: 0 },
     { x: W, y: 0 },
     { x: W, y: H },
     { x: 0, y: H },
   ];
+  const mids: P[] = [
+    { x: W / 2, y: 0 },
+    { x: W, y: H / 2 },
+    { x: W / 2, y: H },
+    { x: 0, y: H / 2 },
+  ];
+  const focal = at(0.2);
   return (
     <>
+      <Frame figure="FIG. 01 — TUNNEL" vp={vp} />
       <Guides at={vp} />
+      <g className="wf-depth" style={z(8)}>
+        {[0.4, 0.62, 0.84].map((k) => (
+          <rect key={k} {...at(k)} {...dash(0.16)} style={i(4)} />
+        ))}
+        {mids.flatMap((c) => [-1, 1].map((s) => {
+          // Rays that split each side into thirds, very faint.
+          const p = c.x === W / 2 ? { x: c.x + s * (W / 6), y: c.y } : { x: c.x, y: c.y + s * (H / 6) };
+          return <line key={`${c.x}-${c.y}-${s}`} x1={vp.x} y1={vp.y} x2={p.x} y2={p.y} {...dash(0.1)} style={i(5)} />;
+        }))}
+      </g>
       <g className="wf-depth" style={z(10)}>
         {corners.map((c, n) => (
           <line key={n} x1={vp.x} y1={vp.y} x2={c.x} y2={c.y} {...hair(0.3)} className="wf-draw" style={i(n + 2)} />
@@ -151,23 +232,51 @@ function Tunnel() {
         ))}
       </g>
       <g className="wf-depth" style={z(18)}>
-        <rect x={vp.x - 40} y={vp.y - 30} width={80} height={60} {...hair(0.9)} className="wf-draw" style={i(7)} />
+        <rect {...focal} fill={`url(#${meshId})`} className="wf-fade" style={i(7)} />
+        <rect {...focal} {...hair(0.9)} className="wf-draw" style={i(7)} />
+        <rect {...at(0.1)} {...hair(0.45)} className="wf-draw" style={i(9)} />
+        <Cross at={vp} />
+        <Label x={focal.x + focal.width + 5} y={focal.y + 6}>z 0.20</Label>
         <circle cx={vp.x} cy={vp.y} r={2} className="wf-pulse" fill="var(--accent, #c2ff4d)" />
       </g>
     </>
   );
 }
 
-/** A floor grid moving toward you, under a fine mesh panel with a scan line. */
+/** A floor grid moving toward you, a rising sun of arcs and a scanning panel. */
 function Horizon({ meshId }: { meshId: string }) {
-  const vp: P = { x: 200, y: 132 };
-  const panel = { x: 150, y: 44, w: 100, h: 72 };
+  const vp: P = { x: 200, y: 150 };
+  const panel = { x: 268, y: 48, w: 92, h: 64 };
+  let ticks = "";
+  for (let x = 20; x <= W - 20; x += 10) ticks += `M${x} ${vp.y}v${(x - 20) % 50 === 0 ? 4 : 2}`;
+  const brackets = (() => {
+    const { x, y, w, h } = panel;
+    const o = 4;
+    const k = 6;
+    return `M${x - o} ${y - o + k}V${y - o}H${x - o + k}M${x + w + o - k} ${y - o}H${x + w + o}V${y - o + k}M${x + w + o} ${y + h + o - k}V${y + h + o}H${x + w + o - k}M${x - o + k} ${y + h + o}H${x - o}V${y + h + o - k}`;
+  })();
   return (
     <>
+      <Frame figure="FIG. 02 — HORIZON" vp={vp} />
       <Guides at={vp} />
+      <g className="wf-depth" style={z(3)}>
+        {[22, 42, 66, 94].map((r, n) => (
+          <path key={r} d={`M${vp.x - r} ${vp.y}A${r} ${r} 0 0 1 ${vp.x + r} ${vp.y}`} {...hair(0.22 - n * 0.04)} className="wf-draw" style={i(3 + n)} />
+        ))}
+      </g>
       <g className="wf-depth" style={z(6)}>
-        {Array.from({ length: 11 }, (_, n) => (
-          <line key={n} x1={vp.x} y1={vp.y} x2={-300 + n * 100} y2={H} {...hair(0.2)} className="wf-draw" style={i(n * 0.4 + 2)} />
+        <path d={ticks} {...hair(0.3)} className="wf-draw" style={i(2)} />
+        {Array.from({ length: 21 }, (_, n) => (
+          <line
+            key={n}
+            x1={vp.x}
+            y1={vp.y}
+            x2={-300 + n * 50}
+            y2={H}
+            {...hair(n % 2 ? 0.08 : 0.22)}
+            className="wf-draw"
+            style={i(n * 0.2 + 2)}
+          />
         ))}
         {Array.from({ length: 6 }, (_, n) => (
           <line
@@ -179,26 +288,30 @@ function Horizon({ meshId }: { meshId: string }) {
             {...hair(0.6)}
             pathLength={undefined}
             className="wf-floor"
-            style={{ ...i(n * 1.33), "--still": `${(n / 6) ** 2 * 168}px` } as CSSProperties}
+            style={{ ...i(n * 1.33), "--still": `${(n / 6) ** 2 * 150}px` } as CSSProperties}
           />
         ))}
       </g>
       <g className="wf-depth" style={z(16)}>
-        <rect x={panel.x} y={panel.y} width={panel.w} height={panel.h} fill={`url(#${meshId})`} />
+        <line x1={vp.x} y1={vp.y} x2={panel.x} y2={panel.y + panel.h} {...dash(0.3)} style={i(8)} />
+        <rect x={panel.x} y={panel.y} width={panel.w} height={panel.h} fill={`url(#${meshId})`} className="wf-fade" style={i(6)} />
         <rect x={panel.x} y={panel.y} width={panel.w} height={panel.h} {...hair(0.8)} className="wf-draw" style={i(6)} />
+        <path d={brackets} {...hair(0.5)} className="wf-draw" style={i(8)} />
         <svg x={panel.x} y={panel.y} width={panel.w} height={panel.h} overflow="hidden">
           <line x1={0} y1={0} x2={panel.w} y2={0} {...hair(0.9)} pathLength={undefined} className="wf-scan" />
         </svg>
+        <Label x={panel.x - 4} y={panel.y - 10}>SCAN · 04</Label>
+        <Cross at={vp} />
         <circle cx={vp.x} cy={vp.y} r={2} className="wf-pulse" fill="var(--accent, #c2ff4d)" />
       </g>
     </>
   );
 }
 
-/** Wireframe boxes on one baseline that draw, hold and undraw on a loop. */
+/** Dimensioned wireframe boxes on one baseline that draw, hold and undraw. */
 function Blueprint() {
-  const vp: P = { x: 200, y: 96 };
-  const base = 214;
+  const vp: P = { x: 200, y: 78 };
+  const base = 206;
   const fronts = [
     { x: 52, w: 84, h: 84, z: 10 },
     { x: 158, w: 84, h: 112, z: 14 },
@@ -206,10 +319,34 @@ function Blueprint() {
   ];
   const back = (p: P, k = 0.62): P => ({ x: vp.x + (p.x - vp.x) * k, y: vp.y + (p.y - vp.y) * k });
   const poly = (ps: P[]) => ps.map((p) => `${p.x},${p.y}`).join(" ");
+  const dy = base + 14;
+  const tall = fronts[1];
+  const first = fronts[0];
 
   return (
     <>
+      <Frame figure="FIG. 03 — BLUEPRINT" vp={vp} />
       <Guides at={{ x: vp.x, y: base }} />
+      <g className="wf-depth" style={z(6)}>
+        {fronts.flatMap((f) =>
+          [f.x, f.x + f.w].map((x) => <line key={x} x1={vp.x} y1={vp.y} x2={x} y2={base - f.h} {...dash(0.14)} style={i(4)} />),
+        )}
+        {/* Width dimensions under the baseline. */}
+        {fronts.map((f, b) => (
+          <g key={b}>
+            <path d={`M${f.x} ${dy}H${f.x + f.w}M${f.x} ${dy - 3}v6M${f.x + f.w} ${dy - 3}v6`} {...hair(0.4)} className="wf-draw" style={i(6 + b)} />
+            <Label x={f.x + f.w / 2} y={dy + 11} anchor="middle" delay={9 + b}>{String(f.w)}</Label>
+          </g>
+        ))}
+        {/* Height dimension on the outside of the first box. */}
+        <path
+          d={`M${first.x - 12} ${base}V${base - first.h}M${first.x - 15} ${base}h6M${first.x - 15} ${base - first.h}h6`}
+          {...hair(0.4)}
+          className="wf-draw"
+          style={i(9)}
+        />
+        <Label x={first.x - 16} y={base - first.h / 2 + 2} anchor="end" delay={11}>{String(first.h)}</Label>
+      </g>
       {fronts.map((f, b) => {
         const fc: P[] = [
           { x: f.x, y: base - f.h },
@@ -230,7 +367,8 @@ function Blueprint() {
         );
       })}
       <g className="wf-depth" style={z(14)}>
-        <circle cx={fronts[1].x} cy={base - fronts[1].h} r={2} className="wf-pulse" fill="var(--accent, #c2ff4d)" />
+        <Cross at={vp} r={5} />
+        <circle cx={tall.x} cy={base - tall.h} r={2} className="wf-pulse" fill="var(--accent, #c2ff4d)" />
       </g>
     </>
   );
@@ -296,12 +434,12 @@ export function WireframeCover({ scene = "tunnel", tone = "cobalt", wordmark, cl
         <ellipse cx={W / 2} cy={H / 2} rx={W * 0.55} ry={H * 0.5} fill={`url(#${id}-glow)`} />
       </g>
 
-      {scene === "tunnel" && <Tunnel />}
+      {scene === "tunnel" && <Tunnel meshId={`${id}-mesh`} />}
       {scene === "horizon" && <Horizon meshId={`${id}-mesh`} />}
       {scene === "blueprint" && <Blueprint />}
 
       {wordmark && (
-        <text x={18} y={28} fontSize={12} fontWeight={400} letterSpacing="0.02em" fontFamily="var(--font-geist-sans), Helvetica, sans-serif">
+        <text x={28} y={33} fontSize={12} fontWeight={400} letterSpacing="0.02em" fontFamily="var(--font-geist-sans), Helvetica, sans-serif">
           <tspan fill="#ffffff">{first}</tspan>
           {rest.length > 0 && <tspan fill={t.word}> {rest.join(" ")}</tspan>}
         </text>
