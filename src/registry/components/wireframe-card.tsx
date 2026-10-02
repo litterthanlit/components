@@ -7,14 +7,16 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
  * through an endless 3D lattice of hairlines, with glowing nodes where the
  * lines meet and dust hanging in the air. The look comes from real-time
  * graphics tools like TouchDesigner: additive light on black, depth fog,
- * motion trails and a bloom pass.
+ * feedback trails, bloom and a filmic tone curve.
  *
- * Rendering is plain Canvas 2D. Every line is projected from 3D each frame,
- * batched into a handful of paths by depth so the browser strokes ~30 paths
- * instead of thousands, and blended with "lighter" so crossings glow. Bloom
- * is a quarter-size copy of the frame blurred by CSS on the GPU. Hover speeds
- * the flight up and steers the camera; a click warps forward with trails.
- * It stops when off-screen and renders one still frame under reduced motion.
+ * Raw WebGL 2, no libraries. The whole world is uploaded once; every frame
+ * the vertex shaders wrap it around the camera, clip it at the lens and
+ * project it, so the CPU only sets a few uniforms. Lines are screen-space
+ * quads, nodes are point sprites that defocus near the lens. Light adds up
+ * in half-float buffers, then passes for trails, a two-level bloom and a
+ * composite (tone curve, lens fringing, vignette, grain) finish the frame.
+ * Hover speeds the flight up and steers; a click warps forward. It stops
+ * off-screen and renders one still frame under reduced motion.
  */
 
 export type WireframeScene = "lattice" | "tunnel" | "horizon";
@@ -148,38 +150,288 @@ function build(scene: WireframeScene): World {
 /* ------------------------------------------------------------------------ */
 
 const NEAR = 0.15;
-const BUCKETS = 16;
 const BASE_SPEED = 0.55;
 
-const smoothstep = (a: number, b: number, x: number) => {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
+const FOG = /* glsl */ `
+uniform float uLoop;
+uniform float uNear;
+// Brightness by depth: fade in from the lens, fog out into the distance.
+float fog(float z) {
+  return smoothstep(uNear, uNear + 1.1, z) * exp(-z * 2.0 / uLoop) * (1.0 - smoothstep(uLoop * 0.72, uLoop, z));
+}
+`;
 
-/** Brightness by depth: fade in from the lens, fog out into the distance. */
-const fog = (z: number) => smoothstep(NEAR, NEAR + 1.1, z) * Math.exp((-z * 2) / LOOP) * (1 - smoothstep(LOOP * 0.72, LOOP, z));
+/**
+ * Lines are quads expanded in screen space, so they stay hairline-thin at
+ * any distance. Each vertex carries both ends of its segment; the shader
+ * wraps depth around the loop, clips at the lens and projects.
+ */
+const LINE_VS = /* glsl */ `#version 300 es
+layout(location = 0) in vec3 aA;
+layout(location = 1) in vec3 aB;
+layout(location = 2) in float aW;
+layout(location = 3) in vec2 aCorner;
+uniform vec2 uRes;
+uniform vec2 uCam;
+uniform float uCamZ;
+uniform float uF;
+uniform float uDpr;
+${FOG}
+out float vAlpha;
+out float vDist;
+out float vHalf;
+void main() {
+  float z1 = mod(aA.z - uCamZ, uLoop);
+  vec3 a = vec3(aA.xy, z1);
+  vec3 b = vec3(aB.xy, z1 + aB.z - aA.z);
+  vAlpha = 0.0; vDist = 0.0; vHalf = 1.0;
+  if (b.z < uNear) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
+  if (a.z < uNear) a = mix(a, b, (uNear - a.z) / (b.z - a.z));
+  vec2 pa = (a.xy - uCam) * uF / a.z;
+  vec2 pb = (b.xy - uCam) * uF / b.z;
+  vec2 d = pb - pa;
+  float len = length(d);
+  vec2 dir = len > 1e-3 ? d / len : vec2(1.0, 0.0);
+  vec2 nrm = vec2(-dir.y, dir.x);
+  float zm = 0.5 * (a.z + b.z);
+  float w = clamp(2.4 / zm, 0.55, 1.7) * uDpr * 0.8;
+  float wpx = max(w, 1.0);
+  vHalf = wpx * 0.5;
+  float ext = vHalf + 1.0;
+  vec2 p = mix(pa, pb, aCorner.x) + nrm * aCorner.y * ext + dir * (aCorner.x * 2.0 - 1.0) * 0.5;
+  vDist = aCorner.y * ext;
+  // Sub-pixel lines keep a 1px footprint and lose brightness instead.
+  vAlpha = fog(zm) * mix(0.4, 1.15, smoothstep(0.3, 0.8, aW)) * (w / wpx);
+  gl_Position = vec4(p / (0.5 * uRes), 0.0, 1.0);
+}`;
 
-/** Buckets are spaced on a square-root curve, so there are more of them up close. */
-const bucketOf = (z: number) => Math.min(BUCKETS - 1, Math.floor(Math.sqrt(Math.max(0, z) / LOOP) * BUCKETS));
-const bucketDepth = (b: number) => ((b + 0.5) / BUCKETS) ** 2 * LOOP;
+const LINE_FS = /* glsl */ `#version 300 es
+precision highp float;
+in float vAlpha;
+in float vDist;
+in float vHalf;
+uniform vec3 uColor;
+uniform float uGain;
+out vec4 o;
+void main() {
+  float coverage = clamp(vHalf + 0.5 - abs(vDist), 0.0, 1.0);
+  o = vec4(uColor * vAlpha * coverage * uGain, 1.0);
+}`;
 
-type Control = { hover: boolean; active: boolean; tx: number; ty: number; warp: number };
+/** Nodes and dust are point sprites; close to the lens they defocus into bokeh. */
+const POINT_VS = /* glsl */ `#version 300 es
+layout(location = 0) in vec3 aP;
+layout(location = 1) in float aR;
+layout(location = 2) in float aW;
+uniform vec2 uRes;
+uniform vec2 uCam;
+uniform float uCamZ;
+uniform float uF;
+uniform float uDpr;
+uniform float uMaxPoint;
+${FOG}
+out float vAlpha;
+out float vR;
+out float vSoft;
+out float vSize;
+void main() {
+  float z = mod(aP.z - uCamZ, uLoop);
+  vAlpha = 0.0; vR = 0.0; vSoft = 1.0; vSize = 1.0;
+  if (z < uNear + 0.05) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); gl_PointSize = 0.0; return; }
+  vec2 p = (aP.xy - uCam) * uF / z;
+  float r = clamp(aR * uF / z, 0.6 * uDpr, 5.0 * uDpr);
+  float blur = smoothstep(1.8, 0.45, z);
+  float R = r * (1.0 + blur * 1.8);
+  vSoft = 0.75 + blur * R * 0.7;
+  vSize = min(uMaxPoint, 2.0 * (R + vSoft + 1.0));
+  vR = R;
+  // A defocused disc spreads the same light over a larger area.
+  vAlpha = fog(z) * (aW > 0.5 ? 1.4 : 0.5) * mix(1.0, max(0.25, (r * r) / (R * R)), blur);
+  gl_PointSize = vSize;
+  gl_Position = vec4(p / (0.5 * uRes), 0.0, 1.0);
+}`;
+
+const POINT_FS = /* glsl */ `#version 300 es
+precision highp float;
+in float vAlpha;
+in float vR;
+in float vSoft;
+in float vSize;
+uniform vec3 uColor;
+uniform float uGain;
+out vec4 o;
+void main() {
+  float d = length(gl_PointCoord - 0.5) * vSize;
+  float c = 1.0 - smoothstep(vR - vSoft, vR + 0.5, d);
+  o = vec4(uColor * vAlpha * c * uGain, 1.0);
+}`;
+
+const QUAD_VS = /* glsl */ `#version 300 es
+layout(location = 0) in vec2 aPos;
+out vec2 vUv;
+void main() { vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
+
+/** Feedback: the last frame, zoomed a touch toward you, fades into this one. */
+const FEEDBACK_FS = /* glsl */ `#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform sampler2D uScene;
+uniform sampler2D uPrev;
+uniform float uKeep;
+uniform float uZoom;
+out vec4 o;
+void main() {
+  vec2 prev = (vUv - 0.5) * uZoom + 0.5;
+  o = texture(uScene, vUv) + texture(uPrev, prev) * uKeep;
+}`;
+
+/** A 2× downsample that averages four bilinear taps. */
+const DOWN_FS = /* glsl */ `#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform sampler2D uTex;
+uniform vec2 uTexel;
+out vec4 o;
+void main() {
+  vec2 h = uTexel * 0.5;
+  o = 0.25 * (texture(uTex, vUv + vec2(-h.x, -h.y)) + texture(uTex, vUv + vec2(h.x, -h.y)) +
+              texture(uTex, vUv + vec2(-h.x, h.y)) + texture(uTex, vUv + vec2(h.x, h.y)));
+}`;
+
+/** A 9-tap Gaussian in five fetches, using bilinear filtering between taps. */
+const BLUR_FS = /* glsl */ `#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform sampler2D uTex;
+uniform vec2 uDir;
+out vec4 o;
+void main() {
+  vec2 o1 = uDir * 1.3846153846;
+  vec2 o2 = uDir * 3.2307692308;
+  o = texture(uTex, vUv) * 0.2270270270
+    + (texture(uTex, vUv + o1) + texture(uTex, vUv - o1)) * 0.3162162162
+    + (texture(uTex, vUv + o2) + texture(uTex, vUv - o2)) * 0.0702702703;
+}`;
+
+/** Bloom, a filmic shoulder for highlights, lens fringing, vignette and grain. */
+const COMPOSITE_FS = /* glsl */ `#version 300 es
+precision highp float;
+in vec2 vUv;
+uniform sampler2D uAcc;
+uniform sampler2D uBloomA;
+uniform sampler2D uBloomB;
+uniform float uBloom;
+uniform float uExposure;
+uniform float uFringe;
+uniform float uTime;
+out vec4 o;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+void main() {
+  vec2 c = vUv - 0.5;
+  float r2 = dot(c, c);
+  vec2 off = c * r2 * uFringe;
+  vec3 col = vec3(texture(uAcc, vUv - off).r, texture(uAcc, vUv).g, texture(uAcc, vUv + off).b);
+  col += (texture(uBloomA, vUv).rgb * 0.7 + texture(uBloomB, vUv).rgb * 0.9) * uBloom;
+  col = 1.0 - exp(-col * uExposure);
+  col *= mix(1.0, 0.28, smoothstep(0.12, 0.5, r2));
+  col += (hash(gl_FragCoord.xy + fract(uTime) * 91.7) - 0.5) * 0.035;
+  o = vec4(max(col, 0.0), 1.0);
+}`;
+
+type Target = { tex: WebGLTexture; fb: WebGLFramebuffer; w: number; h: number };
+
+function compile(gl: WebGL2RenderingContext, vs: string, fs: string) {
+  const program = gl.createProgram()!;
+  for (const [type, source] of [
+    [gl.VERTEX_SHADER, vs],
+    [gl.FRAGMENT_SHADER, fs],
+  ] as const) {
+    const shader = gl.createShader(type)!;
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader) ?? "shader");
+    gl.attachShader(program, shader);
+  }
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program) ?? "link");
+  const uniforms: Record<string, WebGLUniformLocation | null> = {};
+  const count = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS) as number;
+  for (let n = 0; n < count; n++) {
+    const name = gl.getActiveUniform(program, n)!.name;
+    uniforms[name] = gl.getUniformLocation(program, name);
+  }
+  return { program, u: uniforms };
+}
+
+/** Upload the world into vertex arrays: four vertices per line, one per node. */
+function upload(gl: WebGL2RenderingContext, world: World) {
+  const { lines, nodes } = world;
+  const lineCount = lines.length / 7;
+  const verts = new Float32Array(lineCount * 4 * 9);
+  const index = new Uint32Array(lineCount * 6);
+  const corners = [0, -1, 0, 1, 1, -1, 1, 1];
+  for (let l = 0; l < lineCount; l++) {
+    for (let c = 0; c < 4; c++) {
+      const v = (l * 4 + c) * 9;
+      verts.set(lines.subarray(l * 7, l * 7 + 7), v);
+      verts[v + 7] = corners[c * 2];
+      verts[v + 8] = corners[c * 2 + 1];
+    }
+    index.set([0, 1, 2, 2, 1, 3].map((n) => l * 4 + n), l * 6);
+  }
+
+  const lineVao = gl.createVertexArray();
+  gl.bindVertexArray(lineVao);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
+  const stride = 9 * 4;
+  [3, 3, 1, 2].reduce((offset, size, loc) => {
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, size, gl.FLOAT, false, stride, offset * 4);
+    return offset + size;
+  }, 0);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, index, gl.STATIC_DRAW);
+
+  const pointVao = gl.createVertexArray();
+  gl.bindVertexArray(pointVao);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, nodes, gl.STATIC_DRAW);
+  [3, 1, 1].reduce((offset, size, loc) => {
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 5 * 4, offset * 4);
+    return offset + size;
+  }, 0);
+
+  const quadVao = gl.createVertexArray();
+  gl.bindVertexArray(quadVao);
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+
+  return { lineVao, pointVao, quadVao, lineIndices: index.length, pointCount: nodes.length / 5 };
+}
 
 type EngineOptions = {
   wrap: HTMLElement;
   canvas: HTMLCanvasElement;
-  bloom: HTMLCanvasElement;
   readout: HTMLElement | null;
   scene: WireframeScene;
   tone: WireframeTone;
 };
 
-export function createEngine({ wrap, canvas, bloom, readout, scene, tone }: EngineOptions) {
-  const ctx = canvas.getContext("2d");
-  const bctx = bloom.getContext("2d");
-  const ctl: Control = { hover: false, active: false, tx: 0, ty: 0, warp: 0 };
+/** Returns null when WebGL 2 isn't available; the card then stays a black frame. */
+export function createEngine({ wrap, canvas, readout, scene, tone }: EngineOptions) {
+  const maybe = canvas.getContext("webgl2", { antialias: false, alpha: false, depth: false, premultipliedAlpha: false });
+  if (!maybe || maybe.isContextLost()) return null;
+  const gl: WebGL2RenderingContext = maybe;
+
+  const ctl = { hover: false, active: false, tx: 0, ty: 0, warp: 0 };
   const world = build(scene);
-  const rgb = tones[tone].rgb;
+  const color = tones[tone].rgb.split(",").map((n) => Number(n) / 255);
+  const bloomGain = tones[tone].bloom;
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   let W = 1;
@@ -188,87 +440,149 @@ export function createEngine({ wrap, canvas, bloom, readout, scene, tone }: Engi
   let raf = 0;
   let last = 0;
   let frame = 0;
+  let time = 0;
   let camZ = 3.3;
   let speed = BASE_SPEED;
+  let running = false;
+  // Render scale, lowered step by step if the GPU can't hold ~35fps.
+  let quality = 1;
+  let slow = 0;
   const cam = { x: 0, y: 0 };
-  const strong = Array.from({ length: BUCKETS }, () => new Path2D());
-  const faint = Array.from({ length: BUCKETS }, () => new Path2D());
-  const dots = Array.from({ length: BUCKETS * 2 }, () => new Path2D());
+
+  type Resources = ReturnType<typeof setup>;
+  let res: Resources | null = null;
+  let targets: Record<"scene" | "accA" | "accB" | "halfA" | "halfB" | "quarterA" | "quarterB", Target> | null = null;
+
+  function setup() {
+    // Half-float targets let crossings add up past white, so bloom and the
+    // tone curve have real highlights to work with. 8-bit is the fallback.
+    const hdr = !!gl.getExtension("EXT_color_buffer_float");
+    const programs = {
+      line: compile(gl, LINE_VS, LINE_FS),
+      point: compile(gl, POINT_VS, POINT_FS),
+      feedback: compile(gl, QUAD_VS, FEEDBACK_FS),
+      down: compile(gl, QUAD_VS, DOWN_FS),
+      blur: compile(gl, QUAD_VS, BLUR_FS),
+      composite: compile(gl, QUAD_VS, COMPOSITE_FS),
+    };
+    const range = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE) as Float32Array;
+    return { hdr, programs, geometry: upload(gl, world), maxPoint: range[1] };
+  }
+
+  function makeTarget(w: number, h: number, hdr: boolean): Target {
+    const tex = gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, hdr ? gl.RGBA16F : gl.RGBA8, w, h, 0, gl.RGBA, hdr ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE, null);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const fb = gl.createFramebuffer()!;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    return { tex, fb, w, h };
+  }
+
+  function makeTargets() {
+    if (!res) return;
+    for (const t of Object.values(targets ?? {})) {
+      gl.deleteTexture(t.tex);
+      gl.deleteFramebuffer(t.fb);
+    }
+    const half = [Math.max(1, W >> 1), Math.max(1, H >> 1)] as const;
+    const quarter = [Math.max(1, W >> 2), Math.max(1, H >> 2)] as const;
+    targets = {
+      scene: makeTarget(W, H, res.hdr),
+      accA: makeTarget(W, H, res.hdr),
+      accB: makeTarget(W, H, res.hdr),
+      halfA: makeTarget(...half, res.hdr),
+      halfB: makeTarget(...half, res.hdr),
+      quarterA: makeTarget(...quarter, res.hdr),
+      quarterB: makeTarget(...quarter, res.hdr),
+    };
+  }
+
+  /** Run a full-screen pass from the given textures into a target (or the canvas). */
+  function pass(p: ReturnType<typeof compile>, out: Target | null, textures: Record<string, WebGLTexture>, set?: () => void) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, out ? out.fb : null);
+    gl.viewport(0, 0, out ? out.w : W, out ? out.h : H);
+    gl.useProgram(p.program);
+    Object.entries(textures).forEach(([name, tex], unit) => {
+      gl.activeTexture(gl.TEXTURE0 + unit);
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.uniform1i(p.u[name], unit);
+    });
+    set?.();
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+
+  function blur(src: Target, tmp: Target) {
+    if (!res) return;
+    const { blur: b } = res.programs;
+    pass(b, tmp, { uTex: src.tex }, () => gl.uniform2f(b.u.uDir, 1 / src.w, 0));
+    pass(b, src, { uTex: tmp.tex }, () => gl.uniform2f(b.u.uDir, 0, 1 / src.h));
+  }
 
   function draw() {
-    if (!ctx || !bctx) return;
-    const { lines, nodes } = world;
+    if (!res || !targets || gl.isContextLost()) return;
+    const { programs, geometry, maxPoint } = res;
+    const t = targets;
     const f = Math.min(W, H) * 0.95;
-    const cx = W / 2;
-    const cy = H / 2;
-    const flash = 1 + ctl.warp * 0.6;
+    const gain = 1 + ctl.warp * 0.6;
 
-    // A translucent clear leaves trails behind while warping.
-    ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = `rgba(0, 0, 0, ${Math.max(0.22, 1 - ctl.warp * 0.85)})`;
-    ctx.fillRect(0, 0, W, H);
-    ctx.globalCompositeOperation = "lighter";
-
-    for (let b = 0; b < BUCKETS; b++) {
-      strong[b] = new Path2D();
-      faint[b] = new Path2D();
-      dots[b] = new Path2D();
-      dots[b + BUCKETS] = new Path2D();
+    // 1. The scene: additive lines, then nodes.
+    gl.bindFramebuffer(gl.FRAMEBUFFER, t.scene.fb);
+    gl.viewport(0, 0, W, H);
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE);
+    for (const [p, vao, drawCall] of [
+      [programs.line, geometry.lineVao, () => gl.drawElements(gl.TRIANGLES, geometry.lineIndices, gl.UNSIGNED_INT, 0)],
+      [programs.point, geometry.pointVao, () => gl.drawArrays(gl.POINTS, 0, geometry.pointCount)],
+    ] as const) {
+      gl.useProgram(p.program);
+      gl.uniform2f(p.u.uRes, W, H);
+      gl.uniform2f(p.u.uCam, cam.x, cam.y);
+      gl.uniform1f(p.u.uCamZ, camZ);
+      gl.uniform1f(p.u.uF, f);
+      gl.uniform1f(p.u.uDpr, dpr);
+      gl.uniform1f(p.u.uLoop, LOOP);
+      gl.uniform1f(p.u.uNear, NEAR);
+      gl.uniform3f(p.u.uColor, color[0], color[1], color[2]);
+      gl.uniform1f(p.u.uGain, gain);
+      if (p.u.uMaxPoint) gl.uniform1f(p.u.uMaxPoint, maxPoint);
+      gl.bindVertexArray(vao);
+      drawCall();
     }
+    gl.disable(gl.BLEND);
+    gl.bindVertexArray(geometry.quadVao);
 
-    for (let n = 0; n < lines.length; n += 7) {
-      let z1 = (((lines[n + 2] - camZ) % LOOP) + LOOP) % LOOP;
-      const z2 = z1 + (lines[n + 5] - lines[n + 2]);
-      if (z2 < NEAR) continue;
-      let x1 = lines[n];
-      let y1 = lines[n + 1];
-      const x2 = lines[n + 3];
-      const y2 = lines[n + 4];
-      if (z1 < NEAR) {
-        // Clip lines that pass the lens so they don't flip behind the camera.
-        const t = (NEAR - z1) / (z2 - z1);
-        x1 += (x2 - x1) * t;
-        y1 += (y2 - y1) * t;
-        z1 = NEAR;
-      }
-      const b = bucketOf((z1 + z2) / 2);
-      const p = lines[n + 6] > 0.5 ? strong[b] : faint[b];
-      p.moveTo(cx + ((x1 - cam.x) * f) / z1, cy - ((y1 - cam.y) * f) / z1);
-      p.lineTo(cx + ((x2 - cam.x) * f) / z2, cy - ((y2 - cam.y) * f) / z2);
-    }
+    // 2. Feedback trails while warping.
+    pass(programs.feedback, t.accB, { uScene: t.scene.tex, uPrev: t.accA.tex }, () => {
+      gl.uniform1f(programs.feedback.u.uKeep, Math.min(0.82, ctl.warp * 0.9));
+      gl.uniform1f(programs.feedback.u.uZoom, 1 - ctl.warp * 0.025);
+    });
+    [t.accA, t.accB] = [t.accB, t.accA];
 
-    const cap = 5 * dpr;
-    for (let n = 0; n < nodes.length; n += 5) {
-      const z = (((nodes[n + 2] - camZ) % LOOP) + LOOP) % LOOP;
-      if (z < NEAR + 0.05) continue;
-      const s = f / z;
-      const px = cx + (nodes[n] - cam.x) * s;
-      const py = cy - (nodes[n + 1] - cam.y) * s;
-      if (px < -cap || px > W + cap || py < -cap || py > H + cap) continue;
-      const r = Math.min(cap, Math.max(0.6 * dpr, nodes[n + 3] * s));
-      const path = dots[bucketOf(z) + (nodes[n + 4] > 0.5 ? 0 : BUCKETS)];
-      path.moveTo(px + r, py);
-      path.arc(px, py, r, 0, Math.PI * 2);
-    }
+    // 3. Bloom at half and quarter resolution.
+    pass(programs.down, t.halfA, { uTex: t.accA.tex }, () => gl.uniform2f(programs.down.u.uTexel, 1 / W, 1 / H));
+    blur(t.halfA, t.halfB);
+    pass(programs.down, t.quarterA, { uTex: t.halfA.tex }, () => gl.uniform2f(programs.down.u.uTexel, 1 / t.halfA.w, 1 / t.halfA.h));
+    blur(t.quarterA, t.quarterB);
+    blur(t.quarterA, t.quarterB);
 
-    for (let b = 0; b < BUCKETS; b++) {
-      const z = bucketDepth(b);
-      const a = fog(z) * flash;
-      if (a < 0.004) continue;
-      ctx.lineWidth = Math.min(1.7, Math.max(0.55, 2.4 / z)) * dpr * 0.8;
-      ctx.strokeStyle = `rgba(${rgb}, ${Math.min(1, a * 1.15)})`;
-      ctx.stroke(strong[b]);
-      ctx.strokeStyle = `rgba(${rgb}, ${Math.min(1, a * 0.4)})`;
-      ctx.stroke(faint[b]);
-      ctx.fillStyle = `rgba(${rgb}, ${Math.min(1, a * 1.4)})`;
-      ctx.fill(dots[b]);
-      ctx.fillStyle = `rgba(${rgb}, ${Math.min(1, a * 0.5)})`;
-      ctx.fill(dots[b + BUCKETS]);
-    }
-
-    // Bloom: a quarter-size copy, blurred and screened over the frame by CSS.
-    bctx.globalCompositeOperation = "copy";
-    bctx.drawImage(canvas, 0, 0, bloom.width, bloom.height);
+    // 4. Composite to the canvas.
+    pass(programs.composite, null, { uAcc: t.accA.tex, uBloomA: t.halfA.tex, uBloomB: t.quarterA.tex }, () => {
+      const u = programs.composite.u;
+      gl.uniform1f(u.uBloom, bloomGain * (1 + ctl.warp));
+      gl.uniform1f(u.uExposure, 1.9);
+      gl.uniform1f(u.uFringe, 0.006 + ctl.warp * 0.1);
+      gl.uniform1f(u.uTime, time);
+    });
+    gl.bindVertexArray(null);
 
     if (readout && frame++ % 6 === 0) {
       readout.textContent = `${scene}  z ${camZ.toFixed(1).padStart(6, "0")}  ${(speed / BASE_SPEED + ctl.warp * 30).toFixed(1)}×`;
@@ -279,6 +593,13 @@ export function createEngine({ wrap, canvas, bloom, readout, scene, tone }: Engi
     raf = requestAnimationFrame(tick);
     const dt = last ? Math.min(0.05, (now - last) / 1000) : 1 / 60;
     last = now;
+    time += dt;
+    slow = dt > 1 / 35 ? slow + 1 : Math.max(0, slow - 2);
+    if (slow > 45 && quality > 0.5) {
+      quality *= 0.8;
+      slow = 0;
+      resize();
+    }
     const target = BASE_SPEED * (ctl.hover || ctl.active ? 2.6 : 1);
     speed += (target - speed) * (1 - Math.exp(-dt * 3));
     ctl.warp *= Math.exp(-dt * 1.8);
@@ -291,16 +612,62 @@ export function createEngine({ wrap, canvas, bloom, readout, scene, tone }: Engi
 
   function resize() {
     const rect = wrap.getBoundingClientRect();
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dpr = Math.min(window.devicePixelRatio || 1, 2) * quality;
     W = canvas.width = Math.max(1, Math.round(rect.width * dpr));
     H = canvas.height = Math.max(1, Math.round(rect.height * dpr));
-    bloom.width = Math.max(1, Math.round(W / 4));
-    bloom.height = Math.max(1, Math.round(H / 4));
+    makeTargets();
     draw();
+  }
+
+  function start() {
+    running = true;
+    if (raf || reduce || !res) return;
+    last = 0;
+    raf = requestAnimationFrame(tick);
+  }
+
+  function stop() {
+    running = false;
+    cancelAnimationFrame(raf);
+    raf = 0;
+  }
+
+  const onLost = (event: Event) => {
+    event.preventDefault();
+    const wasRunning = running;
+    stop();
+    running = wasRunning;
+    res = null;
+    targets = null;
+  };
+  const onRestored = () => {
+    try {
+      res = setup();
+    } catch {
+      return;
+    }
+    resize();
+    if (running) start();
+  };
+  canvas.addEventListener("webglcontextlost", onLost);
+  canvas.addEventListener("webglcontextrestored", onRestored);
+
+  try {
+    res = setup();
+  } catch (error) {
+    console.warn("WireframeField: WebGL setup failed", error);
+    return null;
   }
 
   return {
     resize,
+    start,
+    stop,
+    destroy() {
+      stop();
+      canvas.removeEventListener("webglcontextlost", onLost);
+      canvas.removeEventListener("webglcontextrestored", onRestored);
+    },
     setHover(on: boolean) {
       ctl.hover = on;
       if (!on) ctl.tx = ctl.ty = 0;
@@ -316,30 +683,12 @@ export function createEngine({ wrap, canvas, bloom, readout, scene, tone }: Engi
     warp() {
       ctl.warp = 1;
     },
-    start() {
-      if (raf || reduce) return;
-      last = 0;
-      raf = requestAnimationFrame(tick);
-    },
-    stop() {
-      cancelAnimationFrame(raf);
-      raf = 0;
-    },
   };
 }
 
 /* ------------------------------------------------------------------------ */
 /* Field                                                                     */
 /* ------------------------------------------------------------------------ */
-
-const GRAIN =
-  "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")";
-
-const STYLES = `
-@keyframes wf-grain { 0% { transform: translate(0, 0); } 25% { transform: translate(-3%, 2%); } 50% { transform: translate(2%, -3%); } 75% { transform: translate(-2%, -1%); } }
-.wf-grain { animation: wf-grain 0.6s steps(1) infinite; }
-@media (prefers-reduced-motion: reduce) { .wf-grain { animation: none; } }
-`;
 
 type WireframeFieldProps = {
   scene?: WireframeScene;
@@ -357,17 +706,16 @@ type WireframeFieldProps = {
 export function WireframeField({ scene = "lattice", tone = "mono", active = false, pulse = 0, readout = true, className = "" }: WireframeFieldProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const bloomRef = useRef<HTMLCanvasElement>(null);
   const readoutRef = useRef<HTMLSpanElement>(null);
-  const engine = useRef<ReturnType<typeof createEngine> | null>(null);
+  const engine = useRef<ReturnType<typeof createEngine>>(null);
   const lastPulse = useRef(pulse);
 
   useEffect(() => {
     const wrap = wrapRef.current;
     const canvas = canvasRef.current;
-    const bloom = bloomRef.current;
-    if (!wrap || !canvas || !bloom) return;
-    const e = createEngine({ wrap, canvas, bloom, readout: readoutRef.current, scene, tone });
+    if (!wrap || !canvas) return;
+    const e = createEngine({ wrap, canvas, readout: readoutRef.current, scene, tone });
+    if (!e) return;
     engine.current = e;
     e.resize();
     const ro = new ResizeObserver(() => e.resize());
@@ -375,9 +723,9 @@ export function WireframeField({ scene = "lattice", tone = "mono", active = fals
     const io = new IntersectionObserver(([entry]) => (entry.isIntersecting ? e.start() : e.stop()));
     io.observe(wrap);
     return () => {
-      e.stop();
       ro.disconnect();
       io.disconnect();
+      e.destroy();
       engine.current = null;
     };
   }, [scene, tone]);
@@ -405,19 +753,11 @@ export function WireframeField({ scene = "lattice", tone = "mono", active = fals
         engine.current?.steer(((event.clientX - rect.left) / rect.width) * 2 - 1, 1 - ((event.clientY - rect.top) / rect.height) * 2);
       }}
     >
-      <style>{STYLES}</style>
       <canvas ref={canvasRef} className="absolute inset-0 size-full" />
-      <canvas
-        ref={bloomRef}
-        className="absolute inset-0 size-full"
-        style={{ filter: "blur(6px) brightness(1.7)", mixBlendMode: "screen", opacity: tones[tone].bloom }}
-      />
-      <div className="wf-grain absolute -inset-[10%] opacity-[0.07] mix-blend-screen" style={{ backgroundImage: GRAIN }} />
-      <div className="absolute inset-0" style={{ background: "radial-gradient(ellipse at center, transparent 50%, rgb(0 0 0 / 0.7) 100%)" }} />
       {readout && (
         <span
           ref={readoutRef}
-          className="absolute left-3 top-3 whitespace-pre font-mono max-sm:hidden text-[10px] uppercase tracking-[0.14em] text-white/45 tabular-nums"
+          className="absolute left-3 top-3 whitespace-pre font-mono text-[10px] uppercase tracking-[0.14em] text-white/45 tabular-nums max-sm:hidden"
         />
       )}
     </div>

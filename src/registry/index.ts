@@ -26,9 +26,9 @@ export const registry: RegistryEntry[] = [
     slug: "wireframe-card",
     title: "Wireframe Card",
     description:
-      "Project cards with a live wireframe cover: a camera flying through an endless 3D lattice of hairlines, with glowing nodes where the lines meet and dust in the air. Additive light on black, depth fog, motion trails and bloom, in the spirit of TouchDesigner. Hover to fly faster and steer, click to warp. Plain Canvas 2D with depth-batched paths; stops off-screen and holds a still frame under reduced motion.",
+      "Project cards with a live wireframe cover: a camera flying through an endless 3D lattice of hairlines, with glowing nodes where the lines meet and dust in the air. Additive light on black, depth fog, feedback trails, bloom and a filmic tone curve, in the spirit of TouchDesigner. Hover to fly faster and steer, click to warp. Raw WebGL 2: the GPU projects the whole world each frame into half-float buffers; stops off-screen and holds a still frame under reduced motion.",
     tagline: "Fly through an endless lattice of light.",
-    tags: ["surface", "pointer", "canvas", "motion"],
+    tags: ["surface", "pointer", "webgl", "motion"],
     date: "2026-10-02",
     status: "new",
     background: "plain",
