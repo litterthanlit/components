@@ -23,6 +23,28 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "agent-run",
+    title: "Agent Run",
+    description:
+      "One agent turn, start to finish. It thinks with a live timer, runs tool steps whose spinners turn into checkmarks that draw themselves, folds the work into “Thought for 4s”, then streams the answer behind a caret. Screen readers hear each phase, not every token.",
+    tagline: "Think, run tools, fold it away, stream the answer.",
+    tags: ["ai", "feedback", "motion", "a11y"],
+    date: "2026-10-02",
+    status: "new",
+    background: "dots",
+  },
+  {
+    slug: "agent-loaders",
+    title: "Agent Loaders",
+    description:
+      "Four ways to say an agent is working: a light sweeping across text, a 3×3 pixel wave, a terminal braille spinner and hopping dots. CSS keyframes from the design system, still under reduced motion, labelled for screen readers.",
+    tagline: "Shimmer, pixel wave, braille, dots.",
+    tags: ["ai", "feedback", "motion"],
+    date: "2026-10-02",
+    status: "new",
+    background: "grid",
+  },
+  {
     slug: "dither-card",
     title: "Dither Card",
     description:

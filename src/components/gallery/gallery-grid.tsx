@@ -8,7 +8,7 @@ import { Preview } from "./preview";
 
 const statusLabel = { new: "New", "in-progress": "In progress" } as const;
 
-const tagLabels: Record<string, string> = { a11y: "Accessibility", css: "CSS", svg: "SVG", webgl: "WebGL" };
+const tagLabels: Record<string, string> = { a11y: "Accessibility", css: "CSS", svg: "SVG", webgl: "WebGL", ai: "AI" };
 const tagLabel = (tag: string) => tagLabels[tag] ?? tag[0].toUpperCase() + tag.slice(1);
 
 export function GalleryGrid({ entries, tags }: { entries: RegistryEntry[]; tags: string[] }) {

@@ -200,6 +200,12 @@ export default function SystemPage() {
               Stagger siblings that enter together by <code className={code}>--stagger</code> (50ms), capped at 8, so a
               long list never waits on its last item.
             </li>
+            <li>
+              Agent states: <code className={code}>animate-shimmer</code> for a working label,{" "}
+              <code className={code}>animate-wave</code> and <code className={code}>animate-hop</code> for pixels and
+              dots, <code className={code}>animate-caret</code> while text streams. Announce phases to screen readers, not
+              tokens.
+            </li>
             <li>Press feedback: <code className={code}>active:scale-[0.97]</code> on anything clickable.</li>
             <li>Hover in at enter speed, out at exit speed, so the UI never lags behind the pointer.</li>
             <li>Never animate from <code className={code}>scale(0)</code>. Start at 0.95 or more with opacity.</li>
