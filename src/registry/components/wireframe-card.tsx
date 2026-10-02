@@ -19,7 +19,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
  * off-screen and renders one still frame under reduced motion.
  */
 
-export type WireframeScene = "lattice" | "tunnel" | "horizon";
+export type WireframeScene = "lattice" | "tunnel" | "ring" | "horizon" | "maze";
 export type WireframeTone = "mono" | "cobalt" | "ice";
 
 const tones: Record<WireframeTone, { rgb: string; bloom: number }> = {
@@ -52,6 +52,57 @@ function rand(a: number, b: number, c: number, salt: number) {
 
 /** Index an edge from n to n+1 so it hashes the same as its mirror image. */
 const edge = (n: number) => (n >= 0 ? n : -n - 1);
+
+/**
+ * A maze on an n×n grid (recursive backtracker, then a few walls knocked out
+ * so it has loops). Returns its walls as [x1, y1, x2, y2] in cell units.
+ */
+function maze(n: number, seed: number) {
+  let state = Math.imul(seed + 1, 2654435761);
+  const random = () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const key = (a: number, b: number) => Math.min(a, b) * 65536 + Math.max(a, b);
+  const open = new Set<number>();
+  const seen = new Uint8Array(n * n);
+  const stack = [0];
+  seen[0] = 1;
+  while (stack.length) {
+    const c = stack[stack.length - 1];
+    const x = c % n;
+    const y = Math.floor(c / n);
+    const next = [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ]
+      .map(([dx, dy]) => [x + dx, y + dy])
+      .filter(([nx, ny]) => nx >= 0 && ny >= 0 && nx < n && ny < n && !seen[ny * n + nx]);
+    if (!next.length) {
+      stack.pop();
+      continue;
+    }
+    const [nx, ny] = next[Math.floor(random() * next.length)];
+    const to = ny * n + nx;
+    seen[to] = 1;
+    open.add(key(c, to));
+    stack.push(to);
+  }
+  const walls: [number, number, number, number][] = [];
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const c = y * n + x;
+      if (x < n - 1 && !open.has(key(c, c + 1)) && random() > 0.12) walls.push([x + 1, y, x + 1, y + 1]);
+      if (y < n - 1 && !open.has(key(c, c + n)) && random() > 0.12) walls.push([x, y + 1, x + 1, y + 1]);
+    }
+    walls.push([y, 0, y + 1, 0], [y, n, y + 1, n], [0, y, 0, y + 1], [n, y, n, y + 1]);
+  }
+  return walls;
+}
 
 function build(scene: WireframeScene): World {
   const lines: number[] = [];
@@ -108,6 +159,54 @@ function build(scene: WireframeScene): World {
           if (rand(ai, aj, k, 3) < 0.75) line(i, j, k, i, j, k + 0.4 + rand(ai, aj, k, 7) * 0.6, 0.9);
           if (rand(ai, aj, k, 4) < 0.55) node(i, j, k, 0.03 + rand(ai, aj, k, 5) * 0.03, 1);
         }
+      }
+    }
+  } else if (scene === "ring") {
+    // A round tunnel. Its rails twist a little each layer, a whole number of
+    // rail steps per loop, so the spin wraps around seamlessly.
+    const R = 3;
+    const SEGMENTS = 48;
+    const RAILS = 24;
+    const twist = (Math.PI * 2 * 3) / (RAILS * LOOP);
+    const at = (a: number, r = R) => [Math.cos(a) * r, Math.sin(a) * r] as const;
+    for (let k = 0; k < LOOP; k++) {
+      for (let s = 0; s < SEGMENTS; s++) {
+        const a0 = (s / SEGMENTS) * Math.PI * 2;
+        const a1 = ((s + 1) / SEGMENTS) * Math.PI * 2;
+        const full = k % 2 === 0;
+        // Odd layers only keep a few arcs, chosen in runs of six segments.
+        if (full || rand(s >> 3, 0, k, 1) < 0.4) line(...at(a0), k, ...at(a1), k, full ? 1 : 0.6);
+        if (k % 6 === 0) line(...at(a0, R * 0.94), k + 0.1, ...at(a1, R * 0.94), k + 0.1, 0.3);
+      }
+      for (let r = 0; r < RAILS; r++) {
+        const a = (r / RAILS) * Math.PI * 2 + twist * k;
+        if (rand(r, 0, k, 3) < 0.7) {
+          const len = 0.4 + rand(r, 0, k, 7) * 0.6;
+          line(...at(a), k, ...at(a + twist * len), k + len, r % 3 === 0 ? 1 : 0.4);
+        }
+        if (r % 2 === 0 && rand(r, 0, k, 4) < 0.6) node(...at(a), k, 0.03 + rand(r, 0, k, 5) * 0.03, 1);
+      }
+    }
+  } else if (scene === "maze") {
+    // Planes of mazes drawn only in dots: bright nodes where walls meet,
+    // fainter dots along the walls, a little depth jitter so planes shimmer.
+    const N = 11;
+    const half = N / 2;
+    for (let layer = 0; layer < 4; layer++) {
+      const z = layer * (LOOP / 4);
+      const corners = new Set<number>();
+      for (const [x1, y1, x2, y2] of maze(N, layer)) {
+        for (const t of [1 / 6, 2 / 6, 3 / 6, 4 / 6, 5 / 6]) {
+          const x = x1 + (x2 - x1) * t;
+          const y = y1 + (y2 - y1) * t;
+          node(x - half, y - half, z + (rand(x * 6, y * 6, layer, 8) - 0.5) * 0.05, 0.012, t === 0.5 ? 1 : 0.45);
+        }
+        corners.add(x1 * 64 + y1).add(x2 * 64 + y2);
+      }
+      for (const c of corners) {
+        const x = Math.floor(c / 64);
+        const y = c % 64;
+        node(x - half, y - half, z, 0.02 + rand(x, y, layer, 9) * 0.018, 1);
       }
     }
   } else {
@@ -776,11 +875,13 @@ type WireframeCardProps = {
   tone?: WireframeTone;
   /** The large card: shows its description under the title. */
   featured?: boolean;
+  /** Below the sm breakpoint, show the cover alone (the caption stays for screen readers). */
+  compact?: boolean;
   className?: string;
   style?: CSSProperties;
 };
 
-export function WireframeCard({ title, description, meta, scene = "lattice", tone = "mono", featured = false, className = "", style }: WireframeCardProps) {
+export function WireframeCard({ title, description, meta, scene = "lattice", tone = "mono", featured = false, compact = false, className = "", style }: WireframeCardProps) {
   const [pulse, setPulse] = useState(0);
   const [focused, setFocused] = useState(false);
 
@@ -797,7 +898,7 @@ export function WireframeCard({ title, description, meta, scene = "lattice", ton
         <WireframeField scene={scene} tone={tone} active={focused} pulse={pulse} className="absolute inset-0 rounded-xl" />
       </button>
       <span aria-hidden className="pointer-events-none absolute inset-0 rounded-xl shadow-[inset_0_0_0_1px_rgb(255_255_255/0.1)]" />
-      <div className={`pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/85 via-black/35 to-transparent ${featured ? "p-5 pt-16" : "p-3.5 pt-10"}`}>
+      <div className={`pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/85 via-black/35 to-transparent ${featured ? "p-5 pt-16" : "p-3.5 pt-10"} ${compact ? "max-sm:sr-only" : ""}`}>
         <div className="flex items-baseline justify-between gap-3">
           <h3 className={`font-medium text-white ${featured ? "text-lead" : "text-body"}`}>{title}</h3>
           {meta && <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-white/50">{meta}</span>}
@@ -812,36 +913,28 @@ export function WireframeCard({ title, description, meta, scene = "lattice", ton
 /* Demo                                                                      */
 /* ------------------------------------------------------------------------ */
 
+const covers: (Omit<WireframeCardProps, "className" | "style"> & { layout: string })[] = [
+  {
+    featured: true,
+    title: "Lattice",
+    description: "An endless mirrored grid. Hover to fly faster and steer, click to warp.",
+    meta: "Mono",
+    scene: "lattice",
+    tone: "mono",
+    layout: "col-span-4 aspect-[21/10] sm:row-span-2 sm:aspect-auto",
+  },
+  { title: "Tunnel", description: "A square tunnel with a ring every other layer.", meta: "Mono", scene: "tunnel", tone: "mono", layout: "aspect-square sm:col-span-2 sm:aspect-[16/10]" },
+  { title: "Ring", description: "A round tunnel whose rails slowly twist.", meta: "Ice", scene: "ring", tone: "ice", layout: "aspect-square sm:col-span-2 sm:aspect-[16/10]" },
+  { title: "Horizon", description: "A floor and a ceiling meeting at the horizon.", meta: "Cobalt", scene: "horizon", tone: "cobalt", layout: "aspect-square sm:col-span-3 sm:aspect-[5/2]" },
+  { title: "Maze", description: "Planes of mazes drawn only in dots.", meta: "Mono", scene: "maze", tone: "mono", layout: "aspect-square sm:col-span-3 sm:aspect-[5/2]" },
+];
+
 export default function Demo() {
   return (
-    <div className="grid w-full max-w-[720px] grid-cols-[1.35fr_1fr] grid-rows-2 gap-3">
-      <WireframeCard
-        featured
-        title="Lattice"
-        description="An endless mirrored grid. Hover to fly faster and steer, click to warp."
-        meta="Mono"
-        scene="lattice"
-        tone="mono"
-        className="row-span-2 animate-enter"
-      />
-      <WireframeCard
-        title="Tunnel"
-        description="A square tunnel with a ring every other layer."
-        meta="Mono"
-        scene="tunnel"
-        tone="mono"
-        className="aspect-[16/10] animate-enter"
-        style={{ animationDelay: "var(--stagger)" }}
-      />
-      <WireframeCard
-        title="Horizon"
-        description="A floor and a ceiling meeting at the horizon."
-        meta="Cobalt"
-        scene="horizon"
-        tone="cobalt"
-        className="aspect-[16/10] animate-enter"
-        style={{ animationDelay: "calc(2 * var(--stagger))" }}
-      />
+    <div className="grid w-full max-w-[720px] grid-cols-4 gap-2 sm:grid-cols-6 sm:gap-3">
+      {covers.map(({ layout, ...cover }, n) => (
+        <WireframeCard key={cover.title} {...cover} compact={!cover.featured} className={`animate-enter ${layout}`} style={{ animationDelay: `calc(${n} * var(--stagger))` }} />
+      ))}
     </div>
   );
 }
