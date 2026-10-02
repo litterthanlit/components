@@ -26,7 +26,7 @@ export const registry: RegistryEntry[] = [
     slug: "light-rooms",
     title: "Light Rooms",
     description:
-      "A small exhibition of four rooms of coloured light, after James Turrell: an edgeless Ganzfeld, a knife-edged Skyspace, rings receding to an oculus, and a cube of projected light floating in a dark corner. Each runs a slow light sequence mixed in OKLab, and the works hang at different sizes on a shared centre line with wall labels beneath. Hover tilts the view and lets your eyes adjust; a click swells the light and drifts into the next sequence. Raw WebGL, tone mapped, no grain.",
+      "A small exhibition of four rooms of coloured light, after James Turrell: an edgeless Ganzfeld, a knife-edged Skyspace, rings receding to an oculus, and a cube of projected light floating in a dark corner. Each runs a slow light sequence mixed in OKLab, and the works hang at different sizes on a shared centre line in a darkened room, each spilling its light onto the wall around it. Hover tilts the view and lets your eyes adjust; a click swells the light and drifts into the next sequence. Raw WebGL, tone mapped, no grain.",
     tagline: "Four rooms of light, after James Turrell.",
     tags: ["art", "pointer", "webgl"],
     date: "2026-10-02",
