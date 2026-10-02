@@ -3,18 +3,40 @@
 import { useEffect, useRef, useState } from "react";
 
 /* ------------------------------------------------------------------------ */
-/* Palettes                                                                  */
+/* Light                                                                     */
 /* ------------------------------------------------------------------------ */
 
-/** Artwork colours, not UI tokens: they look the same in both themes. */
+/**
+ * Light sequences, not static palettes: the room cycles through these four
+ * colours slowly, the way a skyspace drifts through dusk. Artwork colours,
+ * not UI tokens, so they look the same in both themes.
+ */
 export const palettes = [
-  { name: "Lime", colors: ["#c2ff4d", "#1f8a70", "#0b2b26", "#f4f7e8"] },
-  { name: "Dusk", colors: ["#ff8fb1", "#7a5cff", "#1b1446", "#ffd6a5"] },
-  { name: "Glacier", colors: ["#b8e1ff", "#3a6df0", "#0a1a3a", "#eaf6ff"] },
-  { name: "Ember", colors: ["#ffb347", "#ff4e2a", "#3b0a12", "#fff1d6"] },
+  { name: "Twilight", colors: ["#2b1dff", "#8a2cff", "#ff2f8e", "#ff7b47"] },
+  { name: "Blue Hour", colors: ["#0a2bff", "#2f8dff", "#a7d4ff", "#5a33ff"] },
+  { name: "Ember", colors: ["#ff3a1c", "#ff8a1f", "#ff2a6a", "#a3104a"] },
+  { name: "Rose", colors: ["#ff5fa8", "#ffb8cc", "#b85cff", "#ff4560"] },
 ] as const;
 
-const hexToRgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+/** Room types after James Turrell's: an edgeless field, a sky aperture, receding rings. */
+export const forms = ["Ganzfeld", "Skyspace", "Oculus"] as const;
+export type Form = (typeof forms)[number];
+
+/** sRGB hex → OKLab, so hue changes travel the short, even way round. */
+function hexToOklab(hex: string) {
+  const [r, g, b] = [1, 3, 5].map((i) => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  return [
+    0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+    1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+    0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+  ];
+}
 
 /* ------------------------------------------------------------------------ */
 /* Shader                                                                    */
@@ -26,22 +48,22 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
 `;
 
 /**
- * A four-point mesh gradient: each colour sits on a point that drifts on its
- * own slow orbit, the field is domain-warped with fbm noise, and colours are
- * blended in linear light so midpoints stay luminous instead of muddy. The
- * pointer swirls and pinches the field around itself; a click sends a ring
- * outward. Grain on top hides banding.
+ * Every form is two lights from the same sequence a quarter to half a cycle
+ * apart, so the field and the opening are always different colours and each
+ * makes the other look deeper. Colours are mixed in OKLab, lit in linear
+ * light and tone mapped so bright cores bloom toward white instead of
+ * clipping. A ±1/255 dither (invisible) removes banding without grain.
  */
 const FRAGMENT = `
 precision highp float;
 
 uniform vec2 uRes;
-uniform float uTime;
-uniform vec2 uMouse;    // 0–1, y up
+uniform float uTime;    // position in the sequence, in cycles
+uniform float uForm;    // 0 Ganzfeld, 1 Skyspace, 2 Oculus
+uniform vec2 uView;     // eased pointer offset from centre, -0.5–0.5
 uniform float uHover;
 uniform vec3 uPulse;    // xy origin (0–1), z age in seconds (<0: none)
-uniform float uSeed;
-uniform vec3 uC0;
+uniform vec3 uC0;       // OKLab
 uniform vec3 uC1;
 uniform vec3 uC2;
 uniform vec3 uC3;
@@ -54,76 +76,156 @@ float noise(vec2 p) {
 }
 float fbm(vec2 p) {
   float v = 0.0, a = 0.5;
-  for (int i = 0; i < 4; i++) { v += a * noise(p); p *= 2.02; a *= 0.5; }
+  for (int i = 0; i < 4; i++) { v += a * noise(p); p *= 2.03; a *= 0.5; }
   return v;
 }
-vec3 toLinear(vec3 c) { return pow(c, vec3(2.2)); }
-vec3 toSrgb(vec3 c) { return pow(c, vec3(1.0 / 2.2)); }
-float weight(vec2 p, vec2 c) { return 1.0 / (pow(distance(p, c), 2.4) + 0.015); }
+
+vec3 oklabToLinear(vec3 c) {
+  float l = c.x + 0.3963377774 * c.y + 0.2158037573 * c.z;
+  float m = c.x - 0.1055613458 * c.y - 0.0638541728 * c.z;
+  float s = c.x - 0.0894841775 * c.y - 1.2914855480 * c.z;
+  l = l * l * l; m = m * m * m; s = s * s * s;
+  return max(vec3(
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
+  ), 0.0);
+}
+
+vec3 stop(float i) {
+  i = mod(i, 4.0);
+  if (i < 0.5) return uC0;
+  if (i < 1.5) return uC1;
+  if (i < 2.5) return uC2;
+  return uC3;
+}
+
+// The light at a point in the sequence: eased holds on each colour, long
+// even crossings between them.
+vec3 light(float x) {
+  x = fract(x) * 4.0;
+  float i = floor(x);
+  float f = smoothstep(0.15, 0.85, fract(x));
+  return oklabToLinear(mix(stop(i), stop(i + 1.0), f));
+}
+
+float roundBox(vec2 p, vec2 b, float r) {
+  vec2 q = abs(p) - b + r;
+  return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+}
+
+// The opening dissolves into the field: no edge, no horizon, no depth cue.
+vec3 ganzfeld(vec2 p, float aspect, vec2 view) {
+  vec3 field = light(uTime);
+  vec3 core = light(uTime + 0.25);
+  float room = 0.22 + 0.85 * exp(-dot(p * vec2(0.8, 1.0), p * vec2(0.8, 1.0)) * 3.2);
+  vec2 o = p + view * 0.1 - vec2(0.0, 0.02);
+  float d = roundBox(o, vec2(0.27 * aspect, 0.22), 0.16);
+  float inside = 1.0 - smoothstep(-0.035, 0.05, d);
+  float halo = exp(-max(d, 0.0) * 6.0);
+  // The opening is brightest low down, where the light seems to pool.
+  float lift = 0.9 + 0.5 * smoothstep(0.22, -0.22, o.y);
+  vec3 glow = core * (inside * 2.6 * lift + halo * 0.5);
+  return field * room * (1.0 - inside * 0.7) + glow;
+}
+
+// A knife-edged aperture in a ceiling lit from the rim. The sky reads as a
+// flat, painted plane because the ceiling around it is lit in another hue.
+vec3 skyspace(vec2 p, float aspect, vec2 view, float aa) {
+  vec3 ceiling = light(uTime + 0.5);
+  vec3 sky = light(uTime);
+  vec2 rim = abs(p) / vec2(aspect * 0.5, 0.5);
+  // A soft-cornered norm, so the cove light has no diagonal seams.
+  float edge = pow(pow(rim.x, 5.0) + pow(rim.y, 5.0), 0.2);
+  vec2 o = p + view * 0.06;
+  float d = roundBox(o, vec2(0.24), 0.006);
+  float lit = 0.14 + 1.05 * pow(clamp(edge, 0.0, 1.2), 2.2);
+  float inside = 1.0 - smoothstep(-aa, aa, d);
+  vec2 s = o + view * 0.12; // the sky sits further away than the opening
+  float haze = fbm(s * 3.2 + vec2(uTime * 1.4, uTime * 0.6));
+  vec3 skyColor = sky * (0.7 + 0.38 * smoothstep(-0.25, 0.25, s.y)) * (0.92 + 0.16 * haze);
+  return mix(ceiling * lit, skyColor, inside);
+}
+
+// Rings recede toward an oculus, each lit from its inner rim and running a
+// step behind the next, so colour travels inward.
+float ring(vec2 p, float k, float aspect, vec2 view) {
+  float depth = k / 6.0;
+  // Rings close up as they recede and climb, like looking up an atrium.
+  float scale = 1.1 * pow(1.0 - depth * 0.84, 1.25);
+  vec2 c = vec2(0.0, 0.13 * depth) - view * 0.16 * depth;
+  return length((p - c) / (vec2(aspect * 0.62, 0.66) * scale));
+}
+vec3 oculus(vec2 p, float aspect, vec2 view, float aa) {
+  vec3 color = light(uTime + 0.5) * 0.12;
+  for (int i = 0; i < 7; i++) {
+    float k = float(i);
+    float outer = ring(p, k, aspect, view);
+    float inner = ring(p, k + 1.0, aspect, view);
+    float band = clamp((1.0 - outer) / max((1.0 - outer) + (inner - 1.0), 1e-4), 0.0, 1.0);
+    vec3 c = i == 6
+      ? light(uTime + 0.4) * (2.6 - outer * 1.2)
+      : light(uTime + k * 0.07) * (0.7 + 0.8 * pow(band, 1.6));
+    color = mix(color, c, 1.0 - smoothstep(1.0 - aa * (k + 1.0), 1.0 + aa * (k + 1.0), outer));
+  }
+  return color;
+}
 
 void main() {
   float aspect = uRes.x / uRes.y;
   vec2 uv = gl_FragCoord.xy / uRes;
-  vec2 p = vec2(uv.x * aspect, uv.y);
-  vec2 m = vec2(uMouse.x * aspect, uMouse.y);
+  vec2 p = (uv - 0.5) * vec2(aspect, 1.0);
+  vec2 view = uView * vec2(aspect, 1.0);
+  float aa = 1.5 / uRes.y;
 
-  // Pointer: swirl and pinch the field around the cursor.
-  vec2 dm = p - m;
-  float influence = exp(-dot(dm, dm) * 5.0) * uHover;
-  float angle = influence * 1.4;
-  dm = mat2(cos(angle), -sin(angle), sin(angle), cos(angle)) * dm;
-  p = m + dm * (1.0 - 0.3 * influence);
+  vec3 lin = uForm < 0.5 ? ganzfeld(p, aspect, view)
+    : uForm < 1.5 ? skyspace(p, aspect, view, aa)
+    : oculus(p, aspect, view, aa);
 
-  // Click: a ring that pushes the field outward as it widens.
+  // Click: the light swells from the point and settles, like a slow flash.
   if (uPulse.z >= 0.0) {
-    vec2 o = vec2(uPulse.x * aspect, uPulse.y);
-    vec2 dir = p - o;
-    float r = uPulse.z * 1.3;
-    float band = exp(-pow(length(dir) - r, 2.0) * 60.0) * exp(-uPulse.z * 2.4);
-    p += normalize(dir + 1e-4) * band * 0.08;
+    vec2 o = (uPulse.xy - 0.5) * vec2(aspect, 1.0);
+    float spread = 0.04 + uPulse.z * 0.5;
+    float swell = (1.0 - exp(-uPulse.z * 10.0)) * exp(-uPulse.z * 1.8);
+    lin *= 1.0 + 0.9 * swell * exp(-dot(p - o, p - o) / spread);
   }
 
-  float t = uTime * 0.16 + uSeed;
-  vec2 q = vec2(fbm(p * 1.3 + t), fbm(p * 1.3 - t + 5.2));
-  vec2 w = p + (q - 0.5) * 0.85;
-
-  vec2 a = vec2(aspect * (0.22 + 0.16 * sin(t * 1.3)), 0.24 + 0.18 * cos(t * 1.1));
-  vec2 b = vec2(aspect * (0.80 + 0.12 * cos(t * 0.9)), 0.30 + 0.20 * sin(t * 1.4));
-  vec2 c = vec2(aspect * (0.30 + 0.20 * cos(t * 0.7 + 2.0)), 0.82 + 0.10 * sin(t));
-  vec2 d = vec2(aspect * (0.76 + 0.14 * sin(t * 1.2 + 1.0)), 0.78 + 0.14 * cos(t * 0.8));
-
-  float wa = weight(w, a), wb = weight(w, b), wc = weight(w, c), wd = weight(w, d);
-  vec3 lin = (toLinear(uC0) * wa + toLinear(uC1) * wb + toLinear(uC2) * wc + toLinear(uC3) * wd) / (wa + wb + wc + wd);
-  vec3 color = toSrgb(lin) + influence * 0.06;
-
-  // Animated grain: hides banding and gives the surface some tooth.
-  color += (hash(gl_FragCoord.xy + fract(uTime * 7.0) * 113.0) - 0.5) * 0.05;
+  // Eyes adjust: the room brightens a touch while you look at it.
+  lin *= 1.0 + uHover * 0.14;
+  vec3 color = 1.0 - exp(-lin * 1.7);
+  color = pow(color, vec3(1.0 / 2.2));
+  color += (hash(gl_FragCoord.xy) + hash(gl_FragCoord.yx + 17.0) - 1.0) / 255.0;
   gl_FragColor = vec4(color, 1.0);
 }
 `;
 
 /* ------------------------------------------------------------------------ */
-/* GradientField                                                             */
+/* LightField                                                                */
 /* ------------------------------------------------------------------------ */
 
-type GradientFieldProps = {
-  /** Four sRGB hex colours. Changing them crossfades over ~700ms. */
+type LightFieldProps = {
+  form?: Form;
+  /** Four sRGB hex colours, cycled in order. Changing them crossfades over ~2s. */
   colors: readonly string[];
-  /** Offsets the motion so neighbouring cards don't move in sync. */
+  /** Offsets the sequence so neighbouring cards aren't in step. */
   seed?: number;
-  /** Lights the field from the centre (keyboard focus). */
+  /** Lights the field as if looked at (keyboard focus). */
   active?: boolean;
-  /** Increment to send a pulse from the centre (keyboard activation). */
+  /** Increment to swell the light from the centre (keyboard activation). */
   pulse?: number;
   className?: string;
 };
 
+/** One full trip through a sequence, in seconds. Turrell's run for an hour; this is a card. */
+const CYCLE = 40;
+
 /**
  * Raw WebGL, no library. Animates only while on screen; under reduced
- * motion it renders still frames on interaction and swaps colours
- * instantly. Pointer input is read from the parent element.
+ * motion it renders still frames and swaps light instantly. Pointer input
+ * is read from the parent element and tilts the view, so the opening
+ * shifts against the room as if you moved your head.
  */
-export function GradientField({ colors, seed = 0, active = false, pulse = 0, className = "" }: GradientFieldProps) {
+export function LightField({ form = "Ganzfeld", colors, seed = 0, active = false, pulse = 0, className = "" }: LightFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bridge = useRef({
     active,
@@ -175,26 +277,31 @@ export function GradientField({ colors, seed = 0, active = false, pulse = 0, cla
     gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
     const u = (n: string) => gl.getUniformLocation(program, n);
-    const uRes = u("uRes"), uTime = u("uTime"), uMouse = u("uMouse"), uHover = u("uHover");
-    const uPulse = u("uPulse"), uSeed = u("uSeed");
+    const uRes = u("uRes"), uTime = u("uTime"), uForm = u("uForm"), uView = u("uView");
+    const uHover = u("uHover"), uPulse = u("uPulse");
     const uColors = [u("uC0"), u("uC1"), u("uC2"), u("uC3")];
 
     const link = bridge.current;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const toRgb = (list: readonly string[]) => list.map(hexToRgb);
+    const toLab = (list: readonly string[]) => list.map(hexToOklab);
     const state = {
-      time: 0,
+      // Phase in cycles; the seed spreads cards around the sequence.
+      time: (seed * 0.29) % 1,
       hover: 0,
       pointer: false,
-      mouse: [0.5, 0.5],
+      mouse: [0, 0],
+      view: [0, 0],
       pulse: [0.5, 0.5, -1] as number[],
-      from: toRgb(bridge.current.colors),
-      to: toRgb(bridge.current.colors),
+      from: toLab(bridge.current.colors),
+      to: toLab(bridge.current.colors),
       mix: 1,
       visible: false,
       raf: 0,
       last: 0,
     };
+
+    // Ease-in-out cubic: light should arrive and settle, never snap.
+    const blend = () => (state.mix < 0.5 ? 4 * state.mix ** 3 : 1 - (-2 * state.mix + 2) ** 3 / 2);
 
     function resize() {
       const rect = canvas!.getBoundingClientRect();
@@ -206,14 +313,13 @@ export function GradientField({ colors, seed = 0, active = false, pulse = 0, cla
     }
 
     function draw() {
-      // Ease-out cubic crossfade between palettes.
-      const k = 1 - Math.pow(1 - state.mix, 3);
+      const k = blend();
       uColors.forEach((loc, i) => {
         const a = state.from[i], b = state.to[i];
         gl!.uniform3f(loc, a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k);
       });
       gl!.uniform1f(uTime, state.time);
-      gl!.uniform2fv(uMouse, state.mouse);
+      gl!.uniform2fv(uView, state.view);
       gl!.uniform1f(uHover, state.hover);
       gl!.uniform3fv(uPulse, state.pulse);
       gl!.drawArrays(gl!.TRIANGLES, 0, 3);
@@ -222,14 +328,19 @@ export function GradientField({ colors, seed = 0, active = false, pulse = 0, cla
     function frame(now: number) {
       const dt = Math.min(0.05, (now - (state.last || now)) / 1000);
       state.last = now;
-      const target = state.pointer || bridge.current.active ? 1 : 0;
-      if (bridge.current.active && !state.pointer) state.mouse = [0.5, 0.5];
-      state.hover += (target - state.hover) * (1 - Math.exp(-dt * (target > state.hover ? 8 : 4)));
-      state.time += dt * (0.6 + state.hover * 1.2);
-      state.mix = Math.min(1, state.mix + dt / 0.7);
+      const looking = state.pointer || bridge.current.active;
+      const target = looking ? 1 : 0;
+      state.hover += (target - state.hover) * (1 - Math.exp(-dt * (target > state.hover ? 3 : 1.5)));
+      // The view eases after the pointer slowly, like a head turning.
+      const aim = state.pointer ? state.mouse : [0, 0];
+      const ease = 1 - Math.exp(-dt * 2.5);
+      state.view = state.view.map((v, i) => v + (aim[i] - v) * ease);
+      // Looking quickens the light a little, so it reads as alive.
+      state.time += (dt / CYCLE) * (1 + state.hover * 1.5);
+      state.mix = Math.min(1, state.mix + dt / 2);
       if (state.pulse[2] >= 0) {
         state.pulse[2] += dt;
-        if (state.pulse[2] > 1.4) state.pulse[2] = -1;
+        if (state.pulse[2] > 3) state.pulse[2] = -1;
       }
       draw();
       state.raf = state.visible ? requestAnimationFrame(frame) : 0;
@@ -254,7 +365,8 @@ export function GradientField({ colors, seed = 0, active = false, pulse = 0, cla
       return [(e.clientX - r.left) / r.width, 1 - (e.clientY - r.top) / r.height];
     };
     const onMove = (e: PointerEvent) => {
-      state.mouse = local(e);
+      const [x, y] = local(e);
+      state.mouse = [x - 0.5, y - 0.5];
       state.pointer = true;
       if (reduced) {
         state.hover = 1;
@@ -276,22 +388,21 @@ export function GradientField({ colors, seed = 0, active = false, pulse = 0, cla
     host.addEventListener("pointerleave", onLeave);
     host.addEventListener("pointerdown", onDown);
 
-    bridge.current.onColors = () => {
-      const k = 1 - Math.pow(1 - state.mix, 3);
+    link.onColors = () => {
+      const k = blend();
       // Start from wherever the current blend is, so rapid clicks stay smooth.
       state.from = state.from.map((a, i) => a.map((v, j) => v + (state.to[i][j] - v) * k));
-      state.to = toRgb(bridge.current.colors);
+      state.to = toLab(link.colors);
       state.mix = reduced ? 1 : 0;
       if (reduced) draw();
       else start();
     };
-    bridge.current.onActive = () => {
+    link.onActive = () => {
       if (!reduced) return start();
-      state.hover = bridge.current.active ? 1 : 0;
-      state.mouse = [0.5, 0.5];
+      state.hover = link.active ? 1 : 0;
       draw();
     };
-    bridge.current.onPulse = () => sendPulse(0.5, 0.5);
+    link.onPulse = () => sendPulse(0.5, 0.5);
 
     const resizeObserver = new ResizeObserver(() => {
       resize();
@@ -304,7 +415,7 @@ export function GradientField({ colors, seed = 0, active = false, pulse = 0, cla
     });
     visibility.observe(canvas);
 
-    gl.uniform1f(uSeed, seed * 7.31);
+    gl.uniform1f(uForm, forms.indexOf(form));
     resize();
     draw();
 
@@ -319,7 +430,7 @@ export function GradientField({ colors, seed = 0, active = false, pulse = 0, cla
       link.onColors = link.onActive = link.onPulse = () => {};
       gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
-  }, [seed]);
+  }, [seed, form]);
 
   return <canvas ref={canvasRef} aria-hidden className={`block size-full bg-panel ${className}`} />;
 }
@@ -332,17 +443,19 @@ type GradientCardProps = {
   title: string;
   description: string;
   meta?: string;
+  /** Which room the cover is. */
+  form?: Form;
   /** Index into `palettes` to start from. */
   palette?: number;
   seed?: number;
 };
 
 /**
- * A project card whose cover is a live mesh gradient. Hover swirls the
- * colours around the cursor; clicking (or Enter/Space) sends a pulse and
- * crossfades to the next palette, named on a frosted chip.
+ * A project card whose cover is a room of coloured light. Hover tilts the
+ * view and the light brightens; clicking (or Enter/Space) swells it and
+ * drifts into the next sequence, named on a frosted chip.
  */
-export function GradientCard({ title, description, meta, palette = 0, seed = 0 }: GradientCardProps) {
+export function GradientCard({ title, description, meta, form = "Ganzfeld", palette = 0, seed = 0 }: GradientCardProps) {
   const [index, setIndex] = useState(palette % palettes.length);
   const [focused, setFocused] = useState(false);
   const [pulse, setPulse] = useState(0);
@@ -355,24 +468,24 @@ export function GradientCard({ title, description, meta, palette = 0, seed = 0 }
         type="button"
         onClick={(e) => {
           setIndex((i) => (i + 1) % palettes.length);
-          // Pointer clicks pulse from the cursor; keyboard clicks (detail 0) from the centre.
+          // Pointer clicks swell from the cursor; keyboard clicks (detail 0) from the centre.
           if (e.detail === 0) setPulse((n) => n + 1);
         }}
         onFocus={(e) => setFocused(e.currentTarget.matches(":focus-visible"))}
         onBlur={() => setFocused(false)}
-        aria-label={`${title} cover, ${current.name} palette. Switch to ${next.name}`}
+        aria-label={`${title} cover, ${form} in ${current.name} light. Switch to ${next.name}`}
         className="group/gradient relative aspect-[4/3] cursor-pointer overflow-hidden rounded-xl outline-offset-4 transition-[scale] duration-(--duration-exit) ease-out active:scale-[0.98]"
       >
-        <GradientField colors={current.colors} seed={seed} active={focused} pulse={pulse} />
+        <LightField form={form} colors={current.colors} seed={seed} active={focused} pulse={pulse} />
         <span aria-hidden className="pointer-events-none absolute inset-0 rounded-xl shadow-[inset_0_0_0_1px_rgb(0_0_0/0.08)]" />
         <span
           aria-hidden
           className="absolute bottom-2.5 left-2.5 flex items-center gap-2 rounded-full bg-surface/70 py-1 pl-1.5 pr-2.5 text-meta font-medium text-ink shadow-sm backdrop-blur-md backdrop-saturate-150"
         >
           <span className="flex -space-x-1">
-            {current.colors.map((c) => (
+            {current.colors.map((c, i) => (
               <span
-                key={c}
+                key={i}
                 className="size-3 rounded-full shadow-[0_0_0_1.5px_var(--surface)] transition-colors duration-(--duration-move)"
                 style={{ background: c }}
               />
@@ -382,6 +495,12 @@ export function GradientCard({ title, description, meta, palette = 0, seed = 0 }
             {current.name}
           </span>
         </span>
+        <span
+          aria-hidden
+          className="absolute right-3 top-2.5 text-meta font-medium tracking-wide text-white/75 mix-blend-plus-lighter"
+        >
+          {form}
+        </span>
       </button>
       <div className="mt-3 flex items-baseline justify-between gap-3 px-0.5">
         <h3 className="text-body font-medium text-ink">{title}</h3>
@@ -389,7 +508,7 @@ export function GradientCard({ title, description, meta, palette = 0, seed = 0 }
       </div>
       <p className="mt-0.5 px-0.5 text-body text-muted">{description}</p>
       <span className="sr-only" role="status">
-        {current.name} palette
+        {current.name} light
       </span>
     </article>
   );
@@ -400,10 +519,10 @@ export function GradientCard({ title, description, meta, palette = 0, seed = 0 }
 /* ------------------------------------------------------------------------ */
 
 const projects = [
-  { title: "Wavr", description: "Shader code in, motion graphics out.", meta: "2026", palette: 0 },
-  { title: "Studio OS", description: "References in, shipped UI out.", meta: "2026", palette: 1 },
-  { title: "Houston-MD", description: "A Markdown reader built for reading.", meta: "2026", palette: 2 },
-];
+  { title: "Wavr", description: "Shader code in, motion graphics out.", meta: "2026", form: "Ganzfeld", palette: 0 },
+  { title: "Studio OS", description: "References in, shipped UI out.", meta: "2026", form: "Skyspace", palette: 1 },
+  { title: "Houston-MD", description: "A Markdown reader built for reading.", meta: "2026", form: "Oculus", palette: 2 },
+] as const;
 
 export default function Demo() {
   return (
