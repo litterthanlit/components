@@ -12,12 +12,17 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
 `;
 
 /**
- * Ordered (Bayer 8×8) dithering of an animated field. Pixels light up where
- * the field beats the threshold matrix; near the pointer the field brightens
- * and lit pixels switch to the accent ink. A click sends a ring outward.
+ * Three-tone ordered (Bayer 8×8) dithering of an animated field: each cell
+ * resolves to the ground, a mid tone or the ink, which doubles the tonal steps
+ * a two-tone dither can show. Near the pointer the field brightens and lit
+ * cells switch to the accent. A click sends a ring outward.
  */
 const FRAGMENT = `
+#ifdef GL_FRAGMENT_PRECISION_HIGH
+precision highp float;
+#else
 precision mediump float;
+#endif
 
 uniform vec2 uRes;
 uniform float uTime;
@@ -41,32 +46,43 @@ float noise(vec2 p) {
 }
 float fbm(vec2 p) {
   float v = 0.0, a = 0.5;
-  for (int i = 0; i < 4; i++) { v += a * noise(p); p *= 2.03; a *= 0.5; }
+  for (int i = 0; i < 6; i++) { v += a * noise(p); p = p * 2.03 + 17.0; a *= 0.5; }
   return v;
 }
+// Thin bright bands where x crosses a multiple of 1/n — contour lines.
+float contour(float x, float n, float sharp) { return pow(abs(cos(x * n * 3.14159)), sharp); }
 
 float field(vec2 uv, float t) {
   float aspect = uRes.x / uRes.y;
   vec2 p = vec2(uv.x * aspect, uv.y);
   if (uPattern < 0.5) {
-    // Flow: drifting fbm, like smoke or terrain.
+    // Flow: domain-warped fbm read as terrain, with contour lines.
     vec2 q = vec2(fbm(p * 2.2 + t * 0.12), fbm(p * 2.2 - t * 0.09 + 3.1));
-    return smoothstep(0.25, 0.8, fbm(p * 2.4 + q * 1.6));
+    float h = fbm(p * 2.4 + q * 1.6);
+    float base = smoothstep(0.2, 0.85, h);
+    return base * 0.8 + contour(h, 9.0, 18.0) * 0.35 * smoothstep(0.25, 0.6, h);
   } else if (uPattern < 1.5) {
-    // Orbit: rings breathing out of a soft centre.
-    float d = length(p - vec2(aspect * 0.5, 0.5));
-    return (0.5 + 0.5 * sin(d * 26.0 - t * 1.6)) * smoothstep(0.75, 0.05, d);
+    // Orbit: rings breathing out of a soft centre, warped and finely engraved.
+    vec2 c = p - vec2(aspect * 0.5, 0.5);
+    float a = atan(c.y, c.x);
+    float d = length(c) + (fbm(vec2(a * 1.6, t * 0.2)) - 0.5) * 0.05;
+    float rings = 0.5 + 0.5 * sin(d * 26.0 - t * 1.6);
+    float fine = contour(d - t * 0.02, 22.0, 6.0);
+    return (rings * 0.8 + fine * 0.3) * smoothstep(0.78, 0.04, d);
   }
-  // Dunes: interfering diagonal waves.
+  // Dunes: interfering diagonal waves with a fine wind ripple and grain.
   float w = sin(p.x * 9.0 + sin(p.y * 5.0 + t * 0.7) * 1.4 + t * 0.5);
   w += 0.6 * sin((p.x + p.y) * 13.0 - t * 0.8);
-  return smoothstep(-0.9, 1.6, w) * (0.35 + 0.65 * uv.y);
+  float crest = smoothstep(-0.9, 1.6, w);
+  float ripple = contour((p.x * 0.35 - p.y) * 1.0 + w * 0.06 - t * 0.03, 11.0, 4.0);
+  float grain = fbm(p * 7.0 + t * 0.05);
+  return (crest * 0.85 + ripple * (0.15 + crest * 0.3) + (grain - 0.5) * 0.12) * (0.35 + 0.65 * uv.y);
 }
 
 void main() {
   vec2 px = gl_FragCoord.xy;
   vec2 uv = px / uRes;
-  float v = field(uv, uTime) * 0.82;
+  float v = field(uv, uTime) * 0.86;
 
   // Pointer light.
   float r = uRes.y * 0.42;
@@ -78,14 +94,17 @@ void main() {
   if (uRipple.z >= 0.0) {
     float rad = uRipple.z * uRes.y * 1.4;
     float rd = abs(distance(px, uRipple.xy) - rad);
-    ring = smoothstep(3.0, 0.0, rd) * exp(-uRipple.z * 2.2);
+    ring = smoothstep(uRes.y * 0.03, 0.0, rd) * exp(-uRipple.z * 2.2);
   }
 
   float threshold = bayer8(px);
   float level = clamp(v + light * 0.55 + ring, 0.0, 1.0);
-  vec3 color = uBg;
-  if (level > threshold) color = uInk;
-  if (light * 0.9 + ring > threshold && level > threshold) color = uAccent;
+  // Three tones: 0 ground, 1 mid, 2 ink.
+  float scaled = level * 2.0;
+  float tone = min(2.0, floor(scaled) + step(threshold, fract(scaled)));
+  // The mid tone stays light so even a solid run of it reads as a tint under the ink.
+  vec3 color = tone > 1.5 ? uInk : tone > 0.5 ? mix(uBg, uInk, 0.24) : uBg;
+  if (tone > 0.5 && light * 0.9 + ring > threshold) color = tone > 1.5 ? uAccent : mix(uBg, uAccent, 0.4);
   gl_FragColor = vec4(color, 1.0);
 }
 `;
@@ -138,12 +157,12 @@ type DitherFieldProps = {
 
 /**
  * A canvas rendered at 1/`pixel` resolution and scaled up with
- * `image-rendering: pixelated`, so it costs a few thousand fragments a frame.
+ * `image-rendering: pixelated`, so even a large card costs only tens of thousands of fragments a frame.
  * Raw WebGL, no library. It only animates while on screen, holds still under
  * reduced motion, and takes its colours from the `--ink`, `--panel` and
  * `--accent-strong` tokens, following theme changes.
  */
-export function DitherField({ pattern = "flow", pixel = 3, active = false, className = "" }: DitherFieldProps) {
+export function DitherField({ pattern = "flow", pixel = 2, active = false, className = "" }: DitherFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // Bridge from React props into the render loop without restarting it.
   const activeRef = useRef(active);

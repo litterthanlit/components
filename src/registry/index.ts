@@ -59,7 +59,7 @@ export const registry: RegistryEntry[] = [
     slug: "dither-card",
     title: "Dither Card",
     description:
-      "Project cards with a live, ordered-dither cover. Hover lights the field under the cursor and speeds it up, a click sends a ripple through it, and keyboard focus lights it from the centre. Raw WebGL, drawn at a third of the resolution and scaled up pixel-perfect.",
+      "Project cards with a live, ordered-dither cover. Hover lights the field under the cursor and speeds it up, a click sends a ripple through it, and keyboard focus lights it from the centre. Three-tone Bayer dither over contoured, layered fields. Raw WebGL, drawn at half resolution and scaled up pixel-perfect.",
     tagline: "Bayer dithering that follows your cursor.",
     tags: ["surface", "pointer", "webgl"],
     date: "2026-10-02",
