@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "agent-shapes",
+    title: "Agent Shapes",
+    description:
+      "Abstract shapes for the ways an agent works: a spark while it thinks, orbits while it weighs options, a graph while it searches, a form finding its shape while it plans, one continuous thread while it writes and tiles folding together while it builds. AgentShape takes the current phase and crossfades between them. SVG and CSS keyframes, still under reduced motion, labelled for screen readers.",
+    tagline: "Abstract shapes for how an agent thinks.",
+    tags: ["ai", "feedback", "motion", "svg"],
+    date: "2026-10-02",
+    status: "new",
+    background: "dots",
+  },
+  {
     slug: "gradient-card",
     title: "Gradient Card",
     description:

@@ -124,6 +124,12 @@
   --animate-wave: wave 1.4s var(--ease-in-out) infinite;
   --animate-hop: hop 1.1s var(--ease-in-out) infinite;
   --animate-caret: caret 1s steps(1) infinite;
+  /* Agent shapes: rays reaching out, a dash travelling a path (set pathLength={1}),
+     a form finding its shape, tiles folding out and back (set --fx / --fy). */
+  --animate-stretch: stretch 1.6s var(--ease-in-out) infinite;
+  --animate-trace: trace 2.4s linear infinite;
+  --animate-morph: morph 3.2s var(--ease-in-out) infinite;
+  --animate-assemble: assemble 2s var(--ease-in-out) infinite;
   @keyframes shimmer {
     from {
       background-position: 100% 0;
@@ -162,6 +168,60 @@
     }
     50% {
       opacity: 0;
+    }
+  }
+  @keyframes stretch {
+    0%,
+    100% {
+      transform: scaleY(0.3);
+      opacity: 0.3;
+    }
+    50% {
+      transform: scaleY(1);
+      opacity: 1;
+    }
+  }
+  @keyframes trace {
+    from {
+      stroke-dashoffset: 0;
+    }
+    to {
+      stroke-dashoffset: -1;
+    }
+  }
+  @keyframes morph {
+    0% {
+      border-radius: 50%;
+      transform: rotate(0deg) scale(1);
+    }
+    25% {
+      border-radius: 28%;
+      transform: rotate(90deg) scale(0.9);
+    }
+    50% {
+      border-radius: 6%;
+      transform: rotate(225deg) scale(0.78);
+    }
+    75% {
+      border-radius: 6% 50%;
+      transform: rotate(315deg) scale(0.92);
+    }
+    100% {
+      border-radius: 50%;
+      transform: rotate(360deg) scale(1);
+    }
+  }
+  @keyframes assemble {
+    0%,
+    25%,
+    100% {
+      transform: translate(0, 0) scale(1);
+      opacity: 1;
+    }
+    55%,
+    65% {
+      transform: translate(var(--fx, 0), var(--fy, 0)) scale(0.6);
+      opacity: 0.35;
     }
   }
   @keyframes enter {

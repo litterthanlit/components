@@ -206,6 +206,14 @@ export default function SystemPage() {
               dots, <code className={code}>animate-caret</code> while text streams. Announce phases to screen readers, not
               tokens.
             </li>
+            <li>
+              Agent shapes: <code className={code}>animate-stretch</code> for rays,{" "}
+              <code className={code}>animate-trace</code> to run a dash along a path (set{" "}
+              <code className={code}>pathLength={"{1}"}</code>), <code className={code}>animate-morph</code> for a form
+              changing shape, <code className={code}>animate-assemble</code> for tiles folding out along{" "}
+              <code className={code}>--fx</code> / <code className={code}>--fy</code>. Offset siblings with negative
+              delays so a loop never starts at rest.
+            </li>
             <li>Press feedback: <code className={code}>active:scale-[0.97]</code> on anything clickable.</li>
             <li>Hover in at enter speed, out at exit speed, so the UI never lags behind the pointer.</li>
             <li>Never animate from <code className={code}>scale(0)</code>. Start at 0.95 or more with opacity.</li>
