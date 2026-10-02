@@ -19,7 +19,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
  * off-screen and renders one still frame under reduced motion.
  */
 
-export type WireframeScene = "lattice" | "tunnel" | "ring" | "horizon" | "maze";
+export type WireframeScene = "lattice" | "tunnel" | "ring" | "horizon" | "wormhole";
 export type WireframeTone = "mono" | "cobalt" | "ice";
 
 const tones: Record<WireframeTone, { rgb: string; bloom: number }> = {
@@ -52,57 +52,6 @@ function rand(a: number, b: number, c: number, salt: number) {
 
 /** Index an edge from n to n+1 so it hashes the same as its mirror image. */
 const edge = (n: number) => (n >= 0 ? n : -n - 1);
-
-/**
- * A maze on an n×n grid (recursive backtracker, then a few walls knocked out
- * so it has loops). Returns its walls as [x1, y1, x2, y2] in cell units.
- */
-function maze(n: number, seed: number) {
-  let state = Math.imul(seed + 1, 2654435761);
-  const random = () => {
-    state = (state + 0x6d2b79f5) | 0;
-    let t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-  const key = (a: number, b: number) => Math.min(a, b) * 65536 + Math.max(a, b);
-  const open = new Set<number>();
-  const seen = new Uint8Array(n * n);
-  const stack = [0];
-  seen[0] = 1;
-  while (stack.length) {
-    const c = stack[stack.length - 1];
-    const x = c % n;
-    const y = Math.floor(c / n);
-    const next = [
-      [1, 0],
-      [-1, 0],
-      [0, 1],
-      [0, -1],
-    ]
-      .map(([dx, dy]) => [x + dx, y + dy])
-      .filter(([nx, ny]) => nx >= 0 && ny >= 0 && nx < n && ny < n && !seen[ny * n + nx]);
-    if (!next.length) {
-      stack.pop();
-      continue;
-    }
-    const [nx, ny] = next[Math.floor(random() * next.length)];
-    const to = ny * n + nx;
-    seen[to] = 1;
-    open.add(key(c, to));
-    stack.push(to);
-  }
-  const walls: [number, number, number, number][] = [];
-  for (let y = 0; y < n; y++) {
-    for (let x = 0; x < n; x++) {
-      const c = y * n + x;
-      if (x < n - 1 && !open.has(key(c, c + 1)) && random() > 0.12) walls.push([x + 1, y, x + 1, y + 1]);
-      if (y < n - 1 && !open.has(key(c, c + n)) && random() > 0.12) walls.push([x, y + 1, x + 1, y + 1]);
-    }
-    walls.push([y, 0, y + 1, 0], [y, n, y + 1, n], [0, y, 0, y + 1], [n, y, n, y + 1]);
-  }
-  return walls;
-}
 
 function build(scene: WireframeScene): World {
   const lines: number[] = [];
@@ -187,26 +136,19 @@ function build(scene: WireframeScene): World {
         if (r % 2 === 0 && rand(r, 0, k, 4) < 0.6) node(...at(a), k, 0.03 + rand(r, 0, k, 5) * 0.03, 1);
       }
     }
-  } else if (scene === "maze") {
-    // Planes of mazes drawn only in dots: bright nodes where walls meet,
-    // fainter dots along the walls, a little depth jitter so planes shimmer.
-    const N = 11;
-    const half = N / 2;
-    for (let layer = 0; layer < 4; layer++) {
-      const z = layer * (LOOP / 4);
-      const corners = new Set<number>();
-      for (const [x1, y1, x2, y2] of maze(N, layer)) {
-        for (const t of [1 / 6, 2 / 6, 3 / 6, 4 / 6, 5 / 6]) {
-          const x = x1 + (x2 - x1) * t;
-          const y = y1 + (y2 - y1) * t;
-          node(x - half, y - half, z + (rand(x * 6, y * 6, layer, 8) - 0.5) * 0.05, 0.012, t === 0.5 ? 1 : 0.45);
-        }
-        corners.add(x1 * 64 + y1).add(x2 * 64 + y2);
-      }
-      for (const c of corners) {
-        const x = Math.floor(c / 64);
-        const y = c % 64;
-        node(x - half, y - half, z, 0.02 + rand(x, y, layer, 9) * 0.018, 1);
+  } else if (scene === "wormhole") {
+    // A tube woven from dots: staggered rings, a whole number of them per
+    // loop so it wraps seamlessly. Every sixth ring is brighter, so the tube
+    // reads as bands. The shader bends, twists and ripples it.
+    const R = 2.6;
+    const AROUND = 72;
+    const RINGS = 128;
+    for (let k = 0; k < RINGS; k++) {
+      const z = (k / RINGS) * LOOP;
+      const bright = k % 6 === 0;
+      for (let a = 0; a < AROUND; a++) {
+        const t = ((a + (k % 2) * 0.5) / AROUND) * Math.PI * 2;
+        node(Math.cos(t) * R, Math.sin(t) * R, z, bright ? 0.026 : 0.02, bright ? 1 : 0.45);
       }
     }
   } else {
@@ -251,6 +193,58 @@ function build(scene: WireframeScene): World {
 const NEAR = 0.15;
 const BASE_SPEED = 0.55;
 
+/**
+ * The path tunnels follow. The camera sits on it looking down its tangent,
+ * so whatever lies ahead swings left, right, up and down as you fly.
+ * Mirrored in GLSL below; keep the two in step.
+ */
+const path = (z: number) => [
+  Math.sin(z * 0.13) * 3 + Math.sin(z * 0.05 + 1.3) * 4,
+  Math.sin(z * 0.1 + 0.7) * 2.2 + Math.cos(z * 0.04) * 3,
+];
+
+/** How each scene moves: path bend, surface ripple and twist per unit of depth. */
+const motion: Record<WireframeScene, { bend: number; ripple: number; twist: number }> = {
+  lattice: { bend: 0, ripple: 0, twist: 0 },
+  tunnel: { bend: 1, ripple: 0, twist: 0 },
+  ring: { bend: 0.85, ripple: 0, twist: 0 },
+  horizon: { bend: 0, ripple: 0, twist: 0 },
+  wormhole: { bend: 1.1, ripple: 1, twist: 0.035 },
+};
+
+const WARP = /* glsl */ `
+uniform float uBend;
+uniform float uRipple;
+uniform float uTwist;
+uniform float uTime;
+uniform float uRoll;
+uniform vec2 uPath0;
+uniform vec2 uPathD;
+vec2 path(float z) {
+  return vec2(sin(z * 0.13) * 3.0 + sin(z * 0.05 + 1.3) * 4.0, sin(z * 0.1 + 0.7) * 2.2 + cos(z * 0.04) * 3.0);
+}
+// p.z is depth from the camera. Twist and ripple the tube around its axis,
+// then bend it along the path, minus the camera's own position and heading.
+vec3 warp(vec3 p) {
+  float za = uCamZ + p.z;
+  vec2 xy = p.xy;
+  if (uRipple > 0.0 || uTwist != 0.0) {
+    float r = length(xy);
+    float a = atan(xy.y, xy.x) + uTwist * za;
+    r *= 1.0 + uRipple * (0.12 * sin(3.0 * a + za * 0.6 - uTime * 0.9) + 0.06 * sin(7.0 * a - za * 1.3 + uTime * 1.7));
+    xy = vec2(cos(a), sin(a)) * r;
+  }
+  xy += uBend * (path(za) - uPath0 - uPathD * p.z);
+  return vec3(xy, p.z);
+}
+// The camera banks into turns.
+vec2 roll(vec2 p) {
+  float c = cos(uRoll);
+  float s = sin(uRoll);
+  return vec2(c * p.x - s * p.y, s * p.x + c * p.y);
+}
+`;
+
 const FOG = /* glsl */ `
 uniform float uLoop;
 uniform float uNear;
@@ -276,6 +270,7 @@ uniform float uCamZ;
 uniform float uF;
 uniform float uDpr;
 ${FOG}
+${WARP}
 out float vAlpha;
 out float vDist;
 out float vHalf;
@@ -286,8 +281,10 @@ void main() {
   vAlpha = 0.0; vDist = 0.0; vHalf = 1.0;
   if (b.z < uNear) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); return; }
   if (a.z < uNear) a = mix(a, b, (uNear - a.z) / (b.z - a.z));
-  vec2 pa = (a.xy - uCam) * uF / a.z;
-  vec2 pb = (b.xy - uCam) * uF / b.z;
+  a = warp(a);
+  b = warp(b);
+  vec2 pa = roll((a.xy - uCam) * uF / a.z);
+  vec2 pb = roll((b.xy - uCam) * uF / b.z);
   vec2 d = pb - pa;
   float len = length(d);
   vec2 dir = len > 1e-3 ? d / len : vec2(1.0, 0.0);
@@ -329,6 +326,7 @@ uniform float uF;
 uniform float uDpr;
 uniform float uMaxPoint;
 ${FOG}
+${WARP}
 out float vAlpha;
 out float vR;
 out float vSoft;
@@ -337,7 +335,7 @@ void main() {
   float z = mod(aP.z - uCamZ, uLoop);
   vAlpha = 0.0; vR = 0.0; vSoft = 1.0; vSize = 1.0;
   if (z < uNear + 0.05) { gl_Position = vec4(0.0, 0.0, 2.0, 1.0); gl_PointSize = 0.0; return; }
-  vec2 p = (aP.xy - uCam) * uF / z;
+  vec2 p = roll((warp(vec3(aP.xy, z)).xy - uCam) * uF / z);
   float r = clamp(aR * uF / z, 0.6 * uDpr, 5.0 * uDpr);
   float blur = smoothstep(1.8, 0.45, z);
   float R = r * (1.0 + blur * 1.8);
@@ -529,6 +527,7 @@ export function createEngine({ wrap, canvas, readout, scene, tone }: EngineOptio
 
   const ctl = { hover: false, active: false, tx: 0, ty: 0, warp: 0 };
   const world = build(scene);
+  const move = motion[scene];
   const color = tones[tone].rgb.split(",").map((n) => Number(n) / 255);
   const bloomGain = tones[tone].bloom;
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -631,6 +630,15 @@ export function createEngine({ wrap, canvas, readout, scene, tone }: EngineOptio
     const f = Math.min(W, H) * 0.95;
     const gain = 1 + ctl.warp * 0.6;
 
+    // Where the path is under the camera, which way it heads, and how hard it
+    // turns (the camera banks into the turn).
+    const h = 0.05;
+    const p0 = path(camZ);
+    const pa = path(camZ - h);
+    const pb = path(camZ + h);
+    const pd = [(pb[0] - pa[0]) / (2 * h), (pb[1] - pa[1]) / (2 * h)];
+    const roll = Math.max(-0.35, Math.min(0.35, -((pb[0] - 2 * p0[0] + pa[0]) / (h * h)) * move.bend * 6));
+
     // 1. The scene: additive lines, then nodes.
     gl.bindFramebuffer(gl.FRAMEBUFFER, t.scene.fb);
     gl.viewport(0, 0, W, H);
@@ -652,6 +660,13 @@ export function createEngine({ wrap, canvas, readout, scene, tone }: EngineOptio
       gl.uniform1f(p.u.uNear, NEAR);
       gl.uniform3f(p.u.uColor, color[0], color[1], color[2]);
       gl.uniform1f(p.u.uGain, gain);
+      gl.uniform1f(p.u.uBend, move.bend);
+      gl.uniform1f(p.u.uRipple, move.ripple);
+      gl.uniform1f(p.u.uTwist, move.twist);
+      gl.uniform1f(p.u.uTime, time);
+      gl.uniform1f(p.u.uRoll, roll);
+      gl.uniform2f(p.u.uPath0, p0[0], p0[1]);
+      gl.uniform2f(p.u.uPathD, pd[0], pd[1]);
       if (p.u.uMaxPoint) gl.uniform1f(p.u.uMaxPoint, maxPoint);
       gl.bindVertexArray(vao);
       drawCall();
@@ -923,10 +938,10 @@ const covers: (Omit<WireframeCardProps, "className" | "style"> & { layout: strin
     tone: "mono",
     layout: "col-span-4 aspect-[21/10] sm:row-span-2 sm:aspect-auto",
   },
-  { title: "Tunnel", description: "A square tunnel with a ring every other layer.", meta: "Mono", scene: "tunnel", tone: "mono", layout: "aspect-square sm:col-span-2 sm:aspect-[16/10]" },
-  { title: "Ring", description: "A round tunnel whose rails slowly twist.", meta: "Ice", scene: "ring", tone: "ice", layout: "aspect-square sm:col-span-2 sm:aspect-[16/10]" },
+  { title: "Tunnel", description: "A square tunnel that winds as you fly.", meta: "Mono", scene: "tunnel", tone: "mono", layout: "aspect-square sm:col-span-2 sm:aspect-[16/10]" },
+  { title: "Ring", description: "A round tunnel that bends and banks into its turns.", meta: "Ice", scene: "ring", tone: "ice", layout: "aspect-square sm:col-span-2 sm:aspect-[16/10]" },
   { title: "Horizon", description: "A floor and a ceiling meeting at the horizon.", meta: "Cobalt", scene: "horizon", tone: "cobalt", layout: "aspect-square sm:col-span-3 sm:aspect-[5/2]" },
-  { title: "Maze", description: "Planes of mazes drawn only in dots.", meta: "Mono", scene: "maze", tone: "mono", layout: "aspect-square sm:col-span-3 sm:aspect-[5/2]" },
+  { title: "Wormhole", description: "A winding tube of dots that ripples as you fly.", meta: "Mono", scene: "wormhole", tone: "mono", layout: "aspect-square sm:col-span-3 sm:aspect-[5/2]" },
 ];
 
 export default function Demo() {
