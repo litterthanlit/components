@@ -18,8 +18,11 @@ export const palettes = [
   { name: "Rose", colors: ["#ff5fa8", "#ffb8cc", "#b85cff", "#ff4560"] },
 ] as const;
 
-/** Room types after James Turrell's: an edgeless field, a sky aperture, receding rings. */
-export const forms = ["Ganzfeld", "Skyspace", "Oculus"] as const;
+/**
+ * Room types after James Turrell's: an edgeless field, a sky aperture,
+ * receding rings, and a projected cube that floats in a corner.
+ */
+export const forms = ["Ganzfeld", "Skyspace", "Oculus", "Afrum"] as const;
 export type Form = (typeof forms)[number];
 
 /** sRGB hex → OKLab, so hue changes travel the short, even way round. */
@@ -59,7 +62,7 @@ precision highp float;
 
 uniform vec2 uRes;
 uniform float uTime;    // position in the sequence, in cycles
-uniform float uForm;    // 0 Ganzfeld, 1 Skyspace, 2 Oculus
+uniform float uForm;    // 0 Ganzfeld, 1 Skyspace, 2 Oculus, 3 Afrum
 uniform vec2 uView;     // eased pointer offset from centre, -0.5–0.5
 uniform float uHover;
 uniform vec3 uPulse;    // xy origin (0–1), z age in seconds (<0: none)
@@ -112,6 +115,10 @@ vec3 light(float x) {
 float roundBox(vec2 p, vec2 b, float r) {
   vec2 q = abs(p) - b + r;
   return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+}
+
+mat2 inverse2(mat2 m) {
+  return mat2(m[1][1], -m[0][1], -m[1][0], m[0][0]) / (m[0][0] * m[1][1] - m[0][1] * m[1][0]);
 }
 
 // The opening dissolves into the field: no edge, no horizon, no depth cue.
@@ -171,6 +178,47 @@ vec3 oculus(vec2 p, float aspect, vec2 view, float aa) {
   return color;
 }
 
+// How much of a parallelogram (origin o, edges a and b) covers p, with a
+// soft projector edge of width e.
+float face(vec2 p, vec2 o, vec2 a, vec2 b, float e) {
+  vec2 st = inverse2(mat2(a, b)) * (p - o);
+  vec2 w = e / vec2(length(a), length(b));
+  vec2 lo = smoothstep(-w, w, st), hi = smoothstep(-w, w, 1.0 - st);
+  return lo.x * lo.y * hi.x * hi.y;
+}
+
+// One beam into a dark corner, shaped so the light on two walls reads as a
+// solid cube standing out of the corner. Move off-axis and it leans and
+// flattens, the way the illusion gives way in the room.
+vec3 afrum(vec2 p, float aspect, vec2 view, float aa) {
+  vec3 room = light(uTime);
+  vec3 beam = mix(light(uTime + 0.25), vec3(1.0), 0.35);
+  vec2 c = vec2(-view.x * 0.08, 0.04 - view.y * 0.04);
+  // Walls meet at a vertical seam; the floor and ceiling run away from it.
+  float side = p.x - c.x;
+  float wall = side < 0.0 ? 0.06 : 0.04;
+  float floorY = -0.36 - abs(side) * 0.32;
+  float ceilY = 0.42 + abs(side) * 0.26;
+  float seam = exp(-abs(side) / aa * 0.6) * 0.012;
+  float shade = p.y < floorY ? 0.022 : p.y > ceilY ? 0.03 : wall - seam;
+  // The cube, corner-on: three faces meet at its near vertex.
+  float s = 0.2, lean = view.x * 0.45;
+  vec2 v = c;
+  vec2 left = vec2(-s * 0.87 * (1.0 + lean), s * 0.5);
+  vec2 right = vec2(s * 0.87 * (1.0 - lean), s * 0.5);
+  vec2 down = vec2(0.0, -s * (1.0 + view.y * 0.3));
+  float e = aa * 1.4;
+  float top = face(p, v, left, right, e);
+  float lf = face(p, v, left, down, e);
+  float rf = face(p, v, right, down, e);
+  float cube = max(top, max(lf, rf));
+  // Spill: the beam lights the walls around the cube, more on the near side.
+  float spill = exp(-length((p - v - vec2(0.0, 0.02)) * vec2(0.9, 1.2)) * 5.5);
+  vec3 color = room * (shade + spill * 0.28) + beam * spill * 0.04;
+  vec3 lit = beam * (top * 2.2 + lf * 1.25 + rf * 0.75) / max(top + lf + rf, 1e-4);
+  return mix(color, lit, cube);
+}
+
 void main() {
   float aspect = uRes.x / uRes.y;
   vec2 uv = gl_FragCoord.xy / uRes;
@@ -180,7 +228,8 @@ void main() {
 
   vec3 lin = uForm < 0.5 ? ganzfeld(p, aspect, view)
     : uForm < 1.5 ? skyspace(p, aspect, view, aa)
-    : oculus(p, aspect, view, aa);
+    : uForm < 2.5 ? oculus(p, aspect, view, aa)
+    : afrum(p, aspect, view, aa);
 
   // Click: the light swells from the point and settles, like a slow flash.
   if (uPulse.z >= 0.0) {
@@ -360,7 +409,7 @@ export function LightField({ form = "Ganzfeld", colors, seed = 0, active = false
     }
 
     const host = canvas.parentElement!;
-    const local = (e: PointerEvent) => {
+    const local = (e: MouseEvent) => {
       const r = canvas.getBoundingClientRect();
       return [(e.clientX - r.left) / r.width, 1 - (e.clientY - r.top) / r.height];
     };
@@ -380,13 +429,20 @@ export function LightField({ form = "Ganzfeld", colors, seed = 0, active = false
         draw();
       }
     };
+    // Mouse and pen swell on press; touch waits for the tap, so swiping a
+    // row of cards doesn't flash every one it passes.
+    let touch = false;
     const onDown = (e: PointerEvent) => {
-      const [x, y] = local(e);
-      sendPulse(x, y);
+      touch = e.pointerType === "touch";
+      if (!touch) sendPulse(...(local(e) as [number, number]));
+    };
+    const onTap = (e: MouseEvent) => {
+      if (touch && e.detail > 0) sendPulse(...(local(e) as [number, number]));
     };
     host.addEventListener("pointermove", onMove);
     host.addEventListener("pointerleave", onLeave);
     host.addEventListener("pointerdown", onDown);
+    host.addEventListener("click", onTap);
 
     link.onColors = () => {
       const k = blend();
@@ -427,6 +483,7 @@ export function LightField({ form = "Ganzfeld", colors, seed = 0, active = false
       host.removeEventListener("pointermove", onMove);
       host.removeEventListener("pointerleave", onLeave);
       host.removeEventListener("pointerdown", onDown);
+      host.removeEventListener("click", onTap);
       link.onColors = link.onActive = link.onPulse = () => {};
       gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
@@ -463,7 +520,8 @@ export function GradientCard({ title, description, meta, form = "Ganzfeld", pale
   const next = palettes[(index + 1) % palettes.length];
 
   return (
-    <article className="flex flex-col">
+    // A size container, so the card compacts by its own width wherever it sits.
+    <article className="@container flex flex-col">
       <button
         type="button"
         onClick={(e) => {
@@ -480,7 +538,7 @@ export function GradientCard({ title, description, meta, form = "Ganzfeld", pale
         <span aria-hidden className="pointer-events-none absolute inset-0 rounded-xl shadow-[inset_0_0_0_1px_rgb(0_0_0/0.08)]" />
         <span
           aria-hidden
-          className="absolute bottom-2.5 left-2.5 flex items-center gap-2 rounded-full bg-surface/70 py-1 pl-1.5 pr-2.5 text-meta font-medium text-ink shadow-sm backdrop-blur-md backdrop-saturate-150"
+          className="absolute bottom-2.5 left-2.5 flex items-center gap-2 rounded-full bg-surface/70 py-1 pl-1.5 pr-1.5 text-meta @[11rem]:pr-2.5 font-medium text-ink shadow-sm backdrop-blur-md backdrop-saturate-150"
         >
           <span className="flex -space-x-1">
             {current.colors.map((c, i) => (
@@ -491,22 +549,22 @@ export function GradientCard({ title, description, meta, form = "Ganzfeld", pale
               />
             ))}
           </span>
-          <span key={current.name} className="animate-enter">
+          <span key={current.name} className="hidden animate-enter @[11rem]:inline">
             {current.name}
           </span>
         </span>
         <span
           aria-hidden
-          className="absolute right-3 top-2.5 text-meta font-medium tracking-wide text-white/75 mix-blend-plus-lighter"
+          className="absolute right-3 top-2.5 hidden text-meta font-medium @[9rem]:block tracking-wide text-white/75 mix-blend-plus-lighter"
         >
           {form}
         </span>
       </button>
       <div className="mt-3 flex items-baseline justify-between gap-3 px-0.5">
         <h3 className="text-body font-medium text-ink">{title}</h3>
-        {meta && <span className="shrink-0 text-meta tabular-nums text-muted">{meta}</span>}
+        {meta && <span className="hidden shrink-0 text-meta tabular-nums text-muted @[10rem]:inline">{meta}</span>}
       </div>
-      <p className="mt-0.5 px-0.5 text-body text-muted">{description}</p>
+      <p className="mt-0.5 hidden px-0.5 text-body text-muted @[12rem]:block">{description}</p>
       <span className="sr-only" role="status">
         {current.name} light
       </span>
@@ -522,16 +580,25 @@ const projects = [
   { title: "Wavr", description: "Shader code in, motion graphics out.", meta: "2026", form: "Ganzfeld", palette: 0 },
   { title: "Studio OS", description: "References in, shipped UI out.", meta: "2026", form: "Skyspace", palette: 1 },
   { title: "Houston-MD", description: "A Markdown reader built for reading.", meta: "2026", form: "Oculus", palette: 2 },
+  { title: "Litt", description: "A studio site that stays out of the way.", meta: "2026", form: "Afrum", palette: 3 },
 ] as const;
 
 export default function Demo() {
   return (
-    <div className="grid w-full max-w-2xl grid-cols-1 gap-4 sm:grid-cols-3">
-      {projects.map((project, i) => (
-        <div key={project.title} className="animate-enter" style={{ animationDelay: `calc(${i} * var(--stagger))` }}>
-          <GradientCard {...project} seed={i} />
-        </div>
-      ))}
+    // Layout follows the space the demo is given, not the viewport: a row of
+    // four when there's room, otherwise a swipeable row that snaps per card.
+    <div className="@container w-full max-w-3xl">
+      <div className="-m-2 flex snap-x snap-mandatory scroll-px-2 gap-4 overflow-x-auto p-2 [scrollbar-width:none] @xl:grid @xl:grid-cols-4 @xl:overflow-visible">
+        {projects.map((project, i) => (
+          <div
+            key={project.title}
+            className="w-[72%] shrink-0 snap-start animate-enter @xl:w-auto"
+            style={{ animationDelay: `calc(${i} * var(--stagger))` }}
+          >
+            <GradientCard {...project} seed={i} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
