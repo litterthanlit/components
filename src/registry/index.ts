@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "wireframe-card",
+    title: "Wireframe Card",
+    description:
+      "Project cards with an animated SVG cover: hairline wireframes in one-point perspective over a cold blue wash. Three scenes: a tunnel streaming out of its vanishing point, a floor grid racing toward you, and boxes that draw and undraw themselves. The pointer tilts each layer at its own depth through CSS variables; a click replays the drawing. Plain SVG and CSS keyframes, paused off-screen and still under reduced motion.",
+    tagline: "Hairline wireframes that draw themselves.",
+    tags: ["surface", "pointer", "svg", "motion"],
+    date: "2026-10-02",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "gradient-card",
     title: "Gradient Card",
     description:
