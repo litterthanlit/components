@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { MotionDemo } from "@/components/system/motion-demo";
+import { SoundDemo } from "@/components/system/sound-demo";
 import { SpringDemo } from "@/components/system/spring-demo";
 import { Badge, Button, Container, Dot, IconButton, Kbd, SectionLabel } from "@/design-system";
 import { colorRoles, colors, motion, radii, typeScale } from "@/design-system/tokens";
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
 
 const principles = [
   { title: "Quiet by default", body: "Grey text, hairline borders, one weight change. The work should be the loudest thing on the page." },
-  { title: "One accent, used as a signal", body: "Lime marks status and moments of success. It is a fill, never body text on a light ground." },
+  { title: "One accent, used as a signal", body: "Blue marks status and moments of success. Use it as a fill or a link-weight highlight, never for body copy." },
   { title: "Motion responds, it doesn't perform", body: "Anything that reacts to input is fast and eases out. Exits are quicker than entrances." },
   { title: "Objects get a ring, not a box", body: "Raised things use a 1px ring plus a soft shadow. Flat areas use a panel tint, not a border." },
 ];
@@ -24,6 +25,7 @@ const sections = [
   { id: "shape", label: "Shape" },
   { id: "motion", label: "Motion" },
   { id: "primitives", label: "Primitives" },
+  { id: "sound", label: "Sound" },
   { id: "writing", label: "Writing" },
 ];
 
@@ -206,6 +208,17 @@ export default function SystemPage() {
               dots, <code className={code}>animate-caret</code> while text streams. Announce phases to screen readers, not
               tokens.
             </li>
+            <li>
+              Agent shapes: <code className={code}>animate-stretch</code> for rays,{" "}
+              <code className={code}>animate-trace</code> to run a dash along a path (set{" "}
+              <code className={code}>pathLength={"{1}"}</code>), <code className={code}>animate-morph</code> for a form
+              changing shape, <code className={code}>animate-assemble</code> for tiles folding out along{" "}
+              <code className={code}>--fx</code> / <code className={code}>--fy</code>,{" "}
+              <code className={code}>animate-twist</code> to turn a layer a quarter at a time, and{" "}
+              <code className={code}>animate-build</code>, which runs a shared <code className={code}>--build</code>{" "}
+              value from 0 to 1 and back for children to read. Offset siblings with negative delays so a loop never
+              starts at rest.
+            </li>
             <li>Press feedback: <code className={code}>active:scale-[0.97]</code> on anything clickable.</li>
             <li>Hover in at enter speed, out at exit speed, so the UI never lags behind the pointer.</li>
             <li>Never animate from <code className={code}>scale(0)</code>. Start at 0.95 or more with opacity.</li>
@@ -252,13 +265,30 @@ export default function SystemPage() {
           </div>
         </Section>
 
+        <Section id="sound" title="Sound" intro="Clicks after the 2009 click wheel, a little warmer. Synthesized with Web Audio; nothing loads.">
+          <SoundDemo />
+          <ul className="mt-6 flex flex-col gap-1.5 text-body text-muted">
+            <li>
+              Fire and forget: <code className={code}>play(&quot;select&quot;)</code> from{" "}
+              <code className={code}>@/lib/sound</code>. It never throws, and stays silent until the first press or key.
+            </li>
+            <li>
+              Keys sound by themselves: <code className={code}>Button</code> and{" "}
+              <code className={code}>ButtonLink</code> press and release, ghost buttons tick. Opt out with{" "}
+              <code className={code}>data-sound=&quot;off&quot;</code>.
+            </li>
+            <li>Quiet and dry: peaks near -18 dBFS, a little lower on touch screens, never more than eight at once.</li>
+            <li>Mute is remembered per device and follows across tabs.</li>
+          </ul>
+        </Section>
+
         <Section id="writing" title="Writing">
           <ul className="grid gap-x-8 gap-y-3 text-body sm:grid-cols-2">
             {[
               ["Sentence case everywhere", "“Selected work”, not “SELECTED WORK” or “Selected Work”."],
               ["Labels say what happens", "“Copy command”, then “Copied”. Not “Submit” or “OK”."],
               ["Short and plain", "Write it the way you'd say it to someone at the next desk."],
-              ["Parentheses for status", "“Carson (In progress)”. A lime dot comes with it."],
+              ["Parentheses for status", "“Carson (In progress)”. A blue dot comes with it."],
             ].map(([title, body]) => (
               <li key={title}>
                 <p className="font-medium text-ink">{title}</p>

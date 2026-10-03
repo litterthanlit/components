@@ -1,13 +1,11 @@
 import Link from "next/link";
-import { Container, Dot } from "@/design-system";
+import { Container } from "@/design-system";
 import { site } from "@/site.config";
 import { Logo } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 
-const nav = [
-  { href: "/", label: "Components" },
-  { href: "/system", label: "System" },
-];
+// The logo already links home, so the nav only lists what it can't reach.
+const nav = [{ href: "/system", label: "System" }];
 
 export function SiteHeader() {
   return (
@@ -26,13 +24,12 @@ export function SiteHeader() {
               {item.label}
             </Link>
           ))}
+          {/* Same domain, different app: a plain <a> for a full page load. */}
           <a
             href={site.links.portfolio}
-            target="_blank"
-            rel="noreferrer"
             className="hidden rounded-md px-2 py-1 text-muted transition-colors duration-(--duration-exit) hover:text-ink hover:duration-(--duration-enter) sm:inline-block"
           >
-            litt.design ↗
+            litt.design
           </a>
           <ThemeToggle className="ml-1" />
         </nav>
@@ -40,6 +37,9 @@ export function SiteHeader() {
     </header>
   );
 }
+
+const quietLink =
+  "text-muted transition-colors duration-(--duration-exit) hover:text-ink hover:duration-(--duration-enter)";
 
 const footerLinks = [
   { href: site.links.x, label: "X" },
@@ -51,39 +51,19 @@ const footerLinks = [
 export function SiteFooter() {
   return (
     <footer className="mt-auto">
-      <Container className="grid gap-10 pb-12 pt-28 sm:grid-cols-[1fr_auto] sm:items-end">
-        <div>
-          <p className="text-lead text-ink">
-            I build tools for creators.
-            <br />
-            <span className="text-muted">The craft is in what I leave out.</span>
-          </p>
-          <p className="mt-6 flex flex-wrap items-center gap-x-2 text-meta text-muted">
-            <span>Based in Europe, working remotely</span>
-            <span aria-hidden>·</span>
-            <span className="inline-flex items-center gap-1.5">
-              <Dot pulse />
-              Available for projects
-            </span>
-          </p>
-        </div>
-        <div className="flex flex-col gap-3 sm:items-end">
-          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-body">
-            {footerLinks.map((link) => (
-              <li key={link.label}>
-                <a
-                  href={link.href}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-muted transition-colors duration-(--duration-exit) hover:text-ink hover:duration-(--duration-enter)"
-                >
-                  {link.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-          <p className="select-all font-mono text-meta text-muted">{site.email}</p>
-        </div>
+      <Container className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-3 pb-12 pt-32 text-body">
+        <ul className="flex flex-wrap gap-x-4 gap-y-1">
+          {footerLinks.map((link) => (
+            <li key={link.label}>
+              <a href={link.href} target="_blank" rel="noreferrer" className={quietLink}>
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <a href={`mailto:${site.email}`} className={quietLink}>
+          {site.email}
+        </a>
       </Container>
     </footer>
   );

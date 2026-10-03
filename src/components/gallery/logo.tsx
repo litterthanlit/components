@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { site } from "@/site.config";
 
 const query = "(prefers-reduced-motion: reduce)";
 const subscribe = (cb: () => void) => {
@@ -20,12 +21,12 @@ export function Logo({ className = "" }: { className?: string }) {
 
   if (reduced) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src="/logo-poster.png" alt="" width={240} height={170} className={`${blend} ${className}`} />;
+    return <img src={`${site.basePath}/logo-poster.png`} alt="" width={240} height={170} className={`${blend} ${className}`} />;
   }
   return (
     <video
-      src="/logo.mp4"
-      poster="/logo-poster.png"
+      src={`${site.basePath}/logo.mp4`}
+      poster={`${site.basePath}/logo-poster.png`}
       autoPlay
       muted
       loop

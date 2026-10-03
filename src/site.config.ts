@@ -9,7 +9,11 @@ export const site = {
   handle: "@litterthanli7",
   description:
     "Interface components I've designed and built. Small studies in motion, feedback and touch. Each one is a single file you can copy.",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  intro: "Small studies in motion, feedback and touch.",
+  /** Served at litt.design/studies: litt.design rewrites that path here (multi-zones). */
+  basePath: "/studies",
+  /** Origin for metadata and OG images. Vercel builds default to the domain visitors see. */
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? (process.env.VERCEL ? "https://litt.design" : "http://localhost:3000"),
   links: {
     portfolio: "https://litt.design",
     x: "https://x.com/litterthanli7",

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "../cn";
 
-/** The lime status dot from litt.design. Decorative; pair it with text. */
+/** The blue status dot from litt.design. Decorative; pair it with text. */
 export function Dot({ className, pulse = false }: { className?: string; pulse?: boolean }) {
   return (
     <span aria-hidden className={cn("relative inline-flex size-1.5 shrink-0", className)}>

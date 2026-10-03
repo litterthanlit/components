@@ -1,0 +1,43 @@
+# Fails when any component demo spills out of its stage. See "Overflow check"
+# in the README; the script is scripts/check-fit.mjs.
+name: Check fit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: check-fit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-fit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # playwright-core ships no browser; fetch Chromium and its system libraries.
+      - run: npx playwright-core install --with-deps chromium
+
+      - name: Start the app
+        run: |
+          npm start &
+          for i in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:3000/studies && exit 0
+            sleep 1
+          done
+          echo "The app did not start within 60s" >&2
+          exit 1
+
+      - run: npm run check:fit

@@ -2,7 +2,7 @@
  * The registry: one entry per component. Order here is display order
  * (newest first reads best on a portfolio). To add a component:
  *   1. Drop `my-thing.tsx` in ./components with a default-exported Demo.
- *   2. Add an entry below (status: "new" adds the lime dot).
+ *   2. Add an entry below (status: "new" adds the blue dot).
  *   3. Add one line to ./previews.tsx.
  */
 export type StageBackground = "grid" | "dots" | "glow" | "plain";
@@ -12,9 +12,9 @@ export type RegistryEntry = {
   title: string;
   description: string;
   tags: string[];
-  /** ISO date — shown on cards and used for sorting. */
+  /** ISO date — shown on the OG image. */
   date: string;
-  /** Shown as a lime dot + label, like "In progress" on litt.design. */
+  /** Shown as a blue dot + label, like "In progress" on litt.design. */
   status?: "new" | "in-progress";
   background?: StageBackground;
   /** A short line for tweets / OG cards. */
@@ -23,15 +23,26 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
-    slug: "gradient-card",
-    title: "Gradient Card",
+    slug: "click-wheel-player",
+    title: "Click Wheel Player",
     description:
-      "Project cards with a live mesh gradient cover. Four colours drift on slow orbits through a noise-warped field, blended in linear light so the midpoints stay bright. Hover swirls the colours around the cursor; a click sends a pulse and crossfades to the next palette. Raw WebGL with film grain.",
-    tagline: "Mesh gradients that swirl around your cursor.",
-    tags: ["surface", "pointer", "webgl"],
-    date: "2026-10-02",
+      "A pocket music player after the 2009 classic: brushed aluminium in silver or black, a 320×240 screen with the blue highlight bar, a split-screen menu, a Songs list and Now Playing with art, progress and a volume bar. Turn the wheel to scroll or change the volume, press its edges to skip, play and go back. All CSS and SVG, drawn at the real proportions and scaled as one piece; the ring is a slider, so arrow keys, Enter, Escape and Space drive it too.",
+    tagline: "Turn the wheel. A 2009 classic in CSS and SVG.",
+    tags: ["pointer", "motion", "a11y", "svg"],
+    date: "2026-10-03",
     status: "new",
     background: "plain",
+  },
+  {
+    slug: "agent-shapes",
+    title: "Agent Shapes",
+    description:
+      "Abstract shapes for the ways an agent works: a spark while it thinks, a graph while it searches, a cube arranging itself while it organizes, orbits while it weighs options, a form finding its shape while it plans, a cube building itself block by block, tiles folding in turn while tools run and one continuous thread while it writes. AgentShape takes the current phase and crossfades between them. SVG, CSS 3D and keyframes, still under reduced motion, labelled for screen readers.",
+    tagline: "Abstract shapes for how an agent thinks.",
+    tags: ["ai", "feedback", "motion", "svg"],
+    date: "2026-10-02",
+    status: "new",
+    background: "dots",
   },
   {
     slug: "agent-run",
@@ -59,8 +70,8 @@ export const registry: RegistryEntry[] = [
     slug: "dither-card",
     title: "Dither Card",
     description:
-      "Project cards with a live, ordered-dither cover. Hover lights the field under the cursor and speeds it up, a click sends a ripple through it, and keyboard focus lights it from the centre. Raw WebGL, drawn at a third of the resolution and scaled up pixel-perfect.",
-    tagline: "Bayer dithering that follows your cursor.",
+      "Project cards with a live, ordered-dither cover: a butterfly that flaps, a jellyfish that pulses and a flower that turns. Hover lights the cover under the cursor and speeds it up, a click sends a ripple through it, and keyboard focus lights it from the centre. Three-tone Bayer dither, raw WebGL, drawn at half resolution and scaled up pixel-perfect.",
+    tagline: "Dithered creatures that follow your cursor.",
     tags: ["surface", "pointer", "webgl"],
     date: "2026-10-02",
     status: "new",
@@ -151,8 +162,6 @@ export function getNeighbors(slug: string) {
     next: index >= 0 && index < registry.length - 1 ? registry[index + 1] : undefined,
   };
 }
-
-export const allTags = Array.from(new Set(registry.flatMap((entry) => entry.tags))).sort();
 
 export function formatDate(iso: string) {
   return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", {

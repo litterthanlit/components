@@ -3,7 +3,7 @@
 A gallery of interface components by [Nick Georgiev](https://litt.design). It's built to be shown off on X/Twitter and in a portfolio, and it shares litt.design's visual language.
 
 - **Design system** (`/system`): principles, colour, type, shape, motion, primitives and writing rules, rendered from the real tokens.
-- **Gallery** (`/`) — editorial index with live, lazily-mounted demos and tag filters.
+- **Gallery** (`/`) — the home page is a pocket player after the 2009 classic, redrawn in grey keys: a split-screen menu lists every component beside a live preview, and selecting one runs it full-screen inside the device. Turn the click wheel (or use the arrow keys) to browse, MENU or Escape to go back, ⏮ ⏭ to step, ⏯ to shuffle; every press clicks, and the hold switch mutes.
 - **Component pages** (`/c/[slug]`) — large interactive stage, background switcher, replay, highlighted source with copy.
 - **Capture frames** (`/capture/[slug]`) — chrome-free 1200×675 (16:9) frames for screenshots and screen recordings.
 - **Auto OG images** — every page unfurls with a branded card when you paste the link in a tweet.
@@ -15,7 +15,7 @@ Stack: Next.js 16 (App Router), React 19, Tailwind CSS v4, Shiki and Geist. Ever
 
 ```bash
 npm install
-npm run dev            # http://localhost:3000
+npm run dev            # http://localhost:3000/studies
 ```
 
 Personal details live in `src/site.config.ts`. They feed the header, footer, metadata, OG images and the capture watermark.
@@ -31,21 +31,33 @@ src/design-system/
   index.ts        import { Button, Dot } from "@/design-system"
 ```
 
-- **Colour:** `canvas`, `panel` and `surface` grounds; `ink`, `muted` and `subtle` text; `line` hairlines; a single lime `accent`. Every token has a light and a dark value.
+- **Colour:** `canvas`, `panel` and `surface` grounds; `ink`, `muted` and `subtle` text; `line` hairlines; a single blue `accent` (`#384ECB`). Every token has a light and a dark value.
 - **Type:** Geist. `text-body` is 14px, `text-meta` 12px, with `lead`, `title` and `display` above them.
 - **Motion:** `ease-out`, `ease-in-out`, `ease-drawer` and `ease-spring` curves, with `--duration-exit` (150ms), `--duration-enter` (210ms) and `--duration-move` (400ms).
-- **Physics:** `createSpring(initial, springs.snappy | gentle | bouncy, onUpdate)` runs a damped spring that writes straight to the DOM and keeps its velocity when interrupted. Use it for anything pointer-driven or interruptible. Siblings entering together are staggered by `--stagger` (50ms), capped at 8. Agent states use the `animate-shimmer`, `animate-wave`, `animate-hop` and `animate-caret` keyframes.
+- **Physics:** `createSpring(initial, springs.snappy | gentle | bouncy, onUpdate)` runs a damped spring that writes straight to the DOM and keeps its velocity when interrupted. Use it for anything pointer-driven or interruptible. Siblings entering together are staggered by `--stagger` (50ms), capped at 8. Agent states use the `animate-shimmer`, `animate-wave`, `animate-hop` and `animate-caret` keyframes; agent shapes add `animate-stretch`, `animate-trace` (with `pathLength={1}`), `animate-morph`, `animate-assemble`, `animate-twist` and `animate-build` (a shared `--build` progress that children read).
 - **Elevation:** `shadow-sm`, `shadow-md` and `shadow-lg` are a 1px ring plus a soft shadow.
+- **Sound:** short clicks synthesized with Web Audio (no audio files) in `src/lib/sound.ts`. Call `play("tick" | "press" | "select" | …)`; it stays silent until the viewer's first press or key, and never throws. `Button`, `ButtonLink` and `IconButton` sound by themselves through a `data-sound` attribute (`data-sound="off"` opts out). Viewers can mute on `/system#sound`; the choice is saved per device in `localStorage` (`sound-muted`) and syncs across tabs. Audition every sound there too.
 
 If you change a value in `tokens.css`, mirror it in `tokens.ts`.
 
 ## Adding a component
 
 1. Create `src/registry/components/my-thing.tsx`. Export the component and a `default` `Demo` that shows it off. Style it with token classes only (`bg-surface`, `text-muted`, `shadow-md`, `ease-out`…) so it follows the theme. Keep demos at or under about 560px wide; capture frames scale them up.
-2. Add an entry to `src/registry/index.ts`: title, description, tagline, tags and date, plus optional `status: "new"` (adds the lime dot) and `background`.
+2. Add an entry to `src/registry/index.ts`: title, description, tagline, tags and date, plus optional `status: "new"` (adds the blue dot) and `background`.
 3. Add one line to `src/registry/previews.tsx`.
 
 The component page, OG image and capture route are generated from that entry.
+
+### Overflow check
+
+A demo's stage changes size with where it's shown: the device's screen zooms demos down on small phones and up a little on large displays, the preview beside its menu shows them at thumbnail size, and a component page on a phone grows with its demo. Anything taller is clipped silently. So size demos to their container (`@container`, `@md:`), not the viewport (`sm:`), and run the check before pushing:
+
+```bash
+npm run build && npm start   # in one terminal
+npm run check:fit            # every component; or: npm run check:fit -- my-thing
+```
+
+It loads each component page, every component on the home page's device (its preview, then running on the screen), and the capture frame at six widths and fails if any demo, including transformed or absolutely positioned children, spills out of its stage. GitHub runs it on every push to `main` and every pull request (`.github/workflows/check-fit.yml`).
 
 ## Posting to X
 

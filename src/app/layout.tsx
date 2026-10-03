@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeScript } from "@/components/gallery/theme-script";
+import { SoundRuntime } from "@/components/sound/sound-runtime";
 import { site } from "@/site.config";
 import "./globals.css";
 
@@ -15,7 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(site.url),
+  // Metadata paths are relative to the app, so the base includes basePath.
+  metadataBase: new URL(`${site.url}${site.basePath}/`),
   title: {
     default: `${site.name} — ${site.author}`,
     template: `%s — ${site.author}`,
@@ -43,7 +45,11 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <ThemeScript />
       </head>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {children}
+        {/* Every page, the device included: unlocks audio and sounds the physical keys. */}
+        <SoundRuntime />
+      </body>
     </html>
   );
 }
