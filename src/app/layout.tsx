@@ -15,7 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(site.url),
+  // Metadata paths are relative to the app, so the base includes basePath.
+  metadataBase: new URL(`${site.url}${site.basePath}/`),
   title: {
     default: `${site.name} — ${site.author}`,
     template: `%s — ${site.author}`,

@@ -24,13 +24,12 @@ export function SiteHeader() {
               {item.label}
             </Link>
           ))}
+          {/* Same domain, different app: a plain <a> for a full page load. */}
           <a
             href={site.links.portfolio}
-            target="_blank"
-            rel="noreferrer"
             className="hidden rounded-md px-2 py-1 text-muted transition-colors duration-(--duration-exit) hover:text-ink hover:duration-(--duration-enter) sm:inline-block"
           >
-            litt.design ↗
+            litt.design
           </a>
           <ThemeToggle className="ml-1" />
         </nav>

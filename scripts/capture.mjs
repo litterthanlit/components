@@ -6,7 +6,8 @@
  *   npm run capture -- spotlight-card       # one component
  *   npm run capture -- --theme=dark --bg=glow --video
  *
- * Needs the app running (npm run dev / npm start). Set BASE_URL to point
+ * Needs the app running (npm run dev / npm start). Set BASE_URL (the app root,
+ * including /studies) to point
  * elsewhere, CHROMIUM_PATH to use a specific browser binary.
  *
  * Output: captures/<slug>-<theme>.png at 2× (2400×1350), plus a short
@@ -16,7 +17,7 @@ import { mkdir, readFile, rename } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright-core";
 
-const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000";
+const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000/studies";
 const OUT = path.resolve("captures");
 
 const args = process.argv.slice(2);

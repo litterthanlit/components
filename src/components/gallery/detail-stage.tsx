@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button, buttonClass, cn } from "@/design-system";
+import { site } from "@/site.config";
 import type { StageBackground } from "@/registry";
 import { SegmentedControl } from "@/registry/components/segmented-control";
 import { Preview } from "./preview";
@@ -23,7 +24,8 @@ export function DetailStage({ slug, initial = "grid" }: { slug: string; initial?
   const [replay, setReplay] = useState(0);
   const theme = useTheme();
 
-  const captureHref = `/capture/${slug}?bg=${background}&theme=${theme}`;
+  // A plain <a> (new tab), so basePath isn't added for us.
+  const captureHref = `${site.basePath}/capture/${slug}?bg=${background}&theme=${theme}`;
 
   return (
     <div>

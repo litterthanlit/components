@@ -34,7 +34,7 @@ jobs:
         run: |
           npm start &
           for i in $(seq 1 60); do
-            curl -sf -o /dev/null http://localhost:3000 && exit 0
+            curl -sf -o /dev/null http://localhost:3000/studies && exit 0
             sleep 1
           done
           echo "The app did not start within 60s" >&2

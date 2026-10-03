@@ -12,14 +12,15 @@
  * capture frame at several viewport widths and measures every demo, including
  * absolutely positioned and transformed children, against that padded box.
  *
- * Needs the app running (npm run build && npm start). Set BASE_URL to point
+ * Needs the app running (npm run build && npm start). Set BASE_URL (the app root,
+ * including /studies) to point
  * elsewhere, CHROMIUM_PATH to use a specific browser binary.
  */
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright-core";
 
-const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000";
+const BASE_URL = process.env.BASE_URL ?? "http://localhost:3000/studies";
 // Phones, the sm/md/lg breakpoints, laptop and desktop: each changes a stage's size.
 const DEFAULT_WIDTHS = [375, 640, 768, 1024, 1280, 1536];
 // Sub-pixel rounding and anti-aliasing never count as overflow.
