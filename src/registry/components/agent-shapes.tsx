@@ -4,13 +4,15 @@ import { useEffect, useState, type ComponentType, type CSSProperties, type React
 
 /*
  * Abstract shapes for the ways an agent works. Each is a small metaphor: a
- * spark while it thinks, orbits while it weighs options, a graph while it
- * searches, a form finding its shape while it plans, one continuous thread
- * while it writes, tiles folding together while it builds.
+ * spark while it thinks, a graph while it searches, a cube arranging itself
+ * while it organizes, orbits while it weighs options, a form finding its shape
+ * while it plans, a cube building itself while it builds, tiles folding in
+ * turn while tools run, one continuous thread while it writes.
  *
  * AgentShape takes the current phase and crossfades between them. Every shape
- * is SVG or plain elements driven by the design system's keyframes (stretch,
- * trace, morph, assemble, wave), drawn in currentColor with a single accent.
+ * is SVG, plain elements or CSS 3D driven by the design system's keyframes
+ * (stretch, trace, morph, assemble, twist, build, wave), drawn in currentColor
+ * with a single accent.
  * Under prefers-reduced-motion each holds a deliberate still frame, and each
  * carries a label for screen readers.
  */
@@ -229,7 +231,7 @@ export function Thread({ label = "Writing", size = 32, className = "" }: ShapePr
   );
 }
 
-/* --- Fold: building ----------------------------------------------------- */
+/* --- Fold: running ------------------------------------------------------ */
 
 const ASSEMBLE = 2000;
 // Grid order is top-left, top-right, bottom-left, bottom-right; each folds out
@@ -241,8 +243,8 @@ const TILES = [
   { fx: "45%", fy: "45%", turn: 2 },
 ];
 
-/** Pieces being placed: four tiles fold out and settle back, one after another. */
-export function Fold({ label = "Building", size = 32, className = "" }: ShapeProps) {
+/** Steps running in turn: four tiles fold out and settle back, one after another. */
+export function Fold({ label = "Running", size = 32, className = "" }: ShapeProps) {
   return (
     <Frame label={label} size={size} className={className}>
       <span aria-hidden className="absolute inset-[20%] grid grid-cols-2 grid-rows-2 gap-[12%]">
@@ -258,17 +260,168 @@ export function Fold({ label = "Building", size = 32, className = "" }: ShapePro
   );
 }
 
+/* --- Cubes: shared parts ------------------------------------------------- */
+
+// Real CSS 3D, viewed isometrically with no perspective, so the browser sorts
+// the faces as blocks move. Faces are shaded by how much ink they carry,
+// mixed against the surface so they stay opaque (opacity would flatten 3D).
+const ISOMETRIC = "rotateX(-35.26deg) rotateY(45deg)";
+const FACES = [
+  { turn: "rotateX(90deg)", ink: 100 }, // top
+  { turn: "rotateY(0deg)", ink: 62 },
+  { turn: "rotateY(180deg)", ink: 62 },
+  { turn: "rotateY(90deg)", ink: 38 },
+  { turn: "rotateY(-90deg)", ink: 38 },
+]; // the bottom never faces the viewer
+
+/** Edge of one block, and the distance from the cube's centre to a block's centre. */
+const cubeMetrics = (size: number) => {
+  const edge = size * 0.26;
+  return { edge, half: (edge + size * 0.03) / 2 };
+};
+
+/** The eight block centres of a 2×2×2 cube, bottom layer first, back to front. */
+const BLOCKS = (half: number): [number, number, number][] =>
+  [1, -1].flatMap((y) =>
+    [
+      [-1, -1],
+      [1, -1],
+      [-1, 1],
+      [1, 1],
+    ].map(([x, z]): [number, number, number] => [x * half, y * half, z * half]),
+  );
+
+function Cubelet({
+  at,
+  edge,
+  accent = false,
+  className = "",
+  style,
+  faceStyle,
+}: {
+  at: [number, number, number];
+  edge: number;
+  accent?: boolean;
+  className?: string;
+  style?: CSSProperties;
+  /** Applied to every face; opacity belongs here, since on a 3D parent it would flatten it. */
+  faceStyle?: CSSProperties;
+}) {
+  const color = accent ? "var(--accent-strong)" : "currentColor";
+  return (
+    <span className="absolute top-0 left-0 [transform-style:preserve-3d]" style={{ transform: `translate3d(${at[0]}px, ${at[1]}px, ${at[2]}px)` }}>
+      <span className={`absolute top-0 left-0 [transform-style:preserve-3d] ${className}`} style={style}>
+        {FACES.map(({ turn, ink }) => (
+          <span
+            key={turn}
+            className="absolute"
+            style={{
+              width: edge,
+              height: edge,
+              left: -edge / 2,
+              top: -edge / 2,
+              transform: `${turn} translateZ(${edge / 2}px)`,
+              background: `color-mix(in oklab, ${color} ${ink}%, var(--surface))`,
+              ...faceStyle,
+            }}
+          />
+        ))}
+      </span>
+    </span>
+  );
+}
+
+/** Centres a zero-size 3D origin in the frame and turns it isometric. */
+function Scene({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <span aria-hidden className="absolute inset-0 grid place-items-center">
+      <span className={`relative [transform-style:preserve-3d] ${className}`} style={{ transform: ISOMETRIC }}>
+        {children}
+      </span>
+    </span>
+  );
+}
+
+/* --- Cube: organizing --------------------------------------------------- */
+
+/** Arranging itself: the top and bottom layers take turns twisting a quarter, like a puzzle cube. */
+export function Cube({ label = "Organizing", size = 32, className = "" }: ShapeProps) {
+  const { edge, half } = cubeMetrics(size);
+  const blocks = BLOCKS(half);
+  return (
+    <Frame label={label} size={size} className={className}>
+      <Scene>
+        {/* Bottom layer first. Playing the same turn in reverse puts its moves in the top layer's pauses. */}
+        {[blocks.slice(0, 4), blocks.slice(4)].map((layer, i) => (
+          <span
+            key={i}
+            className={`absolute top-0 left-0 animate-twist [transform-style:preserve-3d] motion-reduce:animate-none ${i === 0 ? "[animation-direction:reverse]" : ""}`}
+          >
+            {layer.map((at, j) => (
+              <Cubelet key={j} at={at} edge={edge} accent={i === 1 && j === 3} />
+            ))}
+          </span>
+        ))}
+      </Scene>
+    </Frame>
+  );
+}
+
+/* --- Stack: building ---------------------------------------------------- */
+
+const DROP_WINDOW = 2 / 9;
+
+/**
+ * Building itself: blocks drop into place bottom-up, the cube holds, then they
+ * lift away top-down. One shared --build value drives every block, so the
+ * order reverses on the way out without separate keyframes.
+ */
+export function Stack({ label = "Building", size = 32, className = "" }: ShapeProps) {
+  const { edge, half } = cubeMetrics(size);
+  const lift = edge * 2.2;
+  return (
+    <Frame label={label} size={size} className={className}>
+      <Scene className="animate-build motion-reduce:animate-none">
+        {BLOCKS(half).map((at, i) => {
+          // Block i falls while --build runs from i/9 to (i+2)/9: 1 while waiting above, 0 once placed.
+          const away = `clamp(0, (${(i + 2) / 9} - var(--build)) / ${DROP_WINDOW}, 1)`;
+          return (
+            <Cubelet
+              key={i}
+              at={at}
+              edge={edge}
+              accent={i === 7}
+              style={{ transform: `translateY(calc(${away} * ${-lift}px))` }}
+              faceStyle={{ opacity: `calc(1 - ${away})` }}
+            />
+          );
+        })}
+      </Scene>
+    </Frame>
+  );
+}
+
 /* --- AgentShape: one glyph that follows the agent's phase --------------- */
 
-export type AgentPhase = "thinking" | "reasoning" | "searching" | "planning" | "writing" | "building";
+export type AgentPhase =
+  | "thinking"
+  | "searching"
+  | "organizing"
+  | "reasoning"
+  | "planning"
+  | "building"
+  | "running"
+  | "writing";
 
 export const phases: Record<AgentPhase, { name: string; label: string; Shape: ComponentType<ShapeProps> }> = {
   thinking: { name: "Spark", label: "Thinking", Shape: Spark },
-  reasoning: { name: "Orbit", label: "Reasoning", Shape: Orbit },
   searching: { name: "Graph", label: "Searching", Shape: Graph },
+  organizing: { name: "Cube", label: "Organizing", Shape: Cube },
+  reasoning: { name: "Orbit", label: "Reasoning", Shape: Orbit },
   planning: { name: "Morph", label: "Planning", Shape: Morph },
+  building: { name: "Stack", label: "Building", Shape: Stack },
+  running: { name: "Fold", label: "Running", Shape: Fold },
   writing: { name: "Thread", label: "Writing", Shape: Thread },
-  building: { name: "Fold", label: "Building", Shape: Fold },
 };
 
 /**
@@ -319,11 +472,13 @@ export function AgentShape({ phase, label, size = 32, className = "" }: ShapePro
 
 const SCRIPT: { phase: AgentPhase; line: string }[] = [
   { phase: "thinking", line: "Thinking it through" },
-  { phase: "reasoning", line: "Weighing 3 approaches" },
   { phase: "searching", line: "Searching 12 sources" },
+  { phase: "organizing", line: "Organizing the results" },
+  { phase: "reasoning", line: "Weighing 3 approaches" },
   { phase: "planning", line: "Planning the changes" },
+  { phase: "building", line: "Building the project" },
+  { phase: "running", line: "Running the tests" },
   { phase: "writing", line: "Drafting the answer" },
-  { phase: "building", line: "Running the tests" },
 ];
 
 function Shimmer({ children }: { children: ReactNode }) {
@@ -341,21 +496,23 @@ function Shimmer({ children }: { children: ReactNode }) {
   );
 }
 
-// The demo sizes itself to its container, not the viewport: narrow stages
-// (gallery cards, phones) get a compact grid, wide ones get captioned tiles.
+// The demo sizes itself to its container ("demo"), not the viewport: narrow
+// stages (gallery cards, phones) get a compact grid, wide ones get captioned
+// tiles. Each tile is a container too ("tile"), so name both in queries.
 function Tile({ name, phase, children, index }: { name: string; phase: string; children: ReactNode; index: number }) {
   return (
     <figure
-      className="flex animate-enter flex-col overflow-hidden rounded-xl bg-surface shadow-md"
+      className="@container/tile flex animate-enter flex-col overflow-hidden rounded-xl bg-surface shadow-md"
       style={{ animationDelay: `calc(${index} * var(--stagger))` }}
     >
-      <div className="flex items-center justify-center pt-2.5 text-ink @md:h-16 @md:pt-0">
+      <div className="flex items-center justify-center pt-2.5 text-ink @md/demo:h-15 @md/demo:pt-0">
         {/* zoom, unlike scale, shrinks the layout box too. */}
-        <span className="flex [zoom:0.78] @md:[zoom:1]">{children}</span>
+        <span className="flex [zoom:0.78] @md/demo:[zoom:1]">{children}</span>
       </div>
-      <figcaption className="flex items-baseline justify-center gap-2 px-2 pt-1 pb-2 font-mono text-[11px] leading-none @md:justify-between @md:border-t @md:border-line @md:px-3 @md:py-2 @md:text-meta @md:leading-normal">
+      {/* The phase joins the name only when the tile is wide enough to hold both. */}
+      <figcaption className="flex items-baseline justify-center gap-1.5 px-2 pt-1 pb-2 font-mono text-[11px] leading-none @md/demo:border-t @md/demo:border-line @md/demo:px-2.5 @md/demo:py-2 @md/demo:text-meta @md/demo:leading-normal @[8rem]/tile:justify-between">
         <span className="text-ink">{name}</span>
-        <span className="hidden truncate text-muted @md:inline">{phase}</span>
+        <span className="hidden truncate text-muted @[8rem]/tile:inline">{phase}</span>
       </figcaption>
     </figure>
   );
@@ -371,9 +528,9 @@ export default function Demo() {
   }, []);
 
   return (
-    <div className="@container w-full max-w-xl">
-      <div className="grid grid-cols-3 gap-2 @md:gap-3">
-        <div className="col-span-full flex animate-enter items-center gap-2.5 rounded-xl bg-surface px-3 py-2 shadow-md @md:gap-3 @md:px-4 @md:py-3.5">
+    <div className="@container/demo w-full max-w-xl">
+      <div className="grid grid-cols-4 gap-2 @md/demo:gap-3">
+        <div className="col-span-full flex animate-enter items-center gap-2.5 rounded-xl bg-surface px-3 py-2 shadow-md @md/demo:gap-3 @md/demo:px-4 @md/demo:py-3">
           <AgentShape phase={phase} label={line} size={28} className="text-ink" />
           <span aria-hidden key={step} className="min-w-0 flex-1 animate-enter truncate text-body font-medium">
             <Shimmer>{line}</Shimmer>
