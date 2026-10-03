@@ -89,6 +89,7 @@ export function GalleryCarousel({ entries }: { entries: Entry[] }) {
   const slides = useRef<(HTMLDivElement | null)[]>([]);
   const labels = useRef<(HTMLButtonElement | null)[]>([]);
   const spacer = useRef<HTMLSpanElement>(null);
+  const press = useRef<{ x: number; y: number } | null>(null); // where a press on the card began
 
   const reduced = useMediaQuery("(prefers-reduced-motion: reduce)");
   const pageVisible = useSyncExternalStore(subscribeVisibility, () => !document.hidden, () => true);
@@ -226,6 +227,12 @@ export function GalleryCarousel({ entries }: { entries: Entry[] }) {
   }
 
   function handleCardClick(event: MouseEvent<HTMLDivElement>) {
+    // A drag inside a demo (turning a wheel, scrubbing) ends in a click on
+    // whatever the pointer was captured by, so judge it by distance, not target.
+    const start = press.current;
+    press.current = null;
+    if (event.defaultPrevented) return;
+    if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 6) return;
     const hit = (event.target as Element).closest(INTERACTIVE);
     if (hit && event.currentTarget.contains(hit)) return;
     openLook(labels.current[active]);
@@ -290,7 +297,12 @@ export function GalleryCarousel({ entries }: { entries: Entry[] }) {
                 className="group/slide flex flex-col items-center"
               >
                 {/* The card: a click on anything but the demo's own controls takes a closer look. */}
-                <div data-zoom onClick={isActive ? handleCardClick : undefined} className="w-full">
+                <div
+                  data-zoom
+                  onPointerDownCapture={isActive ? (e) => (press.current = { x: e.clientX, y: e.clientY }) : undefined}
+                  onClick={isActive ? handleCardClick : undefined}
+                  className="w-full"
+                >
                   {near ? (
                     <Preview slug={entry.slug} align="bottom" className="h-72 sm:h-[23rem]" />
                   ) : (

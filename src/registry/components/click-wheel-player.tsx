@@ -989,7 +989,7 @@ export function ClickWheelPlayer({
     e.preventDefault();
     sliderRef.current?.focus({ preventScroll: true });
     e.currentTarget.setPointerCapture(e.pointerId);
-    const button = ((e.target as HTMLElement).closest("[data-wheel]") as HTMLElement | null)?.dataset.wheel as WheelButton | undefined;
+    const button = ((e.target as HTMLElement).closest("[data-wheel-button]") as HTMLElement | null)?.dataset.wheelButton as WheelButton | undefined;
     drag.current = { id: e.pointerId, angle, acc: 0, travel: 0, button: button ?? null };
     setPressed(button ?? null);
   }
@@ -1069,6 +1069,9 @@ export function ClickWheelPlayer({
         break;
       case "Escape":
       case "Backspace":
+        // At the top menu there's nowhere to go back to, so Escape is left for
+        // whatever hosts the player (a dialog, say) to close itself.
+        if (state.stack.length < 2) return;
         flash("menu");
         press("menu");
         break;
@@ -1211,7 +1214,7 @@ export function ClickWheelPlayer({
                 key={key}
                 type="button"
                 tabIndex={-1}
-                data-wheel={key}
+                data-wheel-button={key}
                 aria-label={g.label}
                 onClick={(e) => {
                   // Pointer presses are handled on pointerup (so a press can become a turn);
