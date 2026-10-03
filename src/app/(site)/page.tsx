@@ -1,3 +1,4 @@
+import { CsHero } from "@/components/gallery/cs-hero";
 import { GalleryGrid } from "@/components/gallery/gallery-grid";
 import { Container } from "@/design-system";
 import { allTags, registry } from "@/registry";
@@ -6,7 +7,7 @@ import { site } from "@/site.config";
 export default function Home() {
   return (
     <Container>
-      <section className="max-w-[560px] pb-20 pt-12 sm:pb-28 sm:pt-24">
+      <section className="max-w-[560px] pb-20 pt-12 cs:hidden sm:pb-28 sm:pt-24">
         <h1 className="animate-enter text-body">
           <span className="font-medium text-ink">{site.name}</span>
           <span className="text-muted"> · {site.author}</span>
@@ -24,6 +25,7 @@ export default function Home() {
           .
         </p>
       </section>
+      <CsHero latest={registry.slice(0, 4)} />
 
       <GalleryGrid entries={registry} tags={allTags} />
     </Container>

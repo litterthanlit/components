@@ -17,6 +17,15 @@ body {
   text-rendering: optimizeLegibility;
 }
 
+/* cs: system UI faces of the 2003 VGUI (Tahoma on Windows, Verdana as the
+   fallback). html[] outranks next/font's class that sets the variable. */
+html[data-theme="cs"] {
+  --font-geist-sans: Tahoma, Verdana, "DejaVu Sans", "Segoe UI", sans-serif;
+}
+[data-theme="cs"] body {
+  letter-spacing: 0;
+}
+
 h1,
 h2,
 h3 {
@@ -45,6 +54,39 @@ h3 {
     radial-gradient(40rem 32rem at 8% -6%, rgb(255 120 120 / 0.06), transparent 70%),
     radial-gradient(36rem 40rem at 96% 28%, rgb(120 150 255 / 0.07), transparent 70%),
     radial-gradient(30rem 24rem at 30% 108%, rgb(194 255 77 / 0.04), transparent 70%);
+}
+
+/* cs: the main-menu backdrop. Dust haze from the top, dark vignette. */
+[data-theme="cs"] .atmosphere {
+  background:
+    radial-gradient(70rem 32rem at 50% -12%, rgb(214 178 110 / 0.16), transparent 70%),
+    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 45%, rgb(0 0 0 / 0.55) 100%),
+    linear-gradient(#272c21, #171a13);
+}
+
+/* cs: a classic green crosshair for a cursor, HUD orange over anything you
+   can click. In the base layer so a component's own cursor-* class wins. */
+@layer base {
+  [data-theme="cs"] body {
+    cursor:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='25' height='25'%3E%3Cpath d='M12.5 2v7M12.5 16v7M2 12.5h7M16 12.5h7' stroke='%23000' stroke-opacity='.55' stroke-width='4'/%3E%3Cpath d='M12.5 2v7M12.5 16v7M2 12.5h7M16 12.5h7' stroke='%2350ff50' stroke-width='2'/%3E%3C/svg%3E")
+        12 12,
+      crosshair;
+  }
+  [data-theme="cs"] :where(a[href], button:not(:disabled), [role="button"], [role="tab"], label, summary, select) {
+    cursor:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='25' height='25'%3E%3Cpath d='M12.5 2v7M12.5 16v7M2 12.5h7M16 12.5h7' stroke='%23000' stroke-opacity='.55' stroke-width='4'/%3E%3Cpath d='M12.5 2v7M12.5 16v7M2 12.5h7M16 12.5h7' stroke='%23ffa000' stroke-width='2'/%3E%3Ccircle cx='12.5' cy='12.5' r='1.5' fill='%23ffa000'/%3E%3C/svg%3E")
+        12 12,
+      pointer;
+  }
+  [data-theme="cs"] :where(input:not([type="button"], [type="checkbox"], [type="radio"], [type="range"]), textarea, [contenteditable="true"]) {
+    cursor: text;
+  }
+}
+
+/* cs: HUD numerals glow like additive sprites. */
+.hud-glow {
+  text-shadow: 0 0 8px rgb(255 160 0 / 0.35);
 }
 
 /* Stage backgrounds — shared by gallery cards, detail view and captures. */
@@ -81,7 +123,9 @@ h3 {
   color: var(--shiki-light);
 }
 [data-theme="dark"] .code .shiki,
-[data-theme="dark"] .code .shiki span {
+[data-theme="dark"] .code .shiki span,
+[data-theme="cs"] .code .shiki,
+[data-theme="cs"] .code .shiki span {
   color: var(--shiki-dark);
 }
 .code pre {

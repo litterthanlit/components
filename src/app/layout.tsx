@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Black_Ops_One, Geist, Geist_Mono } from "next/font/google";
 import { ThemeScript } from "@/components/gallery/theme-script";
 import { site } from "@/site.config";
 import "./globals.css";
@@ -11,6 +11,13 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+// Stencil face for the Counter-Strike theme's title and HUD numerals.
+const blackOps = Black_Ops_One({
+  variable: "--font-black-ops",
+  weight: "400",
   subsets: ["latin"],
 });
 
@@ -26,19 +33,17 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fafaf9" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-  ],
+  // The Counter-Strike theme is the default whatever the OS prefers.
+  themeColor: "#1e221a",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      data-theme="light"
+      data-theme="cs"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${blackOps.variable} h-full antialiased`}
     >
       <head>
         <ThemeScript />

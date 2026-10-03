@@ -1,4 +1,6 @@
+import { CsHud } from "@/components/gallery/cs-hud";
 import { SiteFooter, SiteHeader } from "@/components/gallery/site-header";
+import { registry } from "@/registry";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -15,6 +17,9 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         {children}
       </main>
       <SiteFooter />
+      {/* Room for the HUD, so it never sits on top of the footer for good. */}
+      <div aria-hidden className="hidden h-24 cs:block" />
+      <CsHud count={registry.length} />
     </>
   );
 }

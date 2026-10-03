@@ -19,7 +19,7 @@ function num(value: string | string[] | undefined, fallback: number) {
  * Defaults to 1200×675 (16:9, X/Twitter's in-feed image size).
  *
  * Query params:
- *   theme=light|dark  bg=grid|dots|glow|plain  w=1200  h=675
+ *   theme=light|dark|cs  bg=grid|dots|glow|plain  w=1200  h=675
  *   zoom=1.6          label=0 (hide the watermark)
  */
 export default async function CapturePage({ params, searchParams }: PageProps<"/capture/[slug]">) {

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { MotionDemo } from "@/components/system/motion-demo";
 import { SpringDemo } from "@/components/system/spring-demo";
 import { Badge, Button, Container, Dot, IconButton, Kbd, SectionLabel } from "@/design-system";
-import { colorRoles, colors, motion, radii, typeScale } from "@/design-system/tokens";
+import { colorRoles, colors, motion, radii, typeScale, type Theme } from "@/design-system/tokens";
 
 export const metadata: Metadata = {
   title: "System",
@@ -43,11 +43,13 @@ function Section({ id, title, intro, children }: { id: string; title: string; in
   );
 }
 
-function Swatches({ theme }: { theme: "light" | "dark" }) {
+const themeNames: Record<Theme, string> = { light: "Light", dark: "Dark", cs: "Counter-Strike" };
+
+function Swatches({ theme }: { theme: Theme }) {
   const values = colors[theme];
   return (
     <div data-theme={theme} className="rounded-xl bg-canvas p-2 text-ink shadow-[inset_0_0_0_1px_var(--line)]">
-      <p className="px-2 pb-2 pt-1 text-meta text-muted">{theme === "light" ? "Light" : "Dark"}</p>
+      <p className="px-2 pb-2 pt-1 text-meta text-muted">{themeNames[theme]}</p>
       <ul className="flex flex-col">
         {colorRoles.map(({ token }) => (
           <li key={token} className="flex items-center gap-3 rounded-md px-2 py-1.5">
@@ -107,10 +109,11 @@ export default function SystemPage() {
           </ol>
         </Section>
 
-        <Section id="color" title="Color" intro="Neutral grounds, three text greys, one accent. Every value is a token with a light and dark definition.">
-          <div className="grid gap-4 md:grid-cols-2">
+        <Section id="color" title="Color" intro="Neutral grounds, three text greys, one accent. Every value is a token with a light, dark and Counter-Strike definition.">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <Swatches theme="light" />
             <Swatches theme="dark" />
+            <Swatches theme="cs" />
           </div>
           <dl className="mt-6 grid gap-x-8 gap-y-2 sm:grid-cols-2">
             {colorRoles.map(({ token, role }) => (

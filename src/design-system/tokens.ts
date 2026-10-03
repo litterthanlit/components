@@ -32,7 +32,24 @@ export const colors = {
     "accent-strong": "#c2ff4d",
     danger: "#ff6166",
   },
+  /** Counter-Strike 1.6: Steam/VGUI olive panels and HUD orange. */
+  cs: {
+    canvas: "#1e221a",
+    panel: "#3e4637",
+    surface: "#4c5844",
+    ink: "#e4e6dc",
+    muted: "#c3cab6",
+    subtle: "#8c9284",
+    line: "#292c21",
+    "line-strong": "#8c9284",
+    accent: "#ffa000",
+    "accent-ink": "#1e221a",
+    "accent-strong": "#ffb53d",
+    danger: "#ff6b5a",
+  },
 } as const;
+
+export type Theme = keyof typeof colors;
 
 export type ColorToken = keyof typeof colors.light;
 
