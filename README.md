@@ -3,7 +3,7 @@
 A gallery of interface components by [Nick Georgiev](https://litt.design). It's built to be shown off on X/Twitter and in a portfolio, and it shares litt.design's visual language.
 
 - **Design system** (`/system`): principles, colour, type, shape, motion, primitives and writing rules, rendered from the real tokens.
-- **Gallery** (`/`) — editorial index with live, lazily-mounted demos and tag filters.
+- **Gallery** (`/`) — a slideshow of live demos with click-wheel controls; click a card (or the wheel's centre) for a closer look.
 - **Component pages** (`/c/[slug]`) — large interactive stage, background switcher, replay, highlighted source with copy.
 - **Capture frames** (`/capture/[slug]`) — chrome-free 1200×675 (16:9) frames for screenshots and screen recordings.
 - **Auto OG images** — every page unfurls with a branded card when you paste the link in a tweet.
@@ -49,14 +49,14 @@ The component page, OG image and capture route are generated from that entry.
 
 ### Overflow check
 
-A demo's stage changes size with where it's shown: a half-width gallery card at 768px leaves about 190px of height, and the 4:3 stage on a phone about 210px. Anything taller is clipped silently. So size demos to their container (`@container`, `@md:`), not the viewport (`sm:`), and run the check before pushing:
+A demo's stage changes size with where it's shown: a gallery slide on a phone leaves about 250px of height, and on wider screens about 330px. Anything taller is clipped silently. So size demos to their container (`@container`, `@md:`), not the viewport (`sm:`), and run the check before pushing:
 
 ```bash
 npm run build && npm start   # in one terminal
 npm run check:fit            # every component; or: npm run check:fit -- my-thing
 ```
 
-It loads each component page, the gallery and the capture frame at six widths and fails if any demo, including transformed or absolutely positioned children, spills out of its stage. GitHub runs it on every push to `main` and every pull request (`.github/workflows/check-fit.yml`).
+It loads each component page, every gallery slide and its closer look, and the capture frame at six widths and fails if any demo, including transformed or absolutely positioned children, spills out of its stage. GitHub runs it on every push to `main` and every pull request (`.github/workflows/check-fit.yml`).
 
 ## Posting to X
 

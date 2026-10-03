@@ -8,9 +8,10 @@
  *
  * The stage (src/components/gallery/preview.tsx) clips whatever leaves its
  * padded box, so a demo that is too tall loses its top and bottom edges
- * without any error. This loads each component page, the gallery and the
- * capture frame at several viewport widths and measures every demo, including
- * absolutely positioned and transformed children, against that padded box.
+ * without any error. This loads each component page, every gallery slide and
+ * its closer look, and the capture frame at several viewport widths and
+ * measures every demo, including absolutely positioned and transformed
+ * children, against that padded box.
  *
  * Needs the app running (npm run build && npm start). Set BASE_URL (the app root,
  * including /studies) to point
@@ -53,8 +54,9 @@ async function launch() {
 /**
  * Runs in the page. For every stage, returns how far the demo's painted extent
  * reaches past the stage's padded box on each side (positive = overflow).
+ * `only` limits it to some slugs, `within` to stages inside one element.
  */
-function measureStages(only) {
+function measureStages({ only, within } = {}) {
   const union = (a, b) =>
     a ? { top: Math.min(a.top, b.top), left: Math.min(a.left, b.left), bottom: Math.max(a.bottom, b.bottom), right: Math.max(a.right, b.right) } : b;
   const intersect = (a, b) => ({
@@ -85,7 +87,9 @@ function measureStages(only) {
     return box;
   }
 
-  return [...document.querySelectorAll("[data-preview]")]
+  const root = within ? document.querySelector(within) : document;
+  if (!root) return (only ?? []).map((slug) => ({ slug, mounted: false }));
+  return [...root.querySelectorAll("[data-preview]")]
     .filter((stage) => !only || only.includes(stage.dataset.preview))
     .map((stage) => {
       const slug = stage.dataset.preview;
@@ -123,7 +127,7 @@ function record(where, width, results) {
     // The summary tracks spare height: full-width demos always sit flush left
     // and right, and bottom-aligned stages put all their slack above the demo.
     const margin = -(r.over.top + r.over.bottom);
-    // A stage that grows with its demo (phone gallery cards) is flush on both
+    // A stage that grows with its demo (phone component pages) is flush on both
     // sides and can't overflow vertically, so it says nothing about room.
     const contentSized = Math.abs(r.over.top) <= TOLERANCE && Math.abs(r.over.bottom) <= TOLERANCE;
     if (!contentSized && (!tightest.has(r.slug) || margin < tightest.get(r.slug).margin)) {
@@ -144,6 +148,11 @@ async function settle(page) {
   await page.waitForTimeout(SETTLE);
 }
 
+// Waits for a stage's demo to mount; one that never does is reported by record().
+async function mounted(page, stage) {
+  await page.waitForFunction((s) => document.querySelector(`${s} [data-preview-content] > *`), stage, { timeout: 10000 }).catch(() => {});
+}
+
 for (const width of widths) {
   const context = await browser.newContext({ viewport: { width, height: 900 }, reducedMotion: "no-preference" });
   const page = await context.newPage();
@@ -152,21 +161,33 @@ for (const width of widths) {
   for (const slug of slugs) {
     await page.goto(`${BASE_URL}/c/${slug}`, { waitUntil: "load" });
     await settle(page);
-    record("detail", width, await page.evaluate(measureStages, [slug]));
+    record("detail", width, await page.evaluate(measureStages, { only: [slug] }));
   }
 
-  // Gallery cards mount lazily, so bring each one into view first.
+  // The gallery is a slideshow that only mounts the centre slide and its
+  // neighbours, so pause it and step through with the wheel, measuring the
+  // centre stage each time, then the closer-look dialog for the same slide.
   await page.goto(`${BASE_URL}/`, { waitUntil: "load" });
-  for (const slug of slugs) {
-    const stage = page.locator(`[data-preview="${slug}"]`).first();
-    if (!(await stage.count())) continue;
-    await stage.scrollIntoViewIfNeeded();
-    await page
-      .waitForFunction((s) => document.querySelector(`[data-preview="${s}"] [data-preview-content] > *`), slug, { timeout: 10000 })
-      .catch(() => {});
-  }
   await settle(page);
-  record("gallery", width, await page.evaluate(measureStages, slugs));
+  const toggle = page.locator('[data-wheel="toggle"]');
+  if ((await toggle.getAttribute("data-playing")) === "true") await toggle.click();
+  const total = await page.locator("[data-slide]").count();
+  for (let i = 0; i < total; i++) {
+    const slug = await page.locator("[data-slide][data-active]").getAttribute("data-slide");
+    if (slugs.includes(slug)) {
+      await mounted(page, `[data-slide][data-active] [data-preview="${slug}"]`);
+      await page.waitForTimeout(SETTLE);
+      record("gallery", width, await page.evaluate(measureStages, { only: [slug], within: "[data-slide][data-active]" }));
+
+      await page.click('[data-wheel="look"]');
+      await mounted(page, `dialog[open] [data-preview="${slug}"]`);
+      await page.waitForTimeout(SETTLE);
+      record("closer", width, await page.evaluate(measureStages, { only: [slug], within: "dialog[open]" }));
+      await page.keyboard.press("Escape");
+      await page.waitForFunction(() => !document.querySelector("dialog[open]"), null, { timeout: 5000 });
+    }
+    await page.click('[data-wheel="next"]');
+  }
 
   await context.close();
 }
@@ -178,7 +199,7 @@ for (const width of widths) {
   for (const slug of slugs) {
     await page.goto(`${BASE_URL}/capture/${slug}`, { waitUntil: "load" });
     await settle(page);
-    record("capture", 1200, await page.evaluate(measureStages, [slug]));
+    record("capture", 1200, await page.evaluate(measureStages, { only: [slug] }));
   }
   await context.close();
 }

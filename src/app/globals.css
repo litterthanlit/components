@@ -33,6 +33,17 @@ h3 {
   outline-offset: 2px;
 }
 
+/* Gallery cards open a closer look on click, except over the demo's own
+   controls. In the base layer, so a demo's cursor utilities still win. */
+@layer base {
+  [data-zoom] {
+    cursor: zoom-in;
+  }
+  [data-zoom] :where(a, button, input, select, textarea, label, [role="button"], [role="link"], [role="radio"], [role="checkbox"], [role="switch"], [role="slider"], [role="tab"]) {
+    cursor: auto;
+  }
+}
+
 /* Soft colour washes behind the page, as on litt.design. */
 .atmosphere {
   background:
