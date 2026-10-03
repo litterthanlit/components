@@ -47,6 +47,17 @@ If you change a value in `tokens.css`, mirror it in `tokens.ts`.
 
 The component page, OG image and capture route are generated from that entry.
 
+### Overflow check
+
+A demo's stage changes size with where it's shown: a half-width gallery card at 768px leaves about 190px of height, and the 4:3 stage on a phone about 210px. Anything taller is clipped silently. So size demos to their container (`@container`, `@md:`), not the viewport (`sm:`), and run the check before pushing:
+
+```bash
+npm run build && npm start   # in one terminal
+npm run check:fit            # every component; or: npm run check:fit -- my-thing
+```
+
+It loads each component page, the gallery and the capture frame at six widths and fails if any demo, including transformed or absolutely positioned children, spills out of its stage. GitHub runs it on every push to `main` and every pull request (`.github/workflows/check-fit.yml`).
+
 ## Posting to X
 
 **Stills**
