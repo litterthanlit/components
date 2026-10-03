@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, buttonClass } from "@/design-system";
+import { Button, buttonClass, cn } from "@/design-system";
 import type { StageBackground } from "@/registry";
 import { SegmentedControl } from "@/registry/components/segmented-control";
 import { Preview } from "./preview";
@@ -30,8 +30,8 @@ export function DetailStage({ slug, initial = "grid" }: { slug: string; initial?
       <Preview
         key={replay}
         slug={slug}
-        background={background}
-        className="aspect-[4/3] rounded-xl shadow-[inset_0_0_0_1px_var(--line)] sm:aspect-[16/9]"
+        background={authoring ? background : undefined}
+        className={cn("aspect-[4/3] sm:aspect-[16/9]", authoring && "rounded-xl shadow-[inset_0_0_0_1px_var(--line)]")}
       />
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         {authoring && (

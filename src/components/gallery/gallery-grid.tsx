@@ -13,7 +13,7 @@ export function GalleryGrid({ entries }: { entries: RegistryEntry[] }) {
         Components
       </h2>
 
-      <ul className="grid grid-cols-1 gap-x-5 gap-y-10 md:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-x-12 gap-y-20 md:grid-cols-2">
         {entries.map((entry, index) => (
           <li
             key={entry.slug}
@@ -22,9 +22,9 @@ export function GalleryGrid({ entries }: { entries: RegistryEntry[] }) {
           >
             <Preview
               slug={entry.slug}
-              background={entry.background}
+              align="bottom"
               lazy
-              className="aspect-[16/11] rounded-xl shadow-[inset_0_0_0_1px_var(--line)] transition-shadow duration-(--duration-exit) group-hover/card:shadow-[inset_0_0_0_1px_var(--line-strong)] group-hover/card:duration-(--duration-enter) max-sm:aspect-auto max-sm:min-h-[22rem]"
+              className="aspect-[16/11] max-sm:aspect-auto max-sm:min-h-[22rem]"
             />
             <Link href={`/c/${entry.slug}`} className="mt-3 flex items-center gap-2 self-start rounded-md text-body font-medium text-ink">
               {entry.status && <Dot />}
