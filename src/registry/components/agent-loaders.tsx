@@ -93,14 +93,16 @@ export function useElapsed(running = true) {
   return seconds;
 }
 
+// The demo sizes itself to its container, not the viewport, so it fits
+// half-width gallery cards and the 4:3 stage on phones without clipping.
 function Tile({ name, children, index }: { name: string; children: ReactNode; index: number }) {
   return (
     <figure
       className="flex animate-enter flex-col overflow-hidden rounded-xl bg-surface shadow-md"
       style={{ animationDelay: `calc(${index} * var(--stagger))` }}
     >
-      <div className="flex h-20 items-center justify-center px-4">{children}</div>
-      <figcaption className="border-t border-line px-3 py-2 font-mono text-meta text-muted">{name}</figcaption>
+      <div className="flex h-14 items-center justify-center px-4 @md:h-20">{children}</div>
+      <figcaption className="border-t border-line px-3 py-1.5 font-mono text-meta text-muted @md:py-2">{name}</figcaption>
     </figure>
   );
 }
@@ -109,30 +111,32 @@ export default function Demo() {
   const seconds = useElapsed();
 
   return (
-    <div className="grid w-full max-w-xl grid-cols-2 gap-3">
-      <Tile name="ShimmerText" index={0}>
-        <span className="text-body font-medium">
-          <ShimmerText>Thinking</ShimmerText>
-          <span className="ml-2 font-mono text-meta tabular-nums text-muted">{seconds}s</span>
-        </span>
-      </Tile>
-      <Tile name="DotGrid" index={1}>
-        <span className="flex items-center gap-2.5 text-body text-muted">
-          <DotGrid label="Searching" />
-          Searching
-        </span>
-      </Tile>
-      <Tile name="BrailleSpinner" index={2}>
-        <span className="flex items-center gap-2 font-mono text-[13px] text-ink">
-          <BrailleSpinner label="Running tests" />
-          npm test
-        </span>
-      </Tile>
-      <Tile name="ThinkingDots" index={3}>
-        <span className="flex items-center gap-2 rounded-full bg-panel px-3 py-2">
-          <ThinkingDots />
-        </span>
-      </Tile>
+    <div className="@container w-full max-w-xl">
+      <div className="grid grid-cols-2 gap-2 @md:gap-3">
+        <Tile name="ShimmerText" index={0}>
+          <span className="text-body font-medium">
+            <ShimmerText>Thinking</ShimmerText>
+            <span className="ml-2 font-mono text-meta tabular-nums text-muted">{seconds}s</span>
+          </span>
+        </Tile>
+        <Tile name="DotGrid" index={1}>
+          <span className="flex items-center gap-2.5 text-body text-muted">
+            <DotGrid label="Searching" />
+            Searching
+          </span>
+        </Tile>
+        <Tile name="BrailleSpinner" index={2}>
+          <span className="flex items-center gap-2 font-mono text-[13px] text-ink">
+            <BrailleSpinner label="Running tests" />
+            npm test
+          </span>
+        </Tile>
+        <Tile name="ThinkingDots" index={3}>
+          <span className="flex items-center gap-2 rounded-full bg-panel px-3 py-2">
+            <ThinkingDots />
+          </span>
+        </Tile>
+      </div>
     </div>
   );
 }
