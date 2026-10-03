@@ -42,7 +42,7 @@ export default async function ComponentPage({ params }: PageProps<"/c/[slug]">) 
         </Link>
 
         {/* Just the name; the faded number lets the title read first. */}
-        <h1 className="pb-12 pt-16 text-display font-medium text-ink sm:pb-16 sm:pt-24">
+        <h1 className="pb-6 pt-16 text-display font-medium text-ink sm:pb-8 sm:pt-24">
           <span aria-hidden className="mr-3 tabular-nums text-subtle">
             {number}
           </span>

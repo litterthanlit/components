@@ -31,7 +31,7 @@ export function DetailStage({ slug, initial = "grid" }: { slug: string; initial?
         key={replay}
         slug={slug}
         background={authoring ? background : undefined}
-        className={cn("aspect-[4/3] sm:aspect-[16/9]", authoring && "rounded-xl shadow-[inset_0_0_0_1px_var(--line)]")}
+        className={cn("min-h-[22rem] sm:h-[28rem]", authoring && "rounded-xl shadow-[inset_0_0_0_1px_var(--line)]")}
       />
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         {authoring && (

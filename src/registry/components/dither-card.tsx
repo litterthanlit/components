@@ -12,7 +12,8 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
 `;
 
 /**
- * Three-tone ordered (Bayer 8×8) dithering of an animated field: each cell
+ * Three-tone ordered (Bayer 8×8) dithering of an animated creature — a
+ * butterfly, a jellyfish or a flower — over a faint drifting ground. Each cell
  * resolves to the ground, a mid tone or the ink, which doubles the tonal steps
  * a two-tone dither can show. Near the pointer the field brightens and lit
  * cells switch to the accent. A click sends a ring outward.
@@ -51,32 +52,89 @@ float fbm(vec2 p) {
 }
 // Thin bright bands where x crosses a multiple of 1/n — contour lines.
 float contour(float x, float n, float sharp) { return pow(abs(cos(x * n * 3.14159)), sharp); }
+// Signed distance to an ellipse, in units of its radii: <0 inside, 0 on the edge.
+float ellipse(vec2 p, vec2 c, vec2 r) { return length((p - c) / r) - 1.0; }
+mat2 rot(float a) { float s = sin(a), c = cos(a); return mat2(c, -s, s, c); }
+
+// A wing: tinted inside, inked along the rim, with an eyespot.
+float wing(vec2 q, vec2 c, vec2 r, float tilt, vec2 eye) {
+  vec2 w = rot(tilt) * (q - c);
+  float d = length(w / r) - 1.0;
+  if (d > 0.0) return 0.0;
+  float veins = contour(atan(q.y, q.x) * 0.9, 3.0, 24.0) * 0.25;
+  float rim = smoothstep(-0.28, -0.16, d);
+  float e = length(q - eye);
+  float spot = smoothstep(0.045, 0.035, e) - smoothstep(0.025, 0.017, e) * 0.85;
+  return clamp(0.36 + veins + rim * 0.62 + spot * 0.6, 0.0, 1.0);
+}
+
+float butterfly(vec2 p, float t) {
+  p.y -= sin(t * 0.9) * 0.025;
+  // Wings fold toward the body and open again; foreshortening fakes the flap.
+  float flap = 0.3 + 0.7 * abs(cos(t * 2.4));
+  vec2 q = vec2(abs(p.x) / flap, p.y);
+  float v = max(wing(q, vec2(0.15, 0.08), vec2(0.17, 0.12), -0.5, vec2(0.2, 0.12)),
+                wing(q, vec2(0.11, -0.1), vec2(0.11, 0.085), 0.6, vec2(0.13, -0.12)));
+  // Body and antennae stay full width and full ink.
+  float body = step(abs(p.x), 0.016) * step(-0.17, p.y) * step(p.y, 0.15);
+  vec2 a = vec2(abs(p.x), p.y - 0.15);
+  float antenna = step(abs(a.x - a.y * 0.55), 0.006) * step(0.0, a.y) * step(a.y, 0.12);
+  float tip = step(length(a - vec2(0.066, 0.12)), 0.014);
+  return max(v, max(body, max(antenna, tip)));
+}
+
+float jellyfish(vec2 p, float t) {
+  float pulse = sin(t * 2.2);
+  p.y -= 0.04 + pulse * 0.02;
+  // The bell squeezes as it pushes, widening again as it relaxes.
+  vec2 c = vec2(0.0, 0.08);
+  vec2 r = vec2(0.24 - pulse * 0.025, 0.2 + pulse * 0.02);
+  float hem = c.y - 0.02 + 0.012 * sin(p.x * 70.0);
+  float d = ellipse(p, c, r);
+  float bell = 0.0;
+  if (d < 0.0 && p.y > hem) {
+    float depth = (p.y - hem) / r.y;
+    bell = 0.32 + contour(d, 4.0, 10.0) * 0.4 + smoothstep(-0.18, -0.06, d) * 0.5 + (1.0 - depth) * 0.12;
+  }
+  // Tentacles trail and sway, thinning toward their tips.
+  float tent = 0.0;
+  for (int i = 0; i < 6; i++) {
+    float fi = float(i);
+    float x0 = -0.17 + fi * 0.068;
+    float len = 0.34 + 0.08 * sin(fi * 2.3);
+    float y = hem - p.y;
+    float sway = sin(y * 16.0 - t * 2.6 + fi * 1.7) * 0.03 * smoothstep(0.0, 0.2, y);
+    float width = mix(0.009, 0.003, clamp(y / len, 0.0, 1.0));
+    tent = max(tent, step(abs(p.x - x0 - sway), width) * step(0.0, y) * step(y, len));
+  }
+  return clamp(max(bell, tent), 0.0, 1.0);
+}
+
+float bloom(vec2 p, float t) {
+  float breathe = 1.0 + sin(t * 1.3) * 0.04;
+  p /= breathe;
+  float r = length(p), a = atan(p.y, p.x);
+  float spin = t * 0.25;
+  // Two rings of five petals, the inner one offset and turning the other way.
+  float outer = 0.3 * (0.45 + 0.55 * pow(abs(cos(a * 2.5 + spin)), 0.7));
+  float inner = 0.19 * (0.5 + 0.5 * pow(abs(cos(a * 2.5 - spin * 1.4 + 0.63)), 0.7));
+  float v = 0.0;
+  if (r < outer) v = 0.3 + smoothstep(outer - 0.05, outer - 0.015, r) * 0.6 + contour(a * 0.8 + spin * 0.32, 4.0, 30.0) * 0.12;
+  if (r < inner) v = 0.5 + smoothstep(inner - 0.04, inner - 0.01, r) * 0.5;
+  // A seeded centre.
+  if (r < 0.065) v = 0.55 + 0.45 * step(0.5, fract(r * 40.0 - t * 0.3 + sin(a * 8.0) * 0.1));
+  return v;
+}
 
 float field(vec2 uv, float t) {
   float aspect = uRes.x / uRes.y;
-  vec2 p = vec2(uv.x * aspect, uv.y);
-  if (uPattern < 0.5) {
-    // Flow: domain-warped fbm read as terrain, with contour lines.
-    vec2 q = vec2(fbm(p * 2.2 + t * 0.12), fbm(p * 2.2 - t * 0.09 + 3.1));
-    float h = fbm(p * 2.4 + q * 1.6);
-    float base = smoothstep(0.2, 0.85, h);
-    return base * 0.8 + contour(h, 9.0, 18.0) * 0.35 * smoothstep(0.25, 0.6, h);
-  } else if (uPattern < 1.5) {
-    // Orbit: rings breathing out of a soft centre, warped and finely engraved.
-    vec2 c = p - vec2(aspect * 0.5, 0.5);
-    float a = atan(c.y, c.x);
-    float d = length(c) + (fbm(vec2(a * 1.6, t * 0.2)) - 0.5) * 0.05;
-    float rings = 0.5 + 0.5 * sin(d * 26.0 - t * 1.6);
-    float fine = contour(d - t * 0.02, 22.0, 6.0);
-    return (rings * 0.8 + fine * 0.3) * smoothstep(0.78, 0.04, d);
-  }
-  // Dunes: interfering diagonal waves with a fine wind ripple and grain.
-  float w = sin(p.x * 9.0 + sin(p.y * 5.0 + t * 0.7) * 1.4 + t * 0.5);
-  w += 0.6 * sin((p.x + p.y) * 13.0 - t * 0.8);
-  float crest = smoothstep(-0.9, 1.6, w);
-  float ripple = contour((p.x * 0.35 - p.y) * 1.0 + w * 0.06 - t * 0.03, 11.0, 4.0);
-  float grain = fbm(p * 7.0 + t * 0.05);
-  return (crest * 0.85 + ripple * (0.15 + crest * 0.3) + (grain - 0.5) * 0.12) * (0.35 + 0.65 * uv.y);
+  vec2 p = (uv - 0.5) * vec2(aspect, 1.0);
+  // Fit the creature to the card's shorter side.
+  p /= min(aspect, 1.0) * 1.3;
+  // A faint drifting ground so the dither never goes flat.
+  float ground = smoothstep(0.45, 0.9, fbm(uv * 3.0 + t * 0.05)) * 0.22;
+  float shape = uPattern < 0.5 ? butterfly(p, t) : uPattern < 1.5 ? jellyfish(p, t) : bloom(p, t);
+  return max(ground, shape);
 }
 
 void main() {
@@ -113,7 +171,7 @@ void main() {
 /* Helpers                                                                   */
 /* ------------------------------------------------------------------------ */
 
-const PATTERNS = { flow: 0, orbit: 1, dunes: 2 } as const;
+const PATTERNS = { butterfly: 0, jellyfish: 1, bloom: 2 } as const;
 export type DitherPattern = keyof typeof PATTERNS;
 
 let swatch: CanvasRenderingContext2D | null = null;
@@ -162,7 +220,7 @@ type DitherFieldProps = {
  * reduced motion, and takes its colours from the `--ink`, `--panel` and
  * `--accent-strong` tokens, following theme changes.
  */
-export function DitherField({ pattern = "flow", pixel = 2, active = false, className = "" }: DitherFieldProps) {
+export function DitherField({ pattern = "butterfly", pixel = 2, active = false, className = "" }: DitherFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // Bridge from React props into the render loop without restarting it.
   const activeRef = useRef(active);
@@ -359,7 +417,7 @@ type DitherCardProps = {
  * under the cursor and speeds it up, a click sends a ripple, and keyboard
  * focus lights it from the centre.
  */
-export function DitherCard({ title, description, meta, href, pattern = "flow" }: DitherCardProps) {
+export function DitherCard({ title, description, meta, href, pattern = "butterfly" }: DitherCardProps) {
   const [focused, setFocused] = useState(false);
 
   return (
@@ -369,17 +427,18 @@ export function DitherCard({ title, description, meta, href, pattern = "flow" }:
       rel="noreferrer"
       onFocus={(e) => setFocused(e.currentTarget.matches(":focus-visible"))}
       onBlur={() => setFocused(false)}
-      className="flex flex-col rounded-xl outline-offset-4 transition-transform duration-(--duration-exit) ease-out active:scale-[0.98]"
+      className="@container flex flex-col rounded-xl outline-offset-4 transition-transform duration-(--duration-exit) ease-out active:scale-[0.98]"
     >
-      <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
+      <div className="relative aspect-[4/5] overflow-hidden rounded-xl">
         <DitherField pattern={pattern} active={focused} />
         <div aria-hidden className="pointer-events-none absolute inset-0 rounded-xl shadow-[inset_0_0_0_1px_var(--line)]" />
       </div>
       <div className="mt-3 flex items-baseline justify-between gap-3 px-0.5">
         <h3 className="text-body font-medium text-ink">{title}</h3>
-        {meta && <span className="shrink-0 text-meta tabular-nums text-muted">{meta}</span>}
+        {meta && <span className="hidden shrink-0 text-meta tabular-nums text-muted @min-[10rem]:inline">{meta}</span>}
       </div>
-      <p className="mt-0.5 px-0.5 text-body text-muted">{description}</p>
+      {/* Narrow cards keep just the title; the cover carries them. */}
+      <p className="mt-0.5 hidden px-0.5 text-body text-muted @min-[10rem]:block">{description}</p>
       <span className="sr-only">(opens in a new tab)</span>
     </a>
   );
@@ -390,14 +449,14 @@ export function DitherCard({ title, description, meta, href, pattern = "flow" }:
 /* ------------------------------------------------------------------------ */
 
 const projects: (DitherCardProps & { pattern: DitherPattern })[] = [
-  { title: "Wavr", description: "Shader code in, motion graphics out.", meta: "2026", href: "https://litt.design", pattern: "flow" },
-  { title: "Carson", description: "Learn a layout by wrecking one.", meta: "2026", href: "https://litt.design", pattern: "orbit" },
-  { title: "litt.works", description: "Prints and long-form pieces.", meta: "2024–26", href: "https://litt.design", pattern: "dunes" },
+  { title: "Wavr", description: "Shader code in, motion graphics out.", meta: "2026", href: "https://litt.design", pattern: "butterfly" },
+  { title: "Carson", description: "Learn a layout by wrecking one.", meta: "2026", href: "https://litt.design", pattern: "jellyfish" },
+  { title: "litt.works", description: "Prints and long-form pieces.", meta: "2024–26", href: "https://litt.design", pattern: "bloom" },
 ];
 
 export default function Demo() {
   return (
-    <div className="grid w-full max-w-2xl grid-cols-1 gap-4 sm:grid-cols-3">
+    <div className="grid w-full max-w-3xl grid-cols-3 gap-3 sm:gap-5">
       {projects.map((project, i) => (
         <div key={project.title} className="animate-enter" style={{ animationDelay: `calc(${i} * var(--stagger))` }}>
           <DitherCard {...project} />

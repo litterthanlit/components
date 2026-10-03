@@ -34,17 +34,6 @@ export const registry: RegistryEntry[] = [
     background: "dots",
   },
   {
-    slug: "gradient-card",
-    title: "Gradient Card",
-    description:
-      "Project cards with a live mesh gradient cover. Four colours drift on slow orbits through a noise-warped field, blended in linear light so the midpoints stay bright. Hover swirls the colours around the cursor; a click sends a pulse and crossfades to the next palette. Raw WebGL with film grain.",
-    tagline: "Mesh gradients that swirl around your cursor.",
-    tags: ["surface", "pointer", "webgl"],
-    date: "2026-10-02",
-    status: "new",
-    background: "plain",
-  },
-  {
     slug: "agent-run",
     title: "Agent Run",
     description:
@@ -70,8 +59,8 @@ export const registry: RegistryEntry[] = [
     slug: "dither-card",
     title: "Dither Card",
     description:
-      "Project cards with a live, ordered-dither cover. Hover lights the field under the cursor and speeds it up, a click sends a ripple through it, and keyboard focus lights it from the centre. Three-tone Bayer dither over contoured, layered fields. Raw WebGL, drawn at half resolution and scaled up pixel-perfect.",
-    tagline: "Bayer dithering that follows your cursor.",
+      "Project cards with a live, ordered-dither cover: a butterfly that flaps, a jellyfish that pulses and a flower that turns. Hover lights the cover under the cursor and speeds it up, a click sends a ripple through it, and keyboard focus lights it from the centre. Three-tone Bayer dither, raw WebGL, drawn at half resolution and scaled up pixel-perfect.",
+    tagline: "Dithered creatures that follow your cursor.",
     tags: ["surface", "pointer", "webgl"],
     date: "2026-10-02",
     status: "new",

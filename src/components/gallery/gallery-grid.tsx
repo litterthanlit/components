@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { CSSProperties } from "react";
-import { Dot } from "@/design-system";
 import type { RegistryEntry } from "@/registry";
 import { Preview } from "./preview";
 
@@ -26,13 +25,12 @@ export function GalleryGrid({ entries }: { entries: RegistryEntry[] }) {
               lazy
               className="aspect-[16/11] max-sm:aspect-auto max-sm:min-h-[22rem]"
             />
-            <Link href={`/c/${entry.slug}`} className="mt-3 flex items-center gap-2 self-start rounded-md text-body font-medium text-ink">
-              {entry.status && <Dot />}
+            <Link href={`/c/${entry.slug}`} className="mt-3 flex items-center gap-2 self-start rounded-md text-body text-muted transition-colors duration-(--duration-exit) group-hover/card:text-ink group-hover/card:duration-(--duration-enter)">
               {entry.title}
               {entry.status && <span className="sr-only">({statusLabel[entry.status]})</span>}
               <span
                 aria-hidden
-                className="text-muted opacity-0 transition-[opacity,transform] duration-(--duration-exit) ease-out group-hover/card:translate-x-0.5 group-hover/card:opacity-100 group-hover/card:duration-(--duration-enter)"
+                className="opacity-0 transition-[opacity,transform] duration-(--duration-exit) ease-out group-hover/card:translate-x-0.5 group-hover/card:opacity-100 group-hover/card:duration-(--duration-enter)"
               >
                 →
               </span>
