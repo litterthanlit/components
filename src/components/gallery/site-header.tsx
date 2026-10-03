@@ -4,10 +4,8 @@ import { site } from "@/site.config";
 import { Logo } from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 
-const nav = [
-  { href: "/", label: "Components" },
-  { href: "/system", label: "System" },
-];
+// The logo already links home, so the nav only lists what it can't reach.
+const nav = [{ href: "/system", label: "System" }];
 
 export function SiteHeader() {
   return (
@@ -58,13 +56,9 @@ export function SiteFooter() {
             <br />
             <span className="text-muted">The craft is in what I leave out.</span>
           </p>
-          <p className="mt-6 flex flex-wrap items-center gap-x-2 text-meta text-muted">
-            <span>Based in Europe, working remotely</span>
-            <span aria-hidden>·</span>
-            <span className="inline-flex items-center gap-1.5">
-              <Dot pulse />
-              Available for projects
-            </span>
+          <p className="mt-6 inline-flex items-center gap-1.5 text-meta text-muted">
+            <Dot pulse />
+            Available for projects
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:items-end">

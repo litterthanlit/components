@@ -9,6 +9,7 @@ export const site = {
   handle: "@litterthanli7",
   description:
     "Interface components I've designed and built. Small studies in motion, feedback and touch. Each one is a single file you can copy.",
+  intro: "Small studies in motion, feedback and touch.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   links: {
     portfolio: "https://litt.design",

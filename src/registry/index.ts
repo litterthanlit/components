@@ -12,7 +12,7 @@ export type RegistryEntry = {
   title: string;
   description: string;
   tags: string[];
-  /** ISO date — shown on cards and used for sorting. */
+  /** ISO date — shown on the OG image. */
   date: string;
   /** Shown as a blue dot + label, like "In progress" on litt.design. */
   status?: "new" | "in-progress";
