@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type Toast = { id: number; title: string; body: string };
 
-const VISIBLE = 3;
 const GAP = 10;
 const PEEK = 12;
 const DURATION = 4500;
@@ -15,7 +14,16 @@ const DURATION = 4500;
  * with real heights. Timers pause while the stack is expanded so nothing
  * disappears while someone is reading it.
  */
-export function ToastStack({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: number) => void }) {
+export function ToastStack({
+  toasts,
+  onDismiss,
+  visible = 3,
+}: {
+  toasts: Toast[];
+  onDismiss: (id: number) => void;
+  /** How many toasts show at once; older ones wait behind them. */
+  visible?: number;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [heights, setHeights] = useState<Record<number, number>>({});
 
@@ -29,9 +37,9 @@ export function ToastStack({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: 
   const ordered = [...toasts].reverse();
   const frontHeight = ordered[0] ? (heights[ordered[0].id] ?? 64) : 0;
   const expandedHeight = ordered
-    .slice(0, VISIBLE)
+    .slice(0, visible)
     .reduce((sum, t, i) => sum + (heights[t.id] ?? 64) + (i ? GAP : 0), 0);
-  const collapsedHeight = frontHeight + PEEK * Math.max(0, Math.min(ordered.length, VISIBLE) - 1);
+  const collapsedHeight = frontHeight + PEEK * Math.max(0, Math.min(ordered.length, visible) - 1);
 
   return (
     <section
@@ -52,7 +60,7 @@ export function ToastStack({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: 
       >
         {ordered.map((toast, index) => {
           const offset = ordered.slice(0, index).reduce((sum, t) => sum + (heights[t.id] ?? 64) + GAP, 0);
-          const hidden = index >= VISIBLE;
+          const hidden = index >= visible;
           const y = expanded ? offset : index * PEEK;
           const scale = expanded ? 1 : 1 - index * 0.05;
           return (
@@ -165,16 +173,30 @@ export default function Demo() {
     return () => [a, b, c].forEach(clearTimeout);
   }, [add]);
 
+  // Sized to the stage, not the viewport. Narrow stages are short too, so they
+  // reserve less room and fan out two toasts instead of three.
+  const stage = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(3);
+  useEffect(() => {
+    const el = stage.current;
+    if (!el) return;
+    const observer = new ResizeObserver(([entry]) => setVisible(entry.contentRect.width < 448 ? 2 : 3));
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="flex h-72 w-full max-w-[340px] flex-col items-center gap-6">
-      <button
-        type="button"
-        onClick={add}
-        className="h-9 shrink-0 rounded-md bg-surface px-3.5 text-body font-medium text-ink shadow-sm transition-transform duration-(--duration-exit) ease-out active:scale-[0.97]"
-      >
-        Send notification
-      </button>
-      <ToastStack toasts={toasts} onDismiss={dismiss} />
+    <div ref={stage} className="@container flex w-full justify-center">
+      <div className="flex h-48 w-full max-w-[340px] flex-col items-center gap-2.5 @md:h-70 @md:gap-6">
+        <button
+          type="button"
+          onClick={add}
+          className="h-9 shrink-0 rounded-md bg-surface px-3.5 text-body font-medium text-ink shadow-sm transition-transform duration-(--duration-exit) ease-out active:scale-[0.97]"
+        >
+          Send notification
+        </button>
+        <ToastStack toasts={toasts} onDismiss={dismiss} visible={visible} />
+      </div>
     </div>
   );
 }

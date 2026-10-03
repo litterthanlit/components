@@ -407,12 +407,20 @@ const projects = [
 
 export default function Demo() {
   return (
-    <div className="grid w-full max-w-2xl grid-cols-1 gap-4 sm:grid-cols-3">
-      {projects.map((project, i) => (
-        <div key={project.title} className="animate-enter" style={{ animationDelay: `calc(${i} * var(--stagger))` }}>
-          <GradientCard {...project} seed={i} />
-        </div>
-      ))}
+    // Sized to its container, not the viewport: narrow stages (phones, gallery
+    // cards) show two covers without descriptions; wider ones show all three.
+    <div className="@container w-full max-w-2xl">
+      <div className="grid grid-cols-2 gap-3 @max-md:[&_p]:hidden @md:grid-cols-3 @md:gap-4">
+        {projects.map((project, i) => (
+          <div
+            key={project.title}
+            className={`animate-enter ${i > 1 ? "@max-md:hidden" : ""}`}
+            style={{ animationDelay: `calc(${i} * var(--stagger))` }}
+          >
+            <GradientCard {...project} seed={i} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
