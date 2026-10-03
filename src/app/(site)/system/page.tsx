@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { MotionDemo } from "@/components/system/motion-demo";
+import { SoundDemo } from "@/components/system/sound-demo";
 import { SpringDemo } from "@/components/system/spring-demo";
 import { Badge, Button, Container, Dot, IconButton, Kbd, SectionLabel } from "@/design-system";
 import { colorRoles, colors, motion, radii, typeScale } from "@/design-system/tokens";
@@ -24,6 +25,7 @@ const sections = [
   { id: "shape", label: "Shape" },
   { id: "motion", label: "Motion" },
   { id: "primitives", label: "Primitives" },
+  { id: "sound", label: "Sound" },
   { id: "writing", label: "Writing" },
 ];
 
@@ -261,6 +263,23 @@ export default function SystemPage() {
               </span>
             </Specimen>
           </div>
+        </Section>
+
+        <Section id="sound" title="Sound" intro="Clicks after the 2009 click wheel, a little warmer. Synthesized with Web Audio; nothing loads.">
+          <SoundDemo />
+          <ul className="mt-6 flex flex-col gap-1.5 text-body text-muted">
+            <li>
+              Fire and forget: <code className={code}>play(&quot;select&quot;)</code> from{" "}
+              <code className={code}>@/lib/sound</code>. It never throws, and stays silent until the first press or key.
+            </li>
+            <li>
+              Keys sound by themselves: <code className={code}>Button</code> and{" "}
+              <code className={code}>ButtonLink</code> press and release, ghost buttons tick. Opt out with{" "}
+              <code className={code}>data-sound=&quot;off&quot;</code>.
+            </li>
+            <li>Quiet and dry: peaks near -18 dBFS, a little lower on touch screens, never more than eight at once.</li>
+            <li>Mute is remembered per device and follows across tabs.</li>
+          </ul>
         </Section>
 
         <Section id="writing" title="Writing">

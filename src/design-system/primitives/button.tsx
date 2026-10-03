@@ -26,6 +26,14 @@ const sizes: Record<Size, string> = {
   md: "h-9 px-3.5 text-body",
 };
 
+/*
+ * Sound: keys play a press and a release, ghost buttons a quiet tick. The
+ * attribute is all a primitive carries; delegated listeners in lib/sound.ts
+ * do the rest, so these stay server components. Pass data-sound="off" to opt
+ * out (say, when the caller plays its own sound).
+ */
+const soundOf = (variant: Variant = "secondary") => (variant === "ghost" ? "soft" : "key");
+
 export function buttonClass({ variant = "secondary", size = "md", className }: { variant?: Variant; size?: Size; className?: string } = {}) {
   return cn(base, variants[variant], sizes[size], className);
 }
@@ -33,13 +41,13 @@ export function buttonClass({ variant = "secondary", size = "md", className }: {
 type ButtonProps = ComponentPropsWithoutRef<"button"> & { variant?: Variant; size?: Size };
 
 export function Button({ variant, size, className, type = "button", ...props }: ButtonProps) {
-  return <button type={type} className={buttonClass({ variant, size, className })} {...props} />;
+  return <button type={type} data-sound={soundOf(variant)} className={buttonClass({ variant, size, className })} {...props} />;
 }
 
 type ButtonLinkProps = ComponentPropsWithoutRef<typeof Link> & { variant?: Variant; size?: Size };
 
 export function ButtonLink({ variant, size, className, ...props }: ButtonLinkProps) {
-  return <Link className={buttonClass({ variant, size, className })} {...props} />;
+  return <Link data-sound={soundOf(variant)} className={buttonClass({ variant, size, className })} {...props} />;
 }
 
 type IconButtonProps = ComponentPropsWithoutRef<"button"> & { label: string; size?: Size };
@@ -50,6 +58,7 @@ export function IconButton({ label, size = "md", className, type = "button", ...
     <button
       type={type}
       aria-label={label}
+      data-sound="soft"
       className={cn(
         base,
         variants.ghost,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { play } from "@/lib/sound";
 
 type Theme = "light" | "dark";
 
@@ -30,7 +31,10 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
   return (
     <button
       type="button"
-      onClick={() => setTheme(next)}
+      onClick={() => {
+        setTheme(next);
+        play("toggle");
+      }}
       aria-label={`Switch to ${next} theme`}
       className={`relative inline-grid size-8 place-items-center rounded-key text-muted transition-colors duration-(--duration-exit) hover:bg-panel hover:text-ink hover:duration-(--duration-enter) ${className}`}
     >

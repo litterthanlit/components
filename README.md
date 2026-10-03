@@ -36,6 +36,7 @@ src/design-system/
 - **Motion:** `ease-out`, `ease-in-out`, `ease-drawer` and `ease-spring` curves, with `--duration-exit` (150ms), `--duration-enter` (210ms) and `--duration-move` (400ms).
 - **Physics:** `createSpring(initial, springs.snappy | gentle | bouncy, onUpdate)` runs a damped spring that writes straight to the DOM and keeps its velocity when interrupted. Use it for anything pointer-driven or interruptible. Siblings entering together are staggered by `--stagger` (50ms), capped at 8. Agent states use the `animate-shimmer`, `animate-wave`, `animate-hop` and `animate-caret` keyframes; agent shapes add `animate-stretch`, `animate-trace` (with `pathLength={1}`), `animate-morph`, `animate-assemble`, `animate-twist` and `animate-build` (a shared `--build` progress that children read).
 - **Elevation:** `shadow-sm`, `shadow-md` and `shadow-lg` are a 1px ring plus a soft shadow.
+- **Sound:** short clicks synthesized with Web Audio (no audio files) in `src/lib/sound.ts`. Call `play("tick" | "press" | "select" | …)`; it stays silent until the viewer's first press or key, and never throws. `Button`, `ButtonLink` and `IconButton` sound by themselves through a `data-sound` attribute (`data-sound="off"` opts out). Viewers can mute on `/system#sound`; the choice is saved per device in `localStorage` (`sound-muted`) and syncs across tabs. Audition every sound there too.
 
 If you change a value in `tokens.css`, mirror it in `tokens.ts`.
 
