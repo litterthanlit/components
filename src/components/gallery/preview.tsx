@@ -39,8 +39,10 @@ export function Preview({ slug, background, align = "center", lazy = false, clas
   }, [visible]);
 
   return (
+    // data-preview / data-preview-content let scripts/check-fit.mjs find the stage and its padded box.
     <div
       ref={ref}
+      data-preview={slug}
       className={cn(
         "relative isolate flex justify-center overflow-hidden",
         align === "bottom" ? "items-end" : "items-center",
@@ -52,7 +54,11 @@ export function Preview({ slug, background, align = "center", lazy = false, clas
       {background && (
         <div aria-hidden className={`pointer-events-none absolute inset-0 -z-10 stage-${background} stage-vignette`} />
       )}
-      <div className={cn("flex w-full items-center justify-center", align === "bottom" ? "px-6 pb-3 pt-6" : "p-6")} style={zoom ? { zoom } : undefined}>
+      <div
+        data-preview-content
+        className={cn("flex w-full items-center justify-center", align === "bottom" ? "px-6 pb-3 pt-6" : "p-6")}
+        style={zoom ? { zoom } : undefined}
+      >
         {visible && Demo ? <Demo /> : null}
       </div>
     </div>

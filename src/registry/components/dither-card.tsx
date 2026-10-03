@@ -427,18 +427,17 @@ export function DitherCard({ title, description, meta, href, pattern = "butterfl
       rel="noreferrer"
       onFocus={(e) => setFocused(e.currentTarget.matches(":focus-visible"))}
       onBlur={() => setFocused(false)}
-      className="@container flex flex-col rounded-xl outline-offset-4 transition-transform duration-(--duration-exit) ease-out active:scale-[0.98]"
+      className="flex flex-col rounded-xl outline-offset-4 transition-transform duration-(--duration-exit) ease-out active:scale-[0.98]"
     >
-      <div className="relative aspect-[4/5] overflow-hidden rounded-xl">
+      <div className="relative aspect-square overflow-hidden rounded-xl">
         <DitherField pattern={pattern} active={focused} />
         <div aria-hidden className="pointer-events-none absolute inset-0 rounded-xl shadow-[inset_0_0_0_1px_var(--line)]" />
       </div>
       <div className="mt-3 flex items-baseline justify-between gap-3 px-0.5">
         <h3 className="text-body font-medium text-ink">{title}</h3>
-        {meta && <span className="hidden shrink-0 text-meta tabular-nums text-muted @min-[10rem]:inline">{meta}</span>}
+        {meta && <span className="shrink-0 text-meta tabular-nums text-muted">{meta}</span>}
       </div>
-      {/* Narrow cards keep just the title; the cover carries them. */}
-      <p className="mt-0.5 hidden px-0.5 text-body text-muted @min-[10rem]:block">{description}</p>
+      <p className="mt-0.5 px-0.5 text-body text-muted">{description}</p>
       <span className="sr-only">(opens in a new tab)</span>
     </a>
   );
@@ -456,12 +455,20 @@ const projects: (DitherCardProps & { pattern: DitherPattern })[] = [
 
 export default function Demo() {
   return (
-    <div className="grid w-full max-w-3xl grid-cols-3 gap-3 sm:gap-5">
-      {projects.map((project, i) => (
-        <div key={project.title} className="animate-enter" style={{ animationDelay: `calc(${i} * var(--stagger))` }}>
-          <DitherCard {...project} />
-        </div>
-      ))}
+    // Sized to its container, not the viewport: narrow stages (phones, gallery
+    // cards) show two covers without descriptions; wider ones show all three.
+    <div className="@container w-full max-w-[43rem]">
+      <div className="grid grid-cols-2 gap-3 @max-md:[&_p]:hidden @md:grid-cols-3 @md:gap-5">
+        {projects.map((project, i) => (
+          <div
+            key={project.title}
+            className={`animate-enter ${i > 1 ? "@max-md:hidden" : ""}`}
+            style={{ animationDelay: `calc(${i} * var(--stagger))` }}
+          >
+            <DitherCard {...project} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

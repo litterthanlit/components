@@ -75,22 +75,26 @@ const items = [
 
 export default function Demo() {
   return (
-    <div className="grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-2">
-      {items.map((item, i) => (
-        <SpotlightCard key={item.title} className="animate-enter" style={{ animationDelay: `calc(${i} * var(--stagger))` }}>
-          <article className="flex h-full flex-col gap-6 p-5">
-            <div className="flex items-center gap-2">
-              <span aria-hidden className="size-1.5 rounded-full bg-accent" />
-              <h3 className="text-body font-medium text-ink">{item.title}</h3>
-            </div>
-            <p className="text-body text-muted">{item.body}</p>
-            <p className="mt-auto flex items-baseline gap-2 border-t border-line pt-4">
-              <span className="font-mono text-title tracking-tight tabular-nums text-ink">{item.stat}</span>
-              <span className="text-meta text-muted">{item.label}</span>
-            </p>
-          </article>
-        </SpotlightCard>
-      ))}
+    // Sized to its container, not the viewport: narrow stages keep both cards
+    // side by side (so the light still crosses them) and drop the body copy.
+    <div className="@container w-full max-w-xl">
+      <div className="grid grid-cols-2 gap-3">
+        {items.map((item, i) => (
+          <SpotlightCard key={item.title} className="animate-enter" style={{ animationDelay: `calc(${i} * var(--stagger))` }}>
+            <article className="flex h-full flex-col gap-4 p-4 @md:gap-6 @md:p-5">
+              <div className="flex items-center gap-2">
+                <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-accent" />
+                <h3 className="text-body font-medium text-ink">{item.title}</h3>
+              </div>
+              <p className="hidden text-body text-muted @md:block">{item.body}</p>
+              <p className="mt-auto flex flex-wrap items-baseline gap-x-2 border-t border-line pt-4">
+                <span className="font-mono text-title tracking-tight tabular-nums text-ink">{item.stat}</span>
+                <span className="text-meta text-muted">{item.label}</span>
+              </p>
+            </article>
+          </SpotlightCard>
+        ))}
+      </div>
     </div>
   );
 }
