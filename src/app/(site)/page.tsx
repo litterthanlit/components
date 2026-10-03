@@ -1,6 +1,6 @@
 import { GalleryGrid } from "@/components/gallery/gallery-grid";
 import { Container } from "@/design-system";
-import { allTags, registry } from "@/registry";
+import { registry } from "@/registry";
 import { site } from "@/site.config";
 
 export default function Home() {
@@ -25,7 +25,7 @@ export default function Home() {
         </p>
       </section>
 
-      <GalleryGrid entries={registry} tags={allTags} />
+      <GalleryGrid entries={registry} />
     </Container>
   );
 }

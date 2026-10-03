@@ -163,8 +163,6 @@ export function getNeighbors(slug: string) {
   };
 }
 
-export const allTags = Array.from(new Set(registry.flatMap((entry) => entry.tags))).sort();
-
 export function formatDate(iso: string) {
   return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", {
     month: "short",
