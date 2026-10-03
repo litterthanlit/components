@@ -8,8 +8,9 @@
  *
  * The stage (src/components/gallery/preview.tsx) clips whatever leaves its
  * padded box, so a demo that is too tall loses its top and bottom edges
- * without any error. This loads each component page, every gallery slide and
- * its closer look, and the capture frame at several viewport widths and
+ * without any error. This loads each component page, every component on the
+ * home page's device (its preview beside the menu, then open on the screen),
+ * and the capture frame at several viewport widths and
  * measures every demo, including absolutely positioned and transformed
  * children, against that padded box.
  *
@@ -72,6 +73,8 @@ function measureStages({ only, within } = {}) {
     const style = getComputedStyle(el);
     // Hidden or fully faded elements (and everything inside them) paint nothing.
     if (style.display === "none" || parseFloat(style.opacity) === 0) return null;
+    // So do visually hidden ones (sr-only): their -1px margin only shows once a stage zooms in.
+    if (style.clipPath === "inset(50%)" || style.clip === "rect(0px, 0px, 0px, 0px)") return null;
     let box = null;
     const r = el.getBoundingClientRect();
     if (style.visibility !== "hidden" && r.width > 0 && r.height > 0) {
@@ -164,29 +167,26 @@ for (const width of widths) {
     record("detail", width, await page.evaluate(measureStages, { only: [slug] }));
   }
 
-  // The gallery is a slideshow that only mounts the centre slide and its
-  // neighbours, so pause it and step through with the wheel, measuring the
-  // centre stage each time, then the closer-look dialog for the same slide.
+  // The home page is a device that only mounts one demo at a time. Step down
+  // its menu with the keyboard, measuring the highlighted component's live
+  // preview beside the list, then open it on the screen and measure it there.
   await page.goto(`${BASE_URL}/`, { waitUntil: "load" });
   await settle(page);
-  const toggle = page.locator('[data-wheel="toggle"]');
-  if ((await toggle.getAttribute("data-playing")) === "true") await toggle.click();
-  const total = await page.locator("[data-slide]").count();
-  for (let i = 0; i < total; i++) {
-    const slug = await page.locator("[data-slide][data-active]").getAttribute("data-slide");
+  for (const slug of allSlugs) {
     if (slugs.includes(slug)) {
-      await mounted(page, `[data-slide][data-active] [data-preview="${slug}"]`);
+      await mounted(page, `[data-device-preview] [data-preview="${slug}"]`);
       await page.waitForTimeout(SETTLE);
-      record("gallery", width, await page.evaluate(measureStages, { only: [slug], within: "[data-slide][data-active]" }));
+      record("menu", width, await page.evaluate(measureStages, { only: [slug], within: "[data-device-preview]" }));
 
-      await page.click('[data-wheel="look"]');
-      await mounted(page, `dialog[open] [data-preview="${slug}"]`);
+      await page.keyboard.press("Enter");
+      await mounted(page, `[data-app] [data-preview="${slug}"]`);
       await page.waitForTimeout(SETTLE);
-      record("closer", width, await page.evaluate(measureStages, { only: [slug], within: "dialog[open]" }));
+      record("screen", width, await page.evaluate(measureStages, { only: [slug], within: "[data-app]" }));
       await page.keyboard.press("Escape");
-      await page.waitForFunction(() => !document.querySelector("dialog[open]"), null, { timeout: 5000 });
+      // The prototype unmounts once it has slid away.
+      await page.waitForFunction(() => !document.querySelector("[data-app]"), null, { timeout: 5000 });
     }
-    await page.click('[data-wheel="next"]');
+    await page.keyboard.press("ArrowDown");
   }
 
   await context.close();

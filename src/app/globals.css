@@ -33,15 +33,18 @@ h3 {
   outline-offset: 2px;
 }
 
-/* Gallery cards open a closer look on click, except over the demo's own
-   controls. In the base layer, so a demo's cursor utilities still win. */
-@layer base {
-  [data-zoom] {
-    cursor: zoom-in;
-  }
-  [data-zoom] :where(a, button, input, select, textarea, label, [role="button"], [role="link"], [role="radio"], [role="checkbox"], [role="switch"], [role="slider"], [role="tab"]) {
-    cursor: auto;
-  }
+/* The device on the home page. Grain: fine, even noise blended over the
+   body's gradient, so it reads as bead-blasted metal rather than paint. */
+.device-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  mix-blend-mode: soft-light;
+  opacity: var(--device-grain);
+}
+/* Scanlines over the display: a 1px row every 3px, barely there. */
+.screen-grid {
+  background-image: linear-gradient(var(--screen-grid) 1px, transparent 1px);
+  background-size: 100% 3px;
 }
 
 /* Soft colour washes behind the page, as on litt.design. */
