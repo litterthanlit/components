@@ -60,8 +60,9 @@ export const typeScale = [
 ] as const;
 
 export const radii = [
-  { token: "sm", px: 6, use: "Chips, kbd, small buttons" },
-  { token: "md", px: 8, use: "Buttons, inputs" },
+  { token: "key", px: 2, use: "Buttons" },
+  { token: "sm", px: 6, use: "Chips, kbd" },
+  { token: "md", px: 8, use: "Inputs" },
   { token: "lg", px: 12, use: "Cards, previews, toasts" },
   { token: "xl", px: 16, use: "Stages, large panels" },
 ] as const;

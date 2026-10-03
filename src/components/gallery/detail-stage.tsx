@@ -43,7 +43,7 @@ export function DetailStage({ slug, initial = "grid" }: { slug: string; initial?
           />
         )}
         <div className="ml-auto flex items-center gap-1.5">
-          <Button variant="ghost" size="sm" onClick={() => setReplay((n) => n + 1)}>
+          <Button size="sm" onClick={() => setReplay((n) => n + 1)}>
             <svg aria-hidden viewBox="0 0 16 16" fill="none" className="size-3.5">
               <path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 2.5v2.75h2.75" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>

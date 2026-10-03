@@ -32,7 +32,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
       type="button"
       onClick={() => setTheme(next)}
       aria-label={`Switch to ${next} theme`}
-      className={`relative inline-grid size-8 place-items-center rounded-md text-muted transition-colors duration-(--duration-exit) hover:bg-panel hover:text-ink hover:duration-(--duration-enter) ${className}`}
+      className={`relative inline-grid size-8 place-items-center rounded-key text-muted transition-colors duration-(--duration-exit) hover:bg-panel hover:text-ink hover:duration-(--duration-enter) ${className}`}
     >
       {/* Sun */}
       <svg

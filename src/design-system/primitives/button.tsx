@@ -6,17 +6,24 @@ type Variant = "primary" | "secondary" | "ghost";
 type Size = "sm" | "md";
 
 const base =
-  "inline-flex shrink-0 select-none items-center justify-center gap-1.5 whitespace-nowrap font-medium transition-[background-color,color,box-shadow,transform,opacity] duration-(--duration-exit) ease-out hover:duration-(--duration-enter) active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex shrink-0 select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-key font-medium transition-[background-color,color,box-shadow,transform,opacity,filter] duration-(--duration-exit) ease-out hover:duration-(--duration-enter) disabled:pointer-events-none disabled:opacity-50";
+
+/*
+ * Primary and secondary are keys (see --key-* in tokens.css): they sit on a
+ * 2px base and sink onto it while pressed, with lettering cut into the face.
+ * Ghost stays flat; it is the quiet option.
+ */
+const press = "hover:brightness-[1.06] active:translate-y-[2px] active:duration-75";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-ink text-canvas hover:opacity-85",
-  secondary: "bg-surface text-ink shadow-sm hover:shadow-[0_0_0_1px_var(--line-strong),0_1px_2px_rgb(0_0_0/0.04)]",
-  ghost: "text-muted hover:bg-panel hover:text-ink",
+  primary: `[background:var(--key-primary-face)] text-(--key-primary-ink) [text-shadow:var(--key-primary-engrave)] shadow-(--key-primary-shadow) active:shadow-(--key-primary-shadow-pressed) ${press}`,
+  secondary: `[background:var(--key-face)] text-(--key-ink) [text-shadow:var(--key-engrave)] shadow-(--key-shadow) active:shadow-(--key-shadow-pressed) ${press}`,
+  ghost: "text-muted hover:bg-panel hover:text-ink active:scale-[0.97]",
 };
 
 const sizes: Record<Size, string> = {
-  sm: "h-7 rounded-sm px-2.5 text-meta",
-  md: "h-9 rounded-md px-3.5 text-body",
+  sm: "h-7 px-2.5 text-meta",
+  md: "h-9 px-3.5 text-body",
 };
 
 export function buttonClass({ variant = "secondary", size = "md", className }: { variant?: Variant; size?: Size; className?: string } = {}) {
@@ -46,7 +53,7 @@ export function IconButton({ label, size = "md", className, type = "button", ...
       className={cn(
         base,
         variants.ghost,
-        size === "sm" ? "size-7 rounded-sm" : "size-9 rounded-md",
+        size === "sm" ? "size-7" : "size-9",
         className,
       )}
       {...props}
