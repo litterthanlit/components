@@ -52,7 +52,7 @@ export function DetailStage({ slug, initial = "grid" }: { slug: string; initial?
             Replay
           </Button>
           {authoring && (
-            <a href={captureHref} target="_blank" rel="noreferrer" className={buttonClass({ variant: "secondary", size: "sm" })}>
+            <a href={captureHref} target="_blank" rel="noreferrer" data-sound="key" className={buttonClass({ variant: "secondary", size: "sm" })}>
               Capture frame ↗<span className="sr-only">(opens in a new tab)</span>
             </a>
           )}

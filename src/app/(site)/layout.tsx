@@ -1,5 +1,4 @@
 import { SiteFooter, SiteHeader } from "@/components/gallery/site-header";
-import { SoundRuntime } from "@/components/sound/sound-runtime";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -16,7 +15,6 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
         {children}
       </main>
       <SiteFooter />
-      <SoundRuntime />
     </>
   );
 }
