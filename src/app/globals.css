@@ -3,8 +3,8 @@
 
 /* The device's arrangements: its deck under the screen in a column (phones,
    the default), in a row (tablets and up, `wide`), in a row with room for
-   the maker's window to stand tall (`roomy`), or beside the screen when the
-   viewport is a short landscape (phones on their side, `short`). */
+   a wider readout (`roomy`), or beside the screen when the viewport is a
+   short landscape (phones on their side, `short`). */
 @custom-variant wide (@media (min-width: 720px) and (min-height: 521px));
 @custom-variant roomy (@media (min-width: 1100px) and (min-height: 521px));
 @custom-variant short (@media (orientation: landscape) and (max-height: 520px));
@@ -56,12 +56,11 @@ h3 {
   opacity: var(--device-grain);
 }
 /* The deck's grid, one per arrangement (see the variants above). On phones
-   the screen comes first: no readout, the maker's window and the hold
+   the screen comes first: no readout, the maker's nameplate and the hold
    switch tucked into the corners beside the dial (PLAY at its centre, STOP
    beside it), and the key row along the bottom edge, under the thumbs. On
-   wide decks the readout returns over the key row, the dial beside them,
-   and the window is a nameplate over the readout, until the deck is roomy
-   enough for it to stand the full height of the deck on its left. */
+   wide decks the nameplate and the hold switch share the top edge, the
+   readout sits over the key row, and the dial stands beside them. */
 .deck-grid {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -76,15 +75,6 @@ h3 {
       "badge hold"
       "well dial"
       "keys dial";
-  }
-}
-@media (min-width: 1100px) and (min-height: 521px) {
-  .deck-grid {
-    grid-template-columns: auto auto auto;
-    grid-template-areas:
-      "badge . hold"
-      "badge well dial"
-      "badge keys dial";
   }
 }
 /* A take coming onto the screen: in from the side it was dialled from. */

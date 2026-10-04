@@ -5,7 +5,7 @@ import { useEffect, useEffectEvent, useId, useLayoutEffect, useMemo, useRef, use
 import { setTheme, useTheme } from "@/components/gallery/theme-toggle";
 import { VOLUME_DEFAULT, VOLUME_MAX, getVolume, isMuted, play, setMuted, setVolume, subscribeMuted, subscribeVolume } from "@/lib/sound";
 import { site } from "@/site.config";
-import { Dial } from "./dial";
+import { Dial, type DialButton } from "./dial";
 import { takeLength, takeLengths, usePageVisible, useReducedMotion } from "./hooks";
 import { DeviceKey, DeviceKeyLink, HoldSwitch, RoundKey } from "./keys";
 import { LogoWindow } from "./logo-window";
@@ -49,18 +49,22 @@ function SearchGlyph() {
   );
 }
 
-const StopGlyph = () => <span aria-hidden className="size-[0.95em] rounded-[0.14em] bg-(--device-key-ink)" />;
+const StopGlyph = () => <span aria-hidden className="size-[0.8em] rounded-[0.12em] bg-(--device-key-ink) opacity-90 [filter:var(--device-engrave-glyph)]" />;
 
-/** What the dial's centre shows: PLAY or pause, in red, on a take; OK, printed small, on a list. */
+/**
+ * What the dial's centre shows: PLAY or pause on a take, OK on a list. Printed
+ * in the keys' grey like every other legend; the LCD's chip and the window's
+ * light are what turn red while the tape runs.
+ */
 function CentreGlyph({ take, playing }: { take: boolean; playing: boolean }) {
   if (!take)
     return (
-      <span aria-hidden className="text-[max(8px,4.6cqw)] font-semibold tracking-[0.08em] text-(--device-key-ink) opacity-60 [text-shadow:var(--device-engrave)]">
+      <span aria-hidden className="text-[max(8px,4.4cqw)] font-semibold tracking-[0.08em] opacity-75 [text-shadow:var(--device-engrave)]">
         OK
       </span>
     );
   return (
-    <svg aria-hidden viewBox="0 0 16 16" className="size-[11cqw] fill-(--device-rec)">
+    <svg aria-hidden viewBox="0 0 16 16" className="size-[7cqw] fill-current [filter:var(--device-engrave-glyph)]">
       {playing ? <path d="M4 2.5h2.8v11H4zM9.2 2.5H12v11H9.2z" /> : <path d="M5 2.4 13.4 8 5 13.6z" />}
     </svg>
   );
@@ -73,12 +77,13 @@ function CentreGlyph({ take, playing }: { take: boolean; playing: boolean }) {
  * marks the one on screen. Under that, the deck: an LCD with live meters, a
  * row of keys, and the dial, whose centre is PLAY, with STOP beside it.
  *
- * Driving it: turning the dial (or ← →, or dragging along the tape) steps
- * through studies, and PLAY, at the dial's centre, rolls the tape so each
- * study plays for a few seconds before the next. STOP rewinds the study to
- * its first frame. The title on the screen (or Enter) shows what the study
- * is; ↑ ↓ set the volume. HOME, OPTIONS and the search key bring up screens
- * of their own, which the dial then drives, its centre turning into OK.
+ * Driving it: the dial's arrows (or ← →) step through studies, turning it
+ * (or dragging along the tape) scrubs, and PLAY, at the dial's centre, rolls
+ * the tape so each study plays for a few seconds before the next. STOP
+ * rewinds the study to its first frame. The title on the screen (or Enter)
+ * shows what the study is; ↑ ↓ set the volume. FIND, HOME and OPTIONS bring
+ * up screens of their own, which the dial then drives, its centre turning
+ * into OK.
  * A running study keeps its own keys, except an Escape it leaves unhandled.
  * Every press clicks (src/lib/sound.ts); the hold switch mutes it.
  *
@@ -555,6 +560,9 @@ export function Device({ studies }: { studies: Study[] }) {
       ? { label: "Dial: studies", now: dialled + 1, max: n, text: `${study.title}, ${dialled + 1} of ${n}` }
       : { label: `Dial: ${titles[view]}`, now: cursor + 1, max: Math.max(1, items.length), text: panelItem ? `${panelItem.text}, ${cursor + 1} of ${items.length}` : "Nothing found" };
   const hintId = `${ids}-hint`;
+  // A key held on the keyboard shows on the dial: the arrows on its sides, Space or Enter on its centre.
+  const dialFlash: DialButton | null =
+    flash === "up" || flash === "down" || flash === "prev" || flash === "next" ? flash : flash !== null && flash === (view === "take" ? "play" : "ok") ? "centre" : null;
   const title = view === "take" ? study.title : titles[view];
 
   return (
@@ -709,10 +717,8 @@ export function Device({ studies }: { studies: Study[] }) {
 
           {/* The deck. Sized in em from one font size, so it scales as one piece. */}
           <div className="deck-grid shrink-0 content-center justify-center gap-x-[1.3em] gap-y-[0.8em] border-t border-black/[0.07] px-[1.1em] pb-[1.3em] pt-[1.1em] [font-size:clamp(9px,min(3.2vw,1.7vh),15px)] dark:border-white/[0.06] wide:gap-x-[3.2em] wide:px-[2.4em] wide:py-[1.7em] wide:[font-size:clamp(10px,min(1.45vw,1.6vh),16px)] roomy:gap-x-[3em] roomy:[font-size:clamp(10px,min(1.25vw,1.6vh),16px)] short:border-l short:border-t-0 short:px-[1em] short:py-[0.9em] short:[font-size:clamp(8px,2.7vh,12px)]">
-            <LogoWindow
-              live={playing}
-              className="self-start justify-self-start [grid-area:badge] wide:self-center roomy:w-[11.5em] roomy:self-stretch roomy:justify-self-stretch"
-            />
+            {/* The maker's mark: a nameplate, quiet beside the controls. */}
+            <LogoWindow live={playing} className="self-start justify-self-start [grid-area:badge] wide:self-center" />
             <HoldSwitch held={muted} onChange={toggleHold} className="self-start justify-self-end [grid-area:hold] wide:self-center" />
 
             <Readout
@@ -726,9 +732,10 @@ export function Device({ studies }: { studies: Study[] }) {
               className="hidden self-end [grid-area:well] wide:flex"
             />
 
-            <div className="flex items-center justify-between gap-[0.3em] rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess) [grid-area:keys] wide:self-start">
-              <DeviceKey aria-label="Find a study" pressed={flash === "find"} onClick={() => press("find")}>
-                <SearchGlyph />
+            {/* Four keys of one size, on one grid, each lettered with what it does. */}
+            <div className="grid grid-cols-4 gap-[0.3em] rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess) [grid-area:keys] wide:self-start">
+              <DeviceKey aria-label="Find a study" pressed={flash === "find"} aria-pressed={view === "find"} onClick={() => press("find")}>
+                Find
               </DeviceKey>
               <DeviceKey pressed={flash === "home"} aria-pressed={view === "home"} onClick={() => press("home")}>
                 Home
@@ -744,16 +751,18 @@ export function Device({ studies }: { studies: Study[] }) {
             {/* The dial, PLAY at its centre, and STOP set beside it like a turntable's start key. */}
             <div className="relative self-center justify-self-center [grid-area:dial]">
               <Dial
-                flash={view === "take" ? flash === "play" : flash === "ok"}
+                flash={dialFlash}
                 onTurn={(steps) => {
                   wake();
                   turn(steps);
                 }}
-                centre={{
-                  label: view === "take" ? (playing ? "Pause" : "Play") : "Choose",
-                  glyph: <CentreGlyph take={view === "take"} playing={playing} />,
-                  onPress: () => press(view === "take" ? "play" : "ok"),
-                }}
+                onPress={(button) => press(button !== "centre" ? button : view === "take" ? "play" : "ok")}
+                labels={
+                  view === "take"
+                    ? { up: "Volume up", down: "Volume down", prev: "Previous study", next: "Next study", centre: playing ? "Pause" : "Play" }
+                    : { up: "Up", down: "Down", prev: view === "options" ? "Less" : "Previous", next: view === "options" ? "More" : "Next", centre: "Choose" }
+                }
+                centre={<CentreGlyph take={view === "take"} playing={playing} />}
                 slider={slider}
                 sliderRef={sliderRef}
                 hint={hintId}
@@ -765,7 +774,7 @@ export function Device({ studies }: { studies: Study[] }) {
                 pressed={flash === "stop"}
                 onClick={() => press("stop")}
                 // Between three and four o'clock, just clear of the dial's collar.
-                className="absolute left-[calc(50%_+_(50%_+_2.2em)_*_0.906_-_1.8em)] top-[calc(50%_+_(50%_+_2.2em)_*_0.423_-_1.8em)]"
+                className="absolute left-[calc(50%_+_(50%_+_2.45em)_*_0.906_-_1.8em)] top-[calc(50%_+_(50%_+_2.45em)_*_0.423_-_1.8em)]"
               >
                 <StopGlyph />
               </RoundKey>

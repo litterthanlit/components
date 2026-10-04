@@ -31,7 +31,7 @@ const sink =
   "transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75 group-data-pressed/key:translate-y-[2px] group-data-pressed/key:shadow-(--device-key-shadow-pressed) group-data-pressed/key:duration-75";
 
 const raisedFace = cn(
-  "grid h-[2.5em] min-w-[2.5em] place-items-center rounded-[0.7em] px-[0.95em] text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow)",
+  "grid h-[2.5em] w-full min-w-[2.5em] place-items-center rounded-[0.7em] px-[0.95em] text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow)",
   sink,
 );
 
