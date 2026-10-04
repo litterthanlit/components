@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "agent-indicators",
+    title: "Agent Indicators",
+    description:
+      "Six ways to say an agent is working, each a mechanism from the player's hardware. Seven segments chase round while it thinks, fading with an LCD's persistence; a tuner seeks between stations on a spring while it searches; meters take tokens in with VU-style ballistics while it reads; a dot matrix works through an interference pattern while it reasons; step lights latch as it runs; reels record to tape while it writes. One frame loop draws them all.",
+    tagline: "Thinking, searching, reading, reasoning, running and writing, in hardware.",
+    tags: ["ai", "feedback", "motion", "svg"],
+    date: "2026-10-04",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "agent-status",
     title: "Agent Status",
     description:
