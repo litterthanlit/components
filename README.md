@@ -9,7 +9,7 @@ A gallery of interface components by [Nick Georgiev](https://litt.design). It's 
 - **Auto OG images** — every page unfurls with a branded card when you paste the link in a tweet.
 - **One-command export** — `npm run capture` writes 2× PNGs for every component, in dark and light.
 
-Stack: Next.js 16 (App Router), React 19, Tailwind CSS v4, Shiki and Geist. Every component is a single file that needs only React and Tailwind.
+Stack: Next.js 16 (App Router), React 19, Tailwind CSS v4, Shiki and Geist. Every component is a single file that needs React and Tailwind; the ones that make sound or use springs also import `src/lib/sound.ts` and `src/design-system/motion/spring.ts`.
 
 ## Getting started
 
@@ -36,7 +36,9 @@ src/design-system/
 - **Motion:** `ease-out`, `ease-in-out`, `ease-drawer` and `ease-spring` curves, with `--duration-exit` (150ms), `--duration-enter` (210ms) and `--duration-move` (400ms).
 - **Physics:** `createSpring(initial, springs.snappy | gentle | bouncy, onUpdate)` runs a damped spring that writes straight to the DOM and keeps its velocity when interrupted. Use it for anything pointer-driven or interruptible. Siblings entering together are staggered by `--stagger` (50ms), capped at 8. Agent states use the `animate-shimmer`, `animate-wave`, `animate-hop` and `animate-caret` keyframes; agent shapes add `animate-stretch`, `animate-trace` (with `pathLength={1}`), `animate-morph`, `animate-assemble`, `animate-twist` and `animate-build` (a shared `--build` progress that children read).
 - **Elevation:** `shadow-sm`, `shadow-md` and `shadow-lg` are a 1px ring plus a soft shadow.
-- **Sound:** short clicks synthesized with Web Audio (no audio files) in `src/lib/sound.ts`. Call `play("tick" | "press" | "select" | "start" | "stop" | …)`; it stays silent until the viewer's first press or key, and never throws. `setVolume(0–10)` moves the bus in 2 dB steps around the level every sound was tuned at (7) and is remembered per device (`sound-volume`); `readLevels()` returns the left and right peaks leaving the bus, for meters. `Button`, `ButtonLink` and `IconButton` sound by themselves through a `data-sound` attribute (`data-sound="off"` opts out). Viewers can mute on `/system#sound`; the choice is saved per device in `localStorage` (`sound-muted`) and syncs across tabs. Audition every sound there too.
+- **Sound:** short clicks synthesized with Web Audio (no audio files) in `src/lib/sound.ts`. Call `play("tick" | "press" | "select" | "start" | "stop" | …)`; it stays silent until the viewer's first press or key, and never throws. `setVolume(0–10)` moves the bus in 2 dB steps around the level every sound was tuned at (7) and is remembered per device (`sound-volume`); `readLevels()` returns the left and right peaks leaving the bus, for meters. `Button`, `ButtonLink` and `IconButton` sound by themselves through a `data-sound` attribute (`data-sound="off"` opts out). Viewers can mute on `/system#sound`; the choice is saved per device in `localStorage` (`sound-muted`) and syncs across tabs. Audition every sound there too. `slate` is a held 1 kHz line-up tone (tone layers take a `hold`), which the VU Meter reads as 0 VU. For sequencers, `play(name, { delay })` schedules up to 0.5 s ahead on the audio clock; the rate limit counts when a sound will be heard, and scheduled sounds always leave two of the eight voices for key clicks.
+- **Studies that sound on the player:** the running study carries the tape's transport as `data-transport`, which `hostTransport(el)` reads. Play aloud while it's `play`; while it's `pause`, run but keep quiet until the viewer works the study; after `stop` (which remounts it), stay put. With no host (component pages, captures) it reads `play`.
+- **Hardware materials:** the device's tokens work anywhere: `--device-body` and `--device-body-edge` for a plate, `--device-well` with `--device-recess` for anything pressed in, `--device-key-face` with `--device-key-shadow(-pressed)` for keys (2px of travel), `--device-wheel-face` for caps, `--device-lcd` with `--device-lcd-edge` and `--device-lcd-ink` for screens, `--device-meter-on/off` for lights, `--device-rec` and `--device-hold` for the two signal colours, and `--device-engrave` for lettering. `.device-grain` adds the body's finish.
 
 If you change a value in `tokens.css`, mirror it in `tokens.ts`.
 
@@ -48,9 +50,16 @@ If you change a value in `tokens.css`, mirror it in `tokens.ts`.
 
 The component page, OG image and capture route are generated from that entry.
 
+The player gives each study a few seconds, untouched, and a phone a small screen, so a study should:
+
+- **Move in its first four seconds** without a cursor (a rehearsal, a recall, a roll from zero), then reward the hand.
+- **Be built from the device's materials** (above), so it reads as a part of the same instrument, not a card on a screen; a plate of the body's finish, not a second player.
+- **Sound through `play()`** and follow the `data-transport` rule, so HOLD, M and the volume apply.
+- **Turn without transforms** where it rotates (`conic-gradient(from var(--a))`, or SVG attributes), and round any trigonometry it renders on the server, so hydration matches.
+
 ### Overflow check
 
-A demo's stage changes size with where it's shown: the device's screen zooms demos down on small phones and up a little on large displays, and a component page on a phone grows with its demo. Anything taller is clipped silently. So size demos to their container (`@container`, `@md:`), not the viewport (`sm:`), and run the check before pushing:
+A demo's stage changes size with where it's shown: the device's screen zooms demos down on small phones and up a little on large displays, and a component page on a phone grows with its demo. Anything taller is clipped silently. The smallest box a demo gets is about 282 × 332 CSS px (the device's floor zoom, less the stage's padding); the capture frame is 702 × 374. So size demos to their container (`@container`, `@md:`; or a `cqw` font size on a child of the container, with everything else in `em`), not the viewport (`sm:`), and run the check before pushing:
 
 ```bash
 npm run build && npm start   # in one terminal
