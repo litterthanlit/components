@@ -11,6 +11,7 @@ const loading = () => <div className="size-6 animate-pulse rounded-full bg-line"
 
 export const previews: Record<string, ComponentType> = {
   "step-sequencer": dynamic(() => import("./components/step-sequencer"), { loading }),
+  knob: dynamic(() => import("./components/knob"), { loading }),
   "agent-shapes": dynamic(() => import("./components/agent-shapes"), { loading }),
   "agent-run": dynamic(() => import("./components/agent-run"), { loading }),
   "agent-loaders": dynamic(() => import("./components/agent-loaders"), { loading }),

@@ -34,6 +34,17 @@ export const registry: RegistryEntry[] = [
     background: "plain",
   },
   {
+    slug: "knob",
+    title: "Knob",
+    description:
+      "A detented rotary control after a mixing desk's: a knurled cap in a collar, a ring of fifteen lights and its value on a small LCD. Values set from outside travel on a motor (a spring) and click through every detent they pass, so recalling a scene sounds like a desk resetting itself; values set by hand follow the hand. Log taper for frequencies, a centre-out ring for cut and boost. Drag, scroll or use the arrow keys.",
+    tagline: "A channel strip that recalls scenes on its motors.",
+    tags: ["sound", "input", "pointer", "a11y"],
+    date: "2026-10-04",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "agent-shapes",
     title: "Agent Shapes",
     description:
