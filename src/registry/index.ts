@@ -56,6 +56,17 @@ export const registry: RegistryEntry[] = [
     background: "plain",
   },
   {
+    slug: "vu-meter",
+    title: "VU Meter",
+    description:
+      "A pair of VU meters reading the page's own sound: backlit faces behind glass, needles with the VU standard's ballistics (99% of a steady tone in about 300 ms, about 1.5% overshoot) and a peak light each. Levels come from the shared sound bus every frame, so the needles kick with every key and click on the page. The scale is linear in voltage, with 0 VU seven tenths of the way across. SLATE sends a 1 kHz line-up tone that settles on 0.",
+    tagline: "Needles that read the page's own sound.",
+    tags: ["sound", "data", "motion", "svg"],
+    date: "2026-10-04",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "agent-shapes",
     title: "Agent Shapes",
     description:
