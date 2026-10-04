@@ -146,7 +146,7 @@ Black glass with a diagonal sheen: the gradient breaks hard at 47%, where the li
 | `--device-lcd-ink` | `#f5f5f5` (14:1) | `#f2f2f2` (16:1) |
 | `--device-lcd-dim` | `rgb(255 255 255 / 0.64)` (6.6:1) | `rgb(255 255 255 / 0.62)` (7.5:1) |
 
-- **The chip** is `bg-white text-black rounded-[0.4em] px-[0.42em] py-[0.24em]`, a glyph and a word at 0.58 to 0.6em, semibold capitals tracked 0.02em. The glyph says the state before the word does: a red dot that pulses for play, record or recall; two bars for pause; a square for stop; a black dot for ready or loaded; an orange dot for a hand on it (TOUCH, edited).
+- **The chip** is `bg-white text-black rounded-[0.4em] px-[0.42em] py-[0.24em]`, a glyph and a word at 0.58 to 0.6em, semibold capitals tracked 0.02em. The glyph says the state before the word does: a red dot that pulses for play, record or recall; two bars for pause; a square for stop; a black dot for ready or loaded; an orange dot for a hand on it (TOUCH, edited) or a hand needed (an agent waiting for your OK); a red square for a fault (an agent's error), the stop's shape so it never reads as a run.
 - **Figures** are light (300), tabular, tracked −0.03em; units at 0.3em in `--device-lcd-dim`. The player's clock reads minutes, seconds and frames at 25 fps (`00M 14S 06F`).
 - **Other faces of the same glass:** seven-segment cells over the faint 8 of their unlit segments (One-Time Code), and a dot matrix with ghost dots at 8% (Ticker).
 

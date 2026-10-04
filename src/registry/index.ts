@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "agent-status",
+    title: "Agent Status",
+    description:
+      "An agent's run on a recorder's readout. The chip names the state: Thinking, Tool, Writing, Waiting, Done, Error or Stopped. A clock counts only the time the run is live, in minutes, seconds and frames; it holds while a call waits on your OK and freezes on the frame STOP goes down. Three lights latch as the run passes each phase, and the one firing flickers with every chunk of tokens through a 90 ms detector, so a stall goes quiet.",
+    tagline: "An agent's run, on the recorder's readout.",
+    tags: ["ai", "feedback", "sound", "a11y"],
+    date: "2026-10-04",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "command-menu",
     title: "Command Menu",
     description:
