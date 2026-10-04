@@ -5,12 +5,18 @@ import type { ComponentPropsWithoutRef, KeyboardEvent, ReactNode } from "react";
 import { cn } from "@/design-system";
 import { play } from "@/lib/sound";
 
-/** Lettering cut into the body: tiny capitals, lit from above. */
-export const engraved =
-  "text-[9px] font-semibold uppercase leading-none tracking-[0.16em] text-(--device-label) [text-shadow:var(--device-engrave)]";
+/**
+ * The deck's keys. Sizes are in em: the deck sets one font size for its
+ * arrangement and viewport, and every key, well and caption scales with it,
+ * like one physical object.
+ */
 
-const face =
-  "relative grid h-[clamp(26px,9cqw,34px)] w-full place-items-center rounded-key text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75 group-data-pressed/key:translate-y-[2px] group-data-pressed/key:shadow-(--device-key-shadow-pressed) group-data-pressed/key:duration-75";
+/** The maker's lettering on the body: tiny capitals, quiet. */
+export const engraved =
+  "text-[9px] font-semibold uppercase leading-none tracking-[0.16em] text-(--device-label-quiet) [text-shadow:var(--device-engrave)]";
+
+/** Printed captions under and on keys: STOP, HOME, OPTIONS. */
+const lettering = "text-[0.8em] font-medium uppercase leading-none tracking-[0.03em] [text-shadow:var(--device-engrave)]";
 
 // Every key clicks down and up, however it's pressed.
 const sounds = {
@@ -20,52 +26,94 @@ const sounds = {
   onKeyUp: (e: KeyboardEvent) => (e.key === "Enter" || e.key === " ") && play("release"),
 };
 
+// Sinks 2px onto its base while held, or while its keyboard shortcut is (data-pressed).
+const sink =
+  "transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75 group-data-pressed/key:translate-y-[2px] group-data-pressed/key:shadow-(--device-key-shadow-pressed) group-data-pressed/key:duration-75";
+
+const raisedFace = cn(
+  "grid h-[2.5em] min-w-[2.5em] place-items-center rounded-[0.7em] px-[0.95em] text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow)",
+  sink,
+);
+
 type KeyProps = {
-  /** Engraved on the body under the key. */
-  caption: string;
-  /** The glyph on the key's face. */
+  /** Shown pressed: the key's keyboard shortcut is held. */
+  pressed?: boolean;
   children: ReactNode;
   className?: string;
 };
 
-function KeyBody({ caption, children }: Pick<KeyProps, "caption" | "children">) {
+/** A raised key in the key well, lettered or with a glyph. */
+export function DeviceKey({ pressed, children, className, ...props }: KeyProps & Omit<ComponentPropsWithoutRef<"button">, "children">) {
   return (
-    <>
-      <span className={face}>
-        <span aria-hidden className="[filter:var(--device-engrave-glyph)]">
-          {children}
-        </span>
+    <button type="button" data-pressed={pressed || undefined} {...sounds} {...props} className={cn("group/key rounded-[0.7em] outline-offset-2", className)}>
+      <span className={raisedFace}>
+        <span className={cn(lettering, "[&>svg]:size-[1.3em]")}>{children}</span>
       </span>
-      <span aria-hidden className={cn(engraved, "mt-2 block text-center")}>
-        {caption}
-      </span>
-    </>
-  );
-}
-
-const shell = "group/key flex w-full flex-col items-stretch rounded-key outline-offset-4";
-
-/** A rectangular grey key: sharp corners, a 2px base it sinks onto. */
-export function DeviceKey({ caption, children, className, ...props }: KeyProps & Omit<ComponentPropsWithoutRef<"button">, "children">) {
-  return (
-    <button type="button" {...sounds} {...props} className={cn(shell, className)}>
-      <KeyBody caption={caption}>{children}</KeyBody>
     </button>
   );
 }
 
 /** The same key as a link, for pages in this app. */
-export function DeviceKeyLink({ caption, children, className, ...props }: KeyProps & Omit<ComponentPropsWithoutRef<typeof Link>, "children">) {
+export function DeviceKeyLink({ pressed, children, className, ...props }: KeyProps & Omit<ComponentPropsWithoutRef<typeof Link>, "children">) {
   return (
-    <Link {...sounds} {...props} className={cn(shell, className)}>
-      <KeyBody caption={caption}>{children}</KeyBody>
+    <Link data-pressed={pressed || undefined} {...sounds} {...props} className={cn("group/key rounded-[0.7em] outline-offset-2", className)}>
+      <span className={raisedFace}>
+        <span className={lettering}>{children}</span>
+      </span>
     </Link>
   );
 }
 
+/** Lettering printed straight on the well, no key face: it gives a little under the finger. */
+export function FlatKey({ pressed, children, className, ...props }: KeyProps & Omit<ComponentPropsWithoutRef<"button">, "children">) {
+  return (
+    <button
+      type="button"
+      data-pressed={pressed || undefined}
+      {...sounds}
+      {...props}
+      className={cn(
+        "group/key grid h-[2.5em] place-items-center rounded-[0.6em] px-[0.6em] text-(--device-label) outline-offset-2 transition-[background-color,transform] duration-(--duration-exit) ease-out hover:bg-black/[0.035] active:translate-y-px active:duration-75 data-pressed:translate-y-px dark:hover:bg-white/[0.04]",
+        className,
+      )}
+    >
+      <span className={lettering}>{children}</span>
+    </button>
+  );
+}
+
 /**
- * The hold switch, on the device's top edge. Held, it mutes every sound and
- * shows its orange, as the original did when it locked the controls.
+ * A round transport key: a white cap seated in a shallow collar, its caption
+ * printed underneath.
+ */
+export function RoundKey({
+  caption,
+  pressed,
+  children,
+  className,
+  ...props
+}: KeyProps & { caption: string } & Omit<ComponentPropsWithoutRef<"button">, "children">) {
+  return (
+    <button
+      type="button"
+      data-pressed={pressed || undefined}
+      {...sounds}
+      {...props}
+      className={cn("group/key flex flex-col items-center gap-[0.7em] rounded-full outline-offset-4", className)}
+    >
+      <span className="grid size-[5.4em] place-items-center rounded-full bg-black/[0.035] p-[0.32em] shadow-(--device-recess) dark:bg-black/30">
+        <span className={cn("grid size-full place-items-center rounded-full [background:var(--device-wheel-face)] shadow-(--device-key-shadow)", sink)}>
+          {children}
+        </span>
+      </span>
+      <span className={cn(lettering, "text-(--device-label)")}>{caption}</span>
+    </button>
+  );
+}
+
+/**
+ * The hold switch. Held, it mutes every sound and shows its orange, as the
+ * 2009 player did when it locked the controls.
  */
 export function HoldSwitch({ held, onChange, className }: { held: boolean; onChange: (held: boolean) => void; className?: string }) {
   return (

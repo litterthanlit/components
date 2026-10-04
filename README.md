@@ -3,7 +3,7 @@
 A gallery of interface components by [Nick Georgiev](https://litt.design). It's built to be shown off on X/Twitter and in a portfolio, and it shares litt.design's visual language.
 
 - **Design system** (`/system`): principles, colour, type, shape, motion, primitives and writing rules, rendered from the real tokens.
-- **Gallery** (`/`) — the home page is a pocket player after the 2009 classic, redrawn in grey keys: a split-screen menu lists every component beside a live preview, and selecting one runs it full-screen inside the device. Turn the click wheel (or use the arrow keys) to browse, MENU or Escape to go back, ⏮ ⏭ to step, ⏯ to shuffle; every press clicks, and the hold switch mutes.
+- **Gallery** (`/`) — the home page is a player after a field recorder: a near-white body in a black bumper whose full-width screen runs one component at a time. Under the screen, the tape lays every component end to end as a take with its own waveform, and a red playhead marks the one on screen; drag along it to scrub. The deck has an LCD (transport, position, tags, a running clock), live level meters that read the real sound output, a key row (Find, Home, Back, Source, Options), a dial and STOP / PLAY keys. The dial's arrows or ← → step, turning it scrubs, PLAY (or Space) rolls the tape so each component plays for a few seconds, ↑ ↓ set the volume, OK (Enter) shows what's on screen, STOP rewinds it to its first frame. Every press clicks, and the hold switch (or M) mutes.
 - **Component pages** (`/c/[slug]`) — large interactive stage, background switcher, replay, highlighted source with copy.
 - **Capture frames** (`/capture/[slug]`) — chrome-free 1200×675 (16:9) frames for screenshots and screen recordings.
 - **Auto OG images** — every page unfurls with a branded card when you paste the link in a tweet.
@@ -36,7 +36,7 @@ src/design-system/
 - **Motion:** `ease-out`, `ease-in-out`, `ease-drawer` and `ease-spring` curves, with `--duration-exit` (150ms), `--duration-enter` (210ms) and `--duration-move` (400ms).
 - **Physics:** `createSpring(initial, springs.snappy | gentle | bouncy, onUpdate)` runs a damped spring that writes straight to the DOM and keeps its velocity when interrupted. Use it for anything pointer-driven or interruptible. Siblings entering together are staggered by `--stagger` (50ms), capped at 8. Agent states use the `animate-shimmer`, `animate-wave`, `animate-hop` and `animate-caret` keyframes; agent shapes add `animate-stretch`, `animate-trace` (with `pathLength={1}`), `animate-morph`, `animate-assemble`, `animate-twist` and `animate-build` (a shared `--build` progress that children read).
 - **Elevation:** `shadow-sm`, `shadow-md` and `shadow-lg` are a 1px ring plus a soft shadow.
-- **Sound:** short clicks synthesized with Web Audio (no audio files) in `src/lib/sound.ts`. Call `play("tick" | "press" | "select" | …)`; it stays silent until the viewer's first press or key, and never throws. `Button`, `ButtonLink` and `IconButton` sound by themselves through a `data-sound` attribute (`data-sound="off"` opts out). Viewers can mute on `/system#sound`; the choice is saved per device in `localStorage` (`sound-muted`) and syncs across tabs. Audition every sound there too.
+- **Sound:** short clicks synthesized with Web Audio (no audio files) in `src/lib/sound.ts`. Call `play("tick" | "press" | "select" | "start" | "stop" | …)`; it stays silent until the viewer's first press or key, and never throws. `setVolume(0–10)` moves the bus in 2 dB steps around the level every sound was tuned at (7) and is remembered per device (`sound-volume`); `readLevels()` returns the left and right peaks leaving the bus, for meters. `Button`, `ButtonLink` and `IconButton` sound by themselves through a `data-sound` attribute (`data-sound="off"` opts out). Viewers can mute on `/system#sound`; the choice is saved per device in `localStorage` (`sound-muted`) and syncs across tabs. Audition every sound there too.
 
 If you change a value in `tokens.css`, mirror it in `tokens.ts`.
 
@@ -50,14 +50,14 @@ The component page, OG image and capture route are generated from that entry.
 
 ### Overflow check
 
-A demo's stage changes size with where it's shown: the device's screen zooms demos down on small phones and up a little on large displays, the preview beside its menu shows them at thumbnail size, and a component page on a phone grows with its demo. Anything taller is clipped silently. So size demos to their container (`@container`, `@md:`), not the viewport (`sm:`), and run the check before pushing:
+A demo's stage changes size with where it's shown: the device's screen zooms demos down on small phones and up a little on large displays, and a component page on a phone grows with its demo. Anything taller is clipped silently. So size demos to their container (`@container`, `@md:`), not the viewport (`sm:`), and run the check before pushing:
 
 ```bash
 npm run build && npm start   # in one terminal
 npm run check:fit            # every component; or: npm run check:fit -- my-thing
 ```
 
-It loads each component page, every component on the home page's device (its preview, then running on the screen), and the capture frame at six widths and fails if any demo, including transformed or absolutely positioned children, spills out of its stage. GitHub runs it on every push to `main` and every pull request (`.github/workflows/check-fit.yml`).
+It loads each component page, every component running on the home page's device screen, and the capture frame at six widths and fails if any demo, including transformed or absolutely positioned children, spills out of its stage. GitHub runs it on every push to `main` and every pull request (`.github/workflows/check-fit.yml`).
 
 ## Posting to X
 

@@ -1,15 +1,26 @@
+import { stat } from "node:fs/promises";
+import path from "node:path";
 import Link from "next/link";
 import { Device } from "@/components/device/device";
 import { registry } from "@/registry";
 import { site } from "@/site.config";
 
-export default function Home() {
+export default async function Home() {
+  // The readout shows each study's source file and its size, read at build time.
+  const studies = await Promise.all(
+    registry.map(async ({ slug, title, tagline, description, tags, date, background }) => {
+      const file = `${slug}.tsx`;
+      const { size } = await stat(path.join(process.cwd(), "src/registry/components", file));
+      return { slug, title, tagline: tagline ?? "", description, tags, date, background, file, bytes: size };
+    }),
+  );
+
   return (
     <>
       <h1 className="sr-only">
         {site.name}: {site.intro}
       </h1>
-      <Device studies={registry.map(({ slug, title, tagline, background }) => ({ slug, title, tagline: tagline ?? "", background }))} />
+      <Device studies={studies} />
 
       {/* Every page stays one link away for crawlers and screen readers, with or without JS. */}
       <nav aria-label="All components" className="sr-only">

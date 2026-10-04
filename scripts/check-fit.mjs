@@ -9,8 +9,8 @@
  * The stage (src/components/gallery/preview.tsx) clips whatever leaves its
  * padded box, so a demo that is too tall loses its top and bottom edges
  * without any error. This loads each component page, every component on the
- * home page's device (its preview beside the menu, then open on the screen),
- * and the capture frame at several viewport widths and
+ * home page's device (running full width on its screen), and the capture
+ * frame at several viewport widths and
  * measures every demo, including absolutely positioned and transformed
  * children, against that padded box.
  *
@@ -167,26 +167,16 @@ for (const width of widths) {
     record("detail", width, await page.evaluate(measureStages, { only: [slug] }));
   }
 
-  // The home page is a device that only mounts one demo at a time. Step down
-  // its menu with the keyboard, measuring the highlighted component's live
-  // preview beside the list, then open it on the screen and measure it there.
+  // The home page is a device that mounts one study at a time, full width on
+  // its screen. Step through them with the → key and measure each one there.
   await page.goto(`${BASE_URL}/`, { waitUntil: "load" });
   await settle(page);
-  for (const slug of allSlugs) {
-    if (slugs.includes(slug)) {
-      await mounted(page, `[data-device-preview] [data-preview="${slug}"]`);
-      await page.waitForTimeout(SETTLE);
-      record("menu", width, await page.evaluate(measureStages, { only: [slug], within: "[data-device-preview]" }));
-
-      await page.keyboard.press("Enter");
-      await mounted(page, `[data-app] [data-preview="${slug}"]`);
-      await page.waitForTimeout(SETTLE);
-      record("screen", width, await page.evaluate(measureStages, { only: [slug], within: "[data-app]" }));
-      await page.keyboard.press("Escape");
-      // The prototype unmounts once it has slid away.
-      await page.waitForFunction(() => !document.querySelector("[data-app]"), null, { timeout: 5000 });
-    }
-    await page.keyboard.press("ArrowDown");
+  for (const [i, slug] of allSlugs.entries()) {
+    if (i > 0) await page.keyboard.press("ArrowRight");
+    if (!slugs.includes(slug)) continue;
+    await mounted(page, `[data-app] [data-preview="${slug}"]`);
+    await page.waitForTimeout(SETTLE);
+    record("screen", width, await page.evaluate(measureStages, { only: [slug], within: "[data-app]" }));
   }
 
   await context.close();

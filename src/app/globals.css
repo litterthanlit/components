@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @import "../design-system/tokens.css";
 
+/* The device's three arrangements: its deck under the screen in a column
+   (phones, the default), in a row (tablets and up), or beside the screen
+   when the viewport is a short landscape (phones on their side). */
+@custom-variant wide (@media (min-width: 720px) and (min-height: 521px));
+@custom-variant short (@media (orientation: landscape) and (max-height: 520px));
+
 html {
   background: var(--canvas);
 }
@@ -40,6 +46,48 @@ h3 {
   background-size: 160px 160px;
   mix-blend-mode: soft-light;
   opacity: var(--device-grain);
+}
+/* The deck's grid, one per arrangement (see the variants above). On wide
+   decks the transport keys share a column; elsewhere they flank the dial. */
+.deck-grid {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  grid-template-areas:
+    "brand brand hold"
+    "well well well"
+    "keys keys keys"
+    "stop dial play";
+}
+@media (min-width: 720px) and (min-height: 521px) {
+  .deck-grid {
+    grid-template-areas:
+      "brand . hold"
+      "well dial transport"
+      "keys dial transport";
+  }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  .deck-grid {
+    grid-template-areas:
+      "brand brand hold"
+      "stop dial play"
+      "keys keys keys";
+  }
+}
+/* A take coming onto the screen: in from the side it was dialled from. */
+@keyframes take-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--from, 1) * 2.5%));
+    filter: blur(6px);
+  }
+}
+.take-in {
+  animation: take-in 320ms var(--ease-out) both;
+}
+/* Level meter segments: thin bars, as printed on the reference's LCD panel. */
+.meter-ticks {
+  background-image: repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 3px);
 }
 /* Scanlines over the display: a 1px row every 3px, barely there. */
 .screen-grid {
