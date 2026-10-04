@@ -71,8 +71,7 @@ export const takeLength = createPreference("device-take", takeLengths, "4");
 
 /**
  * Focus that follows the hand (a press on the dial or the tape) rather than
- * the keyboard: no focus ring. Browsers without the option simply focus.
+ * the keyboard: no focus ring until a key is pressed. The studies use the
+ * same helper.
  */
-export function focusQuietly(el: HTMLElement | null) {
-  el?.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
-}
+export { focusQuietly } from "@/design-system";

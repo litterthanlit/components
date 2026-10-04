@@ -14,6 +14,7 @@ import {
   type MouseEvent,
   type Ref,
 } from "react";
+import { focusQuietly } from "@/design-system";
 import { hostTransport, play } from "@/lib/sound";
 
 /*
@@ -520,7 +521,7 @@ export function OneTimeCode({
               onFocus={() => setRove(i)}
               onPointerDown={(e) => {
                 if (e.button !== 0) return;
-                e.currentTarget.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
+                focusQuietly(e.currentTarget);
               }}
               onClick={() => press(key)}
               className="group/key h-[2.45em] rounded-[0.6em] outline-offset-2"

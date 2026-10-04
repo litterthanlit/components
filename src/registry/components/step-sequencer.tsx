@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { focusQuietly } from "@/design-system";
 import { hostTransport, play, type SoundName } from "@/lib/sound";
 
 /*
@@ -58,8 +59,8 @@ const msFromNow = (ms: number) => performance.now() + ms;
 const engraved = "font-semibold uppercase leading-none tracking-[0.14em] [text-shadow:var(--device-engrave)]";
 
 /** Focus that follows the hand: no ring, and Safari still hands the keys to the study. */
-const focusQuietly = (e: PointerEvent<HTMLElement>) => {
-  if (e.button === 0) e.currentTarget.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
+const focusOnPress = (e: PointerEvent<HTMLElement>) => {
+  if (e.button === 0) focusQuietly(e.currentTarget);
 };
 
 export function StepSequencer({ className = "" }: { className?: string }) {
@@ -248,7 +249,7 @@ export function StepSequencer({ className = "" }: { className?: string }) {
   // Drag the screen to set the tempo: right or up is faster, a beat per 4px.
   function onTempoDown(e: PointerEvent<HTMLDivElement>) {
     if (e.button !== 0) return;
-    focusQuietly(e);
+    focusOnPress(e);
     e.currentTarget.setPointerCapture(e.pointerId);
     drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, from: bpm, at: bpm };
   }
@@ -327,7 +328,7 @@ export function StepSequencer({ className = "" }: { className?: string }) {
             type="button"
             aria-label={running ? "Stop" : "Play"}
             aria-pressed={running}
-            onPointerDown={focusQuietly}
+            onPointerDown={focusOnPress}
             onClick={toggleRun}
             className="group/key grid size-[3.7em] shrink-0 place-items-center rounded-full bg-black/[0.035] p-[0.26em] shadow-(--device-recess) outline-offset-2 dark:bg-black/30"
           >
@@ -389,7 +390,7 @@ export function StepSequencer({ className = "" }: { className?: string }) {
                       tabIndex={row === stop.row && col === stop.col ? 0 : -1}
                       aria-pressed={on}
                       aria-label={`${track.name}, step ${col + 1}`}
-                      onPointerDown={focusQuietly}
+                      onPointerDown={focusOnPress}
                       onClick={() => toggle(row, col)}
                       onKeyDown={(e) => onStepKey(e, row, col)}
                       className="group/key relative h-[2.15em] rounded-[0.45em] outline-offset-1"
@@ -420,7 +421,7 @@ export function StepSequencer({ className = "" }: { className?: string }) {
                 type="button"
                 aria-pressed={page === p}
                 aria-label={`Steps ${p * PAGE + 1} to ${p * PAGE + PAGE}`}
-                onPointerDown={focusQuietly}
+                onPointerDown={focusOnPress}
                 onClick={() => turnPage(p)}
                 className="group/key flex h-[2.2em] items-center gap-[0.45em] rounded-[0.6em] px-[0.7em] text-(--device-label) outline-offset-2 transition-[background-color,box-shadow,transform] duration-(--duration-exit) ease-out active:translate-y-px aria-pressed:bg-(--device-well) aria-pressed:shadow-(--device-recess)"
               >

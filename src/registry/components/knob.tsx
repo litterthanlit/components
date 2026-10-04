@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
-import { createSpring, springs, type Spring } from "@/design-system";
+import { createSpring, focusQuietly, springs, type Spring } from "@/design-system";
 import { play } from "@/lib/sound";
 
 /*
@@ -153,7 +153,7 @@ export function Knob({ label, value, onChange, min, max, detents = 24, taper = "
   function onPointerDown(e: PointerEvent<HTMLDivElement>) {
     if (e.button !== 0) return;
     e.preventDefault();
-    e.currentTarget.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
+    focusQuietly(e.currentTarget);
     e.currentTarget.setPointerCapture(e.pointerId);
     drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, from: index.current };
     play("press", { gain: 0.6 });
@@ -357,7 +357,7 @@ export default function Demo() {
               data-sound="key"
               aria-label={`Recall scene ${s}`}
               aria-pressed={scene === s && status !== "edited"}
-              onPointerDown={(e) => e.button === 0 && e.currentTarget.focus({ preventScroll: true, focusVisible: false } as FocusOptions)}
+              onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
               onClick={() => recall(s)}
               className="group/key w-[2.9em] shrink-0 rounded-[0.7em] outline-offset-2"
             >

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { focusQuietly } from "@/design-system";
 import { hostTransport, play, type PlayOptions, type SoundName } from "@/lib/sound";
 
 /*
@@ -148,7 +149,7 @@ export function HoldToConfirm({ onConfirm, children, duration = 1200, rehearse =
       data-pressed={pressed || undefined}
       onPointerDown={(e) => {
         if (e.button !== 0) return;
-        e.currentTarget.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
+        focusQuietly(e.currentTarget);
         start();
       }}
       onPointerUp={cancel}

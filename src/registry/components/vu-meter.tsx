@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
-import { createSpring } from "@/design-system";
+import { createSpring, focusQuietly } from "@/design-system";
 import { play, readLevels } from "@/lib/sound";
 
 /*
@@ -224,7 +224,7 @@ export default function Demo() {
             aria-describedby={`${ids}-about`}
             onPointerDown={(e) => {
               if (e.button !== 0) return;
-              e.currentTarget.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
+              focusQuietly(e.currentTarget);
               play("press");
             }}
             onPointerUp={(e) => e.button === 0 && play("release")}

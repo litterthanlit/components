@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
-import { createSpring, type Spring } from "@/design-system";
+import { createSpring, focusQuietly, type Spring } from "@/design-system";
 import { hostTransport, play } from "@/lib/sound";
 
 /*
@@ -199,7 +199,6 @@ export function Fader({ label, value, onChange, min, max, step, defaultValue, fo
   }, [name]);
 
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
-    delete e.currentTarget.dataset.quiet; // keys bring the focus ring back
     const range = max - min;
     const delta = { ArrowUp: step, ArrowRight: step, ArrowDown: -step, ArrowLeft: -step, PageUp: range / 10, PageDown: -range / 10 }[e.key];
     const next = delta !== undefined ? snap(at.current + delta, props.current) : e.key === "Home" ? min : e.key === "End" ? max : null;
@@ -218,9 +217,7 @@ export function Fader({ label, value, onChange, min, max, step, defaultValue, fo
     if (e.button !== 0 || press.current !== null) return;
     e.preventDefault();
     const el = e.currentTarget;
-    // Focus that follows the hand: no ring (browsers that ignore focusVisible get data-quiet), until a key is pressed.
-    el.dataset.quiet = "";
-    el.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
+    focusQuietly(el); // no ring until a key is pressed
     el.setPointerCapture(e.pointerId);
     press.current = e.pointerId;
     play("press", { gain: 0.5 });
@@ -335,8 +332,7 @@ export function Fader({ label, value, onChange, min, max, step, defaultValue, fo
         onPointerMove={onPointerMove}
         onPointerUp={onPointerEnd}
         onPointerCancel={onPointerEnd}
-        onBlur={(e) => delete e.currentTarget.dataset.quiet}
-        className="group/fader relative shrink-0 cursor-ns-resize touch-none select-none rounded-[0.85em] bg-(--device-well) shadow-(--device-recess) outline-offset-2 data-quiet:outline-none!"
+        className="group/fader relative shrink-0 cursor-ns-resize touch-none select-none rounded-[0.85em] bg-(--device-well) shadow-(--device-recess) outline-offset-2"
         style={{ width: `${WIDTH}em`, height: `${TRACK}em`, "--f": initial } as CSSProperties}
       >
         <div aria-hidden>

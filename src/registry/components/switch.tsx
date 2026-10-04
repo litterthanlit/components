@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, type PointerEvent } from "react";
+import { focusQuietly } from "@/design-system";
 import { hostTransport, play } from "@/lib/sound";
 
 /*
@@ -259,9 +260,7 @@ export function Switch({ label, checked, onCheckedChange, name, disabled = false
   function onPointerDown(e: PointerEvent<HTMLButtonElement>) {
     if (e.button !== 0) return;
     const el = e.currentTarget;
-    // Focus that follows the hand: no ring (browsers that ignore focusVisible get data-quiet), until a key is pressed.
-    el.dataset.quiet = "";
-    el.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
+    focusQuietly(el); // no ring until a key is pressed
     el.setPointerCapture(e.pointerId);
     const track = el.querySelector("[data-track]")!.getBoundingClientRect();
     engine.current?.grab(e.clientX, (track.width * TRAVEL) / TRACK_W, e.timeStamp);
@@ -285,10 +284,8 @@ export function Switch({ label, checked, onCheckedChange, name, disabled = false
         onPointerMove={(e) => engine.current?.move(e.clientX, e.timeStamp)}
         onPointerUp={(e) => engine.current?.release(e.timeStamp, false)}
         onPointerCancel={(e) => engine.current?.release(e.timeStamp, true)}
-        onKeyDown={(e) => delete e.currentTarget.dataset.quiet}
-        onBlur={(e) => delete e.currentTarget.dataset.quiet}
         onClick={onClick}
-        className="group/switch flex min-h-[2.9em] w-full touch-pan-y select-none items-center gap-[0.75em] rounded-[0.7em] px-[0.15em] text-left outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45 data-quiet:outline-none!"
+        className="group/switch flex min-h-[2.9em] w-full touch-pan-y select-none items-center gap-[0.75em] rounded-[0.7em] px-[0.15em] text-left outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
         style={{ "--x": initial ? 1 : 0 } as CSSProperties}
       >
         <span className="min-w-0 flex-1 truncate text-[0.66em] font-semibold uppercase leading-none tracking-[0.14em] text-(--device-label) [text-shadow:var(--device-engrave)]">

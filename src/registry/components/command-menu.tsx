@@ -15,7 +15,7 @@ import {
   type ReactNode,
   type Ref,
 } from "react";
-import { createSpring, springs, type Spring } from "@/design-system";
+import { createSpring, focusQuietly, springs, type Spring } from "@/design-system";
 import { hostTransport, play, type PlayOptions, type SoundName } from "@/lib/sound";
 
 /*
@@ -629,7 +629,7 @@ export function CommandMenu<T extends CommandItem>({
   /** The hand on the menu: focus goes to the field, quietly, so typing always lands there. */
   function onPointerDown(e: PointerEvent<HTMLDivElement>) {
     if (e.button !== 0 || e.pointerType === "touch" || e.target === inputRef.current) return;
-    inputRef.current?.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
+    focusQuietly(inputRef.current);
   }
 
   function onHover(e: PointerEvent<HTMLDivElement>, option: number) {
@@ -669,9 +669,9 @@ export function CommandMenu<T extends CommandItem>({
       >
         {/* The screen: the player's own ground under glass. */}
         <div className="relative isolate flex animate-wake flex-col overflow-hidden rounded-[1.1em] bg-canvas text-ink" style={{ "--row": `${ROW}em` } as CSSProperties}>
-          {/* The search field, as on the player's Find panel. */}
+          {/* The search field, as on the player's Find panel. The field draws the focus ring, so the input's own is off (`!`: the page's ring is unlayered and would win). */}
           <div className="px-[0.55em] pb-[0.35em] pt-[0.55em]">
-            <label className="group/field flex h-[2.8em] items-center gap-[0.6em] rounded-[0.75em] bg-panel px-[0.85em] text-muted shadow-[inset_0_0_0_1px_var(--line)] transition-shadow duration-(--duration-exit) focus-within:text-ink focus-within:shadow-[inset_0_0_0_1px_var(--line-strong)] has-[input:focus-visible]:shadow-[inset_0_0_0_1.5px_var(--focus)]">
+            <label className="group/field flex h-[2.8em] items-center gap-[0.6em] rounded-[0.75em] bg-panel px-[0.85em] text-muted shadow-[inset_0_0_0_1px_var(--line)] transition-shadow duration-(--duration-exit) focus-within:text-ink focus-within:shadow-[inset_0_0_0_1px_var(--line-strong)] has-[input:focus-visible:not([data-quiet])]:shadow-[inset_0_0_0_1.5px_var(--focus)]">
               <SearchGlyph />
               <span className="relative flex min-w-0 flex-1 items-center">
                 <input
@@ -693,7 +693,7 @@ export function CommandMenu<T extends CommandItem>({
                   autoCapitalize="off"
                   spellCheck={false}
                   enterKeyHint="go"
-                  className="peer w-full min-w-0 bg-transparent text-[1.08em] tracking-[-0.01em] text-ink outline-none placeholder:text-muted"
+                  className="peer w-full min-w-0 bg-transparent text-[1.08em] tracking-[-0.01em] text-ink outline-none! placeholder:text-muted"
                 />
                 {/* Someone else's caret, while they type into a field that isn't focused. */}
                 {ghost && (

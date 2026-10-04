@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
-import { createSpring } from "@/design-system";
+import { createSpring, focusQuietly } from "@/design-system";
 import { hostTransport, play } from "@/lib/sound";
 
 /*
@@ -128,7 +128,7 @@ export function TapeReels({ progress, label, recording = false, onSeek, onSeekEn
   function onPointerDown(e: PointerEvent<HTMLDivElement>) {
     if (!onSeek || e.button !== 0) return;
     e.preventDefault();
-    e.currentTarget.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
+    focusQuietly(e.currentTarget);
     e.currentTarget.setPointerCapture(e.pointerId);
     const box = e.currentTarget.getBoundingClientRect();
     const reel = e.clientX - box.left < box.width / 2 ? 0 : 1;
@@ -407,7 +407,7 @@ export default function Demo() {
             aria-label={phase === "export" ? "Pause" : "Export"}
             aria-pressed={running}
             aria-describedby={`${ids}-hint`}
-            onPointerDown={(e) => e.button === 0 && e.currentTarget.focus({ preventScroll: true, focusVisible: false } as FocusOptions)}
+            onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
             onClick={toggle}
             className="group/key grid size-[3.4em] shrink-0 place-items-center rounded-full bg-black/[0.035] p-[0.26em] shadow-(--device-recess) outline-offset-2 dark:bg-black/30"
           >

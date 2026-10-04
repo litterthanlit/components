@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { focusQuietly } from "@/design-system";
 import { hostTransport, play } from "@/lib/sound";
 
 /*
@@ -647,7 +648,7 @@ export function Ticker({ controller, label = "Notifications", speed = 72, classN
           onPointerLeave={() => setHand((h) => ({ ...h, hover: false }))}
           onFocus={() => setHand((h) => ({ ...h, focus: true }))}
           onBlur={() => setHand((h) => ({ ...h, focus: false }))}
-          onPointerDown={(e) => e.button === 0 && e.currentTarget.focus({ preventScroll: true, focusVisible: false } as FocusOptions)}
+          onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
           className="relative mt-[0.45em] h-(--fine) rounded-[0.2em] font-semibold outline-offset-4 @[19.5rem]/ticker:h-(--pitch)"
           style={{ "--pitch": `${ROWS * PITCH}em`, "--fine": `${ROWS * FINE_PITCH}em` } as CSSProperties}
         >
@@ -790,7 +791,7 @@ export default function Demo() {
               type="button"
               data-sound="key"
               aria-label={k.label ? undefined : k.name}
-              onPointerDown={(e) => e.button === 0 && e.currentTarget.focus({ preventScroll: true, focusVisible: false } as FocusOptions)}
+              onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
               onClick={() => onKey(k.id)}
               className={cx("group/key rounded-[0.7em] outline-offset-2", k.label ? "@[20rem]:flex-1" : "@[20rem]:w-[2.6em] @[20rem]:shrink-0")}
             >
