@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useEffectEvent, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { hostTransport, play } from "@/lib/sound";
 
 /*
@@ -15,8 +15,10 @@ import { hostTransport, play } from "@/lib/sound";
  * a faint glow, unlit ones as ghosts. Colours come from the CSS variables and
  * follow the theme.
  *
- * A message that fits types on, column by column, and dwells. One that's
- * wider than the display scrolls at a constant speed in px/s, holding at its
+ * The dots keep their pitch in em, so a wider strip shows more columns; a
+ * strip as narrow as a phone's sets them a little finer, so it still holds
+ * a short line. A message that fits types on, column by column, and dwells.
+ * One that's wider than the display scrolls at a constant speed in px/s, holding at its
  * start and its end. Hovering or focusing the strip pauses it; arrows step
  * through the queue. The canvas only redraws when a column changes, and its
  * loop stops while it's idle, paused or off-screen. Under reduced motion
@@ -91,6 +93,7 @@ const ROWS = 12;
 const CAP = 7.5; // rows a capital stands
 const BASELINE = 9; // rows from the top to the baseline: room above for accents, three below for descenders
 const PITCH = 0.22; // em from one dot to the next
+const FINE_PITCH = 0.2; // on a strip narrower than 19.5rem
 const THRESHOLD = 0.5; // coverage that lights a dot
 const TYPE_RATE = 150; // columns a second while typing on
 const DWELL = 2000; // ms a message that fits stays, plus a little per character
@@ -540,7 +543,7 @@ export function Ticker({ controller, label = "Notifications", speed = 72, classN
     paintGhosts();
     draw();
 
-    // Size: the matrix keeps its pitch in em, so a wider strip shows more columns.
+    // Size: the pitch follows the strip's height (set in em), so a wider strip shows more columns.
     const resize = new ResizeObserver(() => {
       measure();
       paintGhosts();
@@ -613,7 +616,7 @@ export function Ticker({ controller, label = "Notifications", speed = 72, classN
   const held = hand.hover || hand.focus;
 
   return (
-    <div className={cx("rounded-[0.9em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]", className)}>
+    <div className={cx("@container/ticker rounded-[0.9em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]", className)}>
       <div className="relative overflow-hidden rounded-[0.65em] px-[0.6em] pb-[0.6em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)">
         <div aria-hidden className="flex items-center gap-[0.45em]">
           <span className={cx("size-[0.5em] shrink-0 rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)", tone ? tone.light : "bg-white/15")} />
@@ -645,8 +648,8 @@ export function Ticker({ controller, label = "Notifications", speed = 72, classN
           onFocus={() => setHand((h) => ({ ...h, focus: true }))}
           onBlur={() => setHand((h) => ({ ...h, focus: false }))}
           onPointerDown={(e) => e.button === 0 && e.currentTarget.focus({ preventScroll: true, focusVisible: false } as FocusOptions)}
-          className="relative mt-[0.45em] rounded-[0.2em] font-semibold outline-offset-4"
-          style={{ height: `${ROWS * PITCH}em` }}
+          className="relative mt-[0.45em] h-(--fine) rounded-[0.2em] font-semibold outline-offset-4 @[19.5rem]/ticker:h-(--pitch)"
+          style={{ "--pitch": `${ROWS * PITCH}em`, "--fine": `${ROWS * FINE_PITCH}em` } as CSSProperties}
         >
           <canvas ref={canvasRef} aria-hidden className="absolute inset-0 size-full" />
         </div>
@@ -674,19 +677,20 @@ export function Ticker({ controller, label = "Notifications", speed = 72, classN
 
 /* --- Demo: a recorder's status line ---------------------------------------- */
 
+/** Every message types on, even on a phone's strip, but the card alert: it's meant to scroll. */
 const ARRIVALS: { text: string; tone: Tone }[] = [
-  { text: "EXPORT DONE · take_04.wav", tone: "info" },
+  { text: "SAVED take_04", tone: "info" },
   { text: "SYNCED 3 TAKES", tone: "info" },
-  { text: "LOW BATTERY 12%", tone: "warn" },
+  { text: "BATTERY 12%", tone: "warn" },
   { text: "CARD FULL — FREE 2.1 GB TO KEEP RECORDING", tone: "alert" },
 ];
 /** What Notify sends, in turn. */
 const SAMPLES: { text: string; tone: Tone }[] = [
   { text: "TAKE 05 ARMED", tone: "info" },
-  { text: "Zoë left 2 notes on take_04", tone: "info" },
-  { text: "MIC 2 CLIPPING −0.3 dB", tone: "alert" },
+  { text: "Zoë left 2 notes", tone: "info" },
+  { text: "MIC 2 CLIPPING", tone: "alert" },
   { text: "BACKUP DONE", tone: "info" },
-  { text: "PHANTOM POWER ON INPUT 2", tone: "warn" },
+  { text: "48V ON INPUT 2", tone: "warn" },
   ...ARRIVALS,
 ];
 const GAP = 2600; // ms between arrivals while untouched
@@ -778,7 +782,8 @@ export default function Demo() {
 
         <Ticker controller={ticker} />
 
-        <div className="mt-[0.8em] flex items-center gap-[0.45em]">
+        {/* The keys: two pairs on a narrow plate, so it stands taller in a phone's box; one row from 20rem. */}
+        <div className="mt-[0.8em] grid grid-cols-2 gap-[0.45em] @[20rem]:flex @[20rem]:items-center">
           {KEYS.map((k) => (
             <button
               key={k.id}
@@ -787,9 +792,9 @@ export default function Demo() {
               aria-label={k.label ? undefined : k.name}
               onPointerDown={(e) => e.button === 0 && e.currentTarget.focus({ preventScroll: true, focusVisible: false } as FocusOptions)}
               onClick={() => onKey(k.id)}
-              className={cx("group/key rounded-[0.7em] outline-offset-2", k.label ? "flex-1" : "w-[2.6em] shrink-0")}
+              className={cx("group/key rounded-[0.7em] outline-offset-2", k.label ? "@[20rem]:flex-1" : "@[20rem]:w-[2.6em] @[20rem]:shrink-0")}
             >
-              <span className="grid h-[2.5em] place-items-center rounded-[0.7em] text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
+              <span className="grid h-[2.75em] place-items-center rounded-[0.7em] text-(--device-key-ink) @[20rem]:h-[2.5em] [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
                 {k.glyph ? (
                   <svg aria-hidden viewBox="0 0 16 16" className="size-[1.1em] fill-none stroke-current [filter:var(--device-engrave-glyph)]" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d={k.glyph} />
