@@ -51,6 +51,8 @@ export type SoundName =
   | "start"
   /** The transport letting go: stop, or a softer pause. */
   | "stop"
+  /** The recorder's reference tone: a held 1 kHz sine that a VU meter reads as 0 VU. */
+  | "slate"
   /** First interaction: the device waking. Played at most once per page load. */
   | "wake";
 
@@ -59,10 +61,15 @@ export type PlayOptions = {
   pitch?: number;
   /** Multiplies the base gain (0–1). Default 1. */
   gain?: number;
+  /**
+   * Seconds from now to start, 0 to 0.5, on the audio clock: for sequencers,
+   * which schedule a little ahead so their timing never jitters. Default 0.
+   */
+  delay?: number;
 };
 
 /** Every sound, in the order the /system page shows them. */
-export const soundNames: readonly SoundName[] = ["tick", "bump", "press", "release", "select", "back", "open", "close", "toggle", "start", "stop", "wake"];
+export const soundNames: readonly SoundName[] = ["tick", "bump", "press", "release", "select", "back", "open", "close", "toggle", "start", "stop", "slate", "wake"];
 
 /* ------------------------------------------------------------------------ */
 /* Synthesis. Works on any BaseAudioContext, so sounds render offline too.   */
@@ -177,6 +184,8 @@ type ToneLayer = {
   glide?: number;
   peak: number;
   attack?: number;
+  /** Seconds held at the peak before the decay: for sustained tones. Default 0. */
+  hold?: number;
   decay: number;
   /** Optional lowpass on the tone, swept from `lowpass` to `lowpassTo`. */
   lowpass?: number;
@@ -206,12 +215,13 @@ class Voice {
     this.nodes.push(this.output);
   }
 
-  private envelope(start: number, peak: number, attack: number, decay: number) {
+  private envelope(start: number, peak: number, attack: number, decay: number, hold = 0) {
     const g = this.ctx.createGain();
     g.gain.setValueAtTime(0, start);
     g.gain.linearRampToValueAtTime(peak, start + attack);
-    g.gain.exponentialRampToValueAtTime(SILENT, start + attack + decay);
-    g.gain.setValueAtTime(0, start + attack + decay);
+    if (hold > 0) g.gain.setValueAtTime(peak, start + attack + hold);
+    g.gain.exponentialRampToValueAtTime(SILENT, start + attack + hold + decay);
+    g.gain.setValueAtTime(0, start + attack + hold + decay);
     this.nodes.push(g);
     return g;
   }
@@ -244,7 +254,7 @@ class Voice {
     this.schedule(src, start, stop, Math.random() * (buffer.duration - 0.3));
   }
 
-  tone({ at = 0, type = "sine", freq, freqTo, glide, peak, attack = 0.0008, decay, lowpass, lowpassTo }: ToneLayer) {
+  tone({ at = 0, type = "sine", freq, freqTo, glide, peak, attack = 0.0008, hold = 0, decay, lowpass, lowpassTo }: ToneLayer) {
     const start = this.t0 + at;
     const osc = this.ctx.createOscillator();
     osc.type = type;
@@ -260,8 +270,8 @@ class Voice {
       this.nodes.push(f);
       node = osc.connect(f);
     }
-    node.connect(this.envelope(start, peak, attack, decay)).connect(this.output);
-    this.schedule(osc, start, start + attack + decay + 0.005);
+    node.connect(this.envelope(start, peak, attack, decay, hold)).connect(this.output);
+    this.schedule(osc, start, start + attack + hold + decay + 0.005);
   }
 
   /** Disconnects every node once the last source has finished. */
@@ -358,6 +368,13 @@ const synths: Record<SoundName, (v: Voice) => void> = {
     v.tone({ freq: 150, freqTo: 68, glide: 0.09, peak: 0.6, attack: 0.001, decay: 0.1 });
     click(v, 0, 2300, 0.6, 0.004);
   },
+  // Line-up tone: a pure 1 kHz sine held for most of a second, as a recorder
+  // sends before a take so the meters can be set. Soft edges, so it never
+  // clicks on or off; quieter than its -18 dBFS namesake, since a held tone
+  // sounds far louder than a click at the same peak.
+  slate(v) {
+    v.tone({ freq: 1000, peak: 0.16, attack: 0.012, hold: 0.9, decay: 0.07 });
+  },
   // Power on: open fifths (D5, A5, E6) blooming in turn and settling into
   // pitch, over a filtered triangle that opens like a screen warming up.
   wake(v) {
@@ -389,7 +406,7 @@ export async function renderSound(
 ): Promise<{ buffer: AudioBuffer; duration: number } | null> {
   try {
     if (typeof OfflineAudioContext === "undefined") return null;
-    const offline = new OfflineAudioContext(2, Math.ceil(sampleRate * 1), sampleRate);
+    const offline = new OfflineAudioContext(2, Math.ceil(sampleRate * 1.5), sampleRate);
     const bus = createBus(offline, offline.destination, LEVEL * (options?.touch ? TOUCH_TRIM : 1));
     const voice = synthesize(name, offline, bus.input, 0, options).done();
     const buffer = await offline.startRendering();
@@ -416,6 +433,7 @@ const minGap: Record<SoundName, number> = {
   toggle: 40,
   start: 80,
   stop: 80,
+  slate: 1000,
   wake: 0,
 };
 const MAX_VOICES = 8;
@@ -489,20 +507,26 @@ function start(name: SoundName, options: PlayOptions | undefined, limited: boole
     if (document.visibilityState === "hidden") return;
     const ac = context();
     if (!ac || !bus || !ready(ac)) return;
+    const delay = lead(options?.delay);
+    // Scheduled sounds need a running clock: on a suspended one they would bunch up and burst out together.
+    if (delay > 0 && ac.state !== "running") return;
 
-    const now = performance.now();
+    // The rate limit counts when a sound will be heard, so notes queued ahead are spaced like ones played now.
+    const at = performance.now() + delay * 1000;
     if (limited) {
       const last = lastPlayed[name];
-      if (last !== undefined && now - last < minGap[name]) return;
+      if (last !== undefined && Math.abs(at - last) < minGap[name]) return;
     }
 
     const t = ac.currentTime;
     while (voiceEnds.length && voiceEnds[0] <= t) voiceEnds.shift();
-    if (voiceEnds.length >= MAX_VOICES) return;
+    // Scheduled sounds leave two voices free, so the interface's own clicks always get through.
+    if (voiceEnds.length >= (delay > 0 ? MAX_VOICES - 2 : MAX_VOICES)) return;
 
-    lastPlayed[name] = now;
-    const voice = synthesize(name, ac, bus.input, t, options).done();
-    const end = t + voice.end;
+    lastPlayed[name] = at;
+    const when = t + delay;
+    const voice = synthesize(name, ac, bus.input, when, options).done();
+    const end = when + voice.end;
     const i = voiceEnds.findIndex((e) => e > end);
     voiceEnds.splice(i === -1 ? voiceEnds.length : i, 0, end);
   } catch {}
@@ -803,6 +827,11 @@ function isSound(name: unknown): name is SoundName {
 
 function clamp(n: number, min: number, max: number) {
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : 1;
+}
+
+/** A `delay` in seconds: 0 to 0.5, and 0 for anything that isn't a number. */
+function lead(delay: number | undefined) {
+  return delay !== undefined && Number.isFinite(delay) ? Math.min(0.5, Math.max(0, delay)) : 0;
 }
 
 installSound();

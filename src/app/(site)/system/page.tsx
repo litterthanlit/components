@@ -278,6 +278,10 @@ export default function SystemPage() {
               <code className={code}>data-sound=&quot;off&quot;</code>.
             </li>
             <li>Quiet and dry: peaks near -18 dBFS, a little lower on touch screens, never more than eight at once.</li>
+            <li>
+              In time: sequencers pass <code className={code}>{"{ delay }"}</code> to schedule a note a moment ahead on the audio clock. Scheduled notes
+              never take the last two voices, so a key press always clicks.
+            </li>
             <li>Mute is remembered per device and follows across tabs.</li>
           </ul>
         </Section>

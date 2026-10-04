@@ -16,6 +16,7 @@ const roles: Record<SoundName, string> = {
   toggle: "A switch: two tiny clicks.",
   start: "The tape rolling: a latch, then a rising two-note beep.",
   stop: "Stop: a heavier thock, a low note winding down.",
+  slate: "The line-up tone: 1 kHz held for most of a second, which a VU meter reads as 0.",
   wake: "The device waking, once per visit.",
 };
 
@@ -61,7 +62,7 @@ export function SoundDemo() {
           {muted ? "Unmute" : "Mute"}
         </button>
       </div>
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-6">
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-7">
         {soundNames.map((name) => (
           <li key={name}>
             <button
