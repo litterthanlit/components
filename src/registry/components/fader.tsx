@@ -558,8 +558,8 @@ export default function Demo() {
   const touched = CHANNELS.filter((c) => modes[c.key] === "touch");
 
   return (
-    <div ref={rootRef} className="@container w-full max-w-[360px] select-none">
-      <div className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
+    <div ref={rootRef} className="@container w-full max-w-[460px] select-none">
+      <div className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,15px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
         {/* The automation screen. */}
