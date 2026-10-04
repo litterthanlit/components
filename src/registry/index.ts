@@ -23,17 +23,6 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
-    slug: "click-wheel-player",
-    title: "Click Wheel Player",
-    description:
-      "A pocket music player after the 2009 classic: brushed aluminium in silver or black, a 320×240 screen with the blue highlight bar, a split-screen menu, a Songs list and Now Playing with art, progress and a volume bar. Turn the wheel to scroll or change the volume, press its edges to skip, play and go back. All CSS and SVG, drawn at the real proportions and scaled as one piece; the ring is a slider, so arrow keys, Enter, Escape and Space drive it too.",
-    tagline: "Turn the wheel. A 2009 classic in CSS and SVG.",
-    tags: ["pointer", "motion", "a11y", "svg"],
-    date: "2026-10-03",
-    status: "new",
-    background: "plain",
-  },
-  {
     slug: "agent-shapes",
     title: "Agent Shapes",
     description:
