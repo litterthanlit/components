@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "step-sequencer",
+    title: "Step Sequencer",
+    description:
+      "A sixteen-step sequencer whose drum kit is the player's own interface: the key's thock, the wheel's detent, the bump at the end of a list and the centre button's chime. Notes are scheduled a moment ahead on the audio clock, so the groove holds steady at any frame rate, and the lights follow the same clock. On the player it plays aloud while the tape rolls. Narrow stages page through eight steps at a time; the pattern is one tab stop.",
+    tagline: "The player's own clicks, sequenced.",
+    tags: ["sound", "input", "motion", "a11y"],
+    date: "2026-10-04",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "agent-shapes",
     title: "Agent Shapes",
     description:
