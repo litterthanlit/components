@@ -49,18 +49,20 @@ h3 {
   mix-blend-mode: soft-light;
   opacity: var(--device-grain);
 }
-/* The deck's grid, one per arrangement (see the variants above). On wide
-   decks the transport keys share a column; elsewhere they flank the dial.
-   The maker's window is a nameplate in the top row until the deck is roomy,
-   then stands the full height of the deck on its left. */
+/* The deck's grid, one per arrangement (see the variants above). On phones
+   the screen comes first: no readout, the maker's window and the hold
+   switch tucked into the corners beside the dial, above the transport keys,
+   and the key row along the bottom edge, under the thumbs. On wide decks
+   the readout returns, the transport keys share a column and the window is
+   a nameplate over the readout, until the deck is roomy enough for it to
+   stand the full height of the deck on its left. */
 .deck-grid {
   display: grid;
   grid-template-columns: auto auto auto;
   grid-template-areas:
-    "badge badge hold"
-    "well well well"
-    "keys keys keys"
-    "stop dial play";
+    "badge dial hold"
+    "stop dial play"
+    "keys keys keys";
 }
 @media (min-width: 720px) and (min-height: 521px) {
   .deck-grid {
@@ -77,14 +79,6 @@ h3 {
       "badge . . hold"
       "badge well dial transport"
       "badge keys dial transport";
-  }
-}
-@media (orientation: landscape) and (max-height: 520px) {
-  .deck-grid {
-    grid-template-areas:
-      "badge badge hold"
-      "stop dial play"
-      "keys keys keys";
   }
 }
 /* A take coming onto the screen: in from the side it was dialled from. */

@@ -698,8 +698,11 @@ export function Device({ studies }: { studies: Study[] }) {
 
           {/* The deck. Sized in em from one font size, so it scales as one piece. */}
           <div className="deck-grid shrink-0 content-center justify-center gap-x-[1.3em] gap-y-[0.8em] border-t border-black/[0.07] px-[1.1em] pb-[1.3em] pt-[1.1em] [font-size:clamp(9px,min(3.2vw,1.7vh),15px)] dark:border-white/[0.06] wide:gap-x-[3.2em] wide:px-[2.4em] wide:py-[1.7em] wide:[font-size:clamp(10px,min(1.45vw,1.6vh),16px)] roomy:gap-x-[3em] roomy:[font-size:clamp(10px,min(1.25vw,1.6vh),16px)] short:border-l short:border-t-0 short:px-[1em] short:py-[0.9em] short:[font-size:clamp(8px,2.7vh,12px)]">
-            <LogoWindow live={playing} className="self-center justify-self-start [grid-area:badge] roomy:w-[11.5em] roomy:self-stretch roomy:justify-self-stretch" />
-            <HoldSwitch held={muted} onChange={toggleHold} className="justify-self-end [grid-area:hold]" />
+            <LogoWindow
+              live={playing}
+              className="self-start justify-self-start [grid-area:badge] wide:self-center roomy:w-[11.5em] roomy:self-stretch roomy:justify-self-stretch"
+            />
+            <HoldSwitch held={muted} onChange={toggleHold} className="self-start justify-self-end [grid-area:hold] wide:self-center" />
 
             <Readout
               study={study}
@@ -709,7 +712,8 @@ export function Device({ studies }: { studies: Study[] }) {
               clockRef={clockRef}
               activity={activity}
               reduced={reduced}
-              className="[grid-area:well] short:hidden"
+              // Phones give its room to the screen; the screen and the HUD already say what it says.
+              className="hidden [grid-area:well] wide:flex"
             />
 
             <div className="flex items-center justify-between gap-[0.3em] rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess) [grid-area:keys]">
@@ -742,12 +746,12 @@ export function Device({ studies }: { studies: Study[] }) {
                   ? { up: "Volume up", down: "Volume down", prev: "Previous study", next: "Next study", ok: info ? "Hide details" : "Show details" }
                   : { up: "Up", down: "Down", prev: view === "options" ? "Less" : "Previous", next: view === "options" ? "More" : "Next", ok: "Choose" }
               }
-              className="w-[12.5em] self-center justify-self-center [grid-area:dial] wide:w-[15em] short:w-[11.5em]"
+              className="w-[12em] self-center justify-self-center [grid-area:dial] wide:w-[15em] short:w-[11em]"
             />
 
             {/* The transport: one column beside the dial on wide decks, either side of it on narrow ones. */}
             <div className="contents wide:flex wide:flex-col wide:items-center wide:justify-between wide:self-stretch wide:[grid-area:transport]">
-              <RoundKey caption="Stop" pressed={flash === "stop"} onClick={() => press("stop")} className="self-center [grid-area:stop]">
+              <RoundKey caption="Stop" pressed={flash === "stop"} onClick={() => press("stop")} className="self-end [grid-area:stop] wide:self-center">
                 <StopGlyph />
               </RoundKey>
               <RoundKey
@@ -756,7 +760,7 @@ export function Device({ studies }: { studies: Study[] }) {
                 aria-pressed={playing}
                 pressed={flash === "play"}
                 onClick={() => press("play")}
-                className="self-center [grid-area:play]"
+                className="self-end [grid-area:play] wide:self-center"
               >
                 <PlayGlyph playing={playing} />
               </RoundKey>

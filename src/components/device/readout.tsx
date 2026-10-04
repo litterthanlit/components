@@ -59,6 +59,9 @@ function Meters({ activity, playing, reduced }: { activity: RefObject<number>; p
     const frame = (now: number) => {
       const dt = Math.min(100, now - last) / 1000;
       last = now;
+      raf = requestAnimationFrame(frame);
+      // Hidden (phones show no readout): nothing to draw.
+      if (!ref.current?.offsetParent) return;
       readLevels(levels);
       activity.current *= Math.exp(-dt / 0.28);
       const act = activity.current;
@@ -78,7 +81,6 @@ function Meters({ activity, playing, reduced }: { activity: RefObject<number>; p
         rows[c].style.setProperty("--l", toScale(shown[c]).toFixed(4));
         rows[c].style.setProperty("--pk", toScale(peak[c]).toFixed(4));
       }
-      raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
@@ -172,7 +174,8 @@ export function Readout({
   className?: string;
 }) {
   return (
-    <div className={cn("flex gap-[0.45em] rounded-[1.05em] bg-(--device-well) p-[0.45em] shadow-(--device-recess)", className)}>
+    // Callers set its display, so they can hide it.
+    <div className={cn("gap-[0.45em] rounded-[1.05em] bg-(--device-well) p-[0.45em] shadow-(--device-recess)", className)}>
       {/* The LCD mirrors what the status line and announcements already say, so it stays out of the reading order. */}
       <div
         aria-hidden
