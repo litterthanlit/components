@@ -709,6 +709,24 @@ export function readLevels(out: [number, number] = [0, 0]): [number, number] {
   return out;
 }
 
+/* ------------------------------------------------------------------------ */
+/* Hosts: a study that makes sound of its own asks whoever runs it.          */
+/* ------------------------------------------------------------------------ */
+
+export type HostTransport = "play" | "pause" | "stop";
+
+/**
+ * The transport of whatever is running `el`. The home page's player marks the
+ * study on its screen with `data-transport`: a study plays aloud while the
+ * tape plays, keeps quiet while it's paused (until the viewer works the study
+ * itself) and stays put once it's stopped. Anywhere else, a component page or
+ * a capture frame, there is no host and a study runs as if playing.
+ */
+export function hostTransport(el: Element | null | undefined): HostTransport {
+  const value = el?.closest("[data-transport]")?.getAttribute("data-transport");
+  return value === "pause" || value === "stop" ? value : "play";
+}
+
 /** React binding: `const { muted, setMuted, play } = useSound()`. */
 export function useSound() {
   const value = useSyncExternalStore(subscribeMuted, isMuted, () => false);

@@ -8,6 +8,7 @@ import { VOLUME_MAX } from "@/lib/sound";
 import type { StageBackground } from "@/registry";
 import { site } from "@/site.config";
 import { useBoxSize } from "./hooks";
+import type { Transport } from "./readout";
 
 export type Study = {
   slug: string;
@@ -48,12 +49,16 @@ export function StatusBar({ title }: { title: string }) {
 
 /* --- The running study ----------------------------------------------------- */
 
-/** A running study, filling the screen at a zoom that fits it. */
-export function AppStage({ study, from }: { study: Study; from: number }) {
+/**
+ * A running study, filling the screen at a zoom that fits it. It carries the
+ * transport as `data-transport`, so a study that makes sound can tell whether
+ * the tape is playing (see `hostTransport` in lib/sound).
+ */
+export function AppStage({ study, from, transport }: { study: Study; from: number; transport: Transport }) {
   const box = useRef<HTMLDivElement>(null);
   const size = useBoxSize(box);
   return (
-    <div ref={box} data-app className="take-in absolute inset-0" style={{ "--from": from } as CSSProperties}>
+    <div ref={box} data-app data-transport={transport} className="take-in absolute inset-0" style={{ "--from": from } as CSSProperties}>
       {size && <Preview slug={study.slug} background={study.background} zoom={appZoom(size)} className="h-full" />}
     </div>
   );

@@ -577,12 +577,14 @@ export function Device({ studies }: { studies: Study[] }) {
                   }}
                   onPointerMove={(e) => {
                     activity.current = Math.min(1, activity.current + Math.hypot(e.movementX, e.movementY) / 260);
+                    // A drag still under way (a knob, a reel) keeps the tape waiting, however long it takes.
+                    if (e.buttons) lastTouch.current = performance.now();
                   }}
                   onWheel={() => (lastTouch.current = performance.now())}
                   className="absolute inset-0"
                 >
                   <div role="group" aria-label={`${studies[at].title}, running`} className="absolute inset-0">
-                    <AppStage key={`${studies[at].slug}:${replay}`} study={studies[at]} from={reduced ? 0 : from} />
+                    <AppStage key={`${studies[at].slug}:${replay}`} study={studies[at]} from={reduced ? 0 : from} transport={transport} />
                   </div>
                   <Hud show={hud !== null}>
                     {hud?.kind === "volume" ? (
