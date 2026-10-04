@@ -136,9 +136,9 @@ export const registry: RegistryEntry[] = [
     slug: "hold-to-confirm",
     title: "Hold to Confirm",
     description:
-      "A destructive action that asks for intent. Hold with pointer, Space or Enter until the fill completes; letting go early rewinds it.",
-    tagline: "Make destructive actions ask for intent.",
-    tags: ["button", "feedback", "a11y"],
+      "A destructive action that asks for intent, after a recorder's erase key: a round key in a collar with a ring of twelve lights. Hold with pointer, Space or Enter and the ring fills light by light, each one a click a little higher, until the action runs; let go early and it runs back. It shows the gesture once on mount, and the ring is drawn from a frame loop, so holding never re-renders.",
+    tagline: "Hold the key until the ring is full.",
+    tags: ["button", "feedback", "sound", "a11y"],
     date: "2026-09-20",
     background: "plain",
   },
@@ -146,11 +146,11 @@ export const registry: RegistryEntry[] = [
     slug: "number-ticker",
     title: "Number Ticker",
     description:
-      "Digits roll into place like a mechanical counter. Formatting comes from Intl.NumberFormat, so any locale or currency just works.",
-    tagline: "Mechanical counter reels, any locale.",
-    tags: ["data", "motion", "typography"],
+      "A number on a tape counter's drums: white figures on black drums in a window pressed into the body, separators printed on the frame. Each drum turns on its own spring and clicks for every figure that passes; counting up they roll forward through 9 to 0, as a mechanical counter carries. They roll from 0 on the first frame. Formatting comes from Intl.NumberFormat, so any locale or currency just works.",
+    tagline: "Tape-counter drums, any locale.",
+    tags: ["data", "motion", "sound", "typography"],
     date: "2026-09-15",
-    background: "glow",
+    background: "plain",
   },
   {
     slug: "segmented-control",
