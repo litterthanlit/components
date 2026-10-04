@@ -8,9 +8,6 @@ type Take = { slug: string; title: string };
 
 type TapeProps = {
   takes: Take[];
-  /** The take on screen, or the one being dialled to. */
-  at: number;
-  takeSeconds: number;
   /** The tape is a slider over the takes, like the dial. */
   slider: { label: string; now: number; max: number; text: string };
   hint: string;
@@ -22,7 +19,6 @@ type TapeProps = {
 };
 
 const BAR_PITCH = 5; // px between bars
-const LABEL_ROOM = 64; // px a timecode needs to itself
 
 /** A small, seedable PRNG (mulberry32), so every take draws the same waveform on every visit. */
 function random(seed: number) {
@@ -61,16 +57,14 @@ function envelope(slug: string) {
   };
 }
 
-const timecode = (seconds: number) => `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(Math.round(seconds % 60)).padStart(2, "0")}`;
-
 /**
- * The tape: every study laid end to end as a take, its waveform printed along
- * the device under the screen, as on a field recorder. Bars behind the red
+ * The tape: every study laid end to end as a take, its waveform printed in a
+ * slim strip under the screen, as on a field recorder. Bars behind the red
  * playhead are inked in; the ones ahead wait faintly. The device writes the
  * playhead's position as `--p` (0 to 1) on an ancestor, so it moves without
  * re-rendering. Press or drag anywhere along it to scrub.
  */
-export function Tape({ takes, at, takeSeconds, slider, hint, onScrub, onScrubEnd, className }: TapeProps) {
+export function Tape({ takes, slider, hint, onScrub, onScrubEnd, className }: TapeProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const waveRef = useRef<HTMLDivElement>(null);
   const size = useBoxSize(waveRef);
@@ -97,24 +91,6 @@ export function Tape({ takes, at, takeSeconds, slider, hint, onScrub, onScrubEnd
     });
     return d;
   }, [size, takes, n]);
-
-  const labelEvery = size ? Math.max(1, Math.ceil(LABEL_ROOM / (size.w / n))) : 1;
-
-  // A tick at every take start and three between, skipping any that would touch a timecode.
-  const ticks = useMemo(() => {
-    if (!size) return [];
-    const span = size.w / n;
-    const out: { at: number; major: boolean }[] = [];
-    for (let i = 0; i < n; i++) {
-      const labelled = Math.floor(i / labelEvery) * labelEvery;
-      for (const t of [0, 0.25, 0.5, 0.75]) {
-        const x = (i + t) * span;
-        if (x - labelled * span < LABEL_ROOM - 16) continue;
-        out.push({ at: x / size.w, major: t === 0 });
-      }
-    }
-    return out;
-  }, [size, n, labelEvery]);
 
   function place(e: PointerEvent) {
     const r = trackRef.current!.getBoundingClientRect();
@@ -171,11 +147,11 @@ export function Tape({ takes, at, takeSeconds, slider, hint, onScrub, onScrubEnd
       className={cn("group/tape relative cursor-ew-resize touch-none select-none outline-offset-[-3px] [--tape-inset:clamp(18px,4.5vw,72px)]", className)}
     >
       {/* The baseline runs the full width, as printed on the body. */}
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-[34%] h-px bg-black/[0.06] dark:bg-white/[0.06]" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-1/2 h-px bg-black/[0.06] dark:bg-white/[0.06]" />
 
       <div ref={trackRef} className="absolute inset-y-0 left-[var(--tape-inset)] right-[var(--tape-inset)]">
         {/* Waveform: the whole tape faint, then again in ink up to the playhead. */}
-        <div ref={waveRef} aria-hidden className="absolute inset-x-0 top-[8%] h-[52%]">
+        <div ref={waveRef} aria-hidden className="absolute inset-x-0 inset-y-[22%]">
           {size && (
             <>
               <svg viewBox={`0 0 ${size.w} ${size.h}`} className="absolute inset-0 size-full overflow-visible text-ink opacity-[0.16]">
@@ -198,31 +174,10 @@ export function Tape({ takes, at, takeSeconds, slider, hint, onScrub, onScrubEnd
           )}
         </div>
 
-        {/* Timecodes at each take, ticks between them wherever a timecode leaves room. */}
-        <div aria-hidden className="absolute inset-x-0 bottom-[8%] h-[30%]">
-          {takes.map((take, i) =>
-            i % labelEvery === 0 ? (
-              <span
-                key={take.slug}
-                className={cn(
-                  "absolute bottom-0 font-mono text-[11px] leading-none tabular-nums tracking-[-0.02em] transition-colors duration-(--duration-exit) wide:text-[12px]",
-                  i === at ? "text-ink" : "text-muted",
-                )}
-                style={{ left: `${(i / n) * 100}%` }}
-              >
-                {timecode(i * takeSeconds)}
-              </span>
-            ) : null,
-          )}
-          {ticks.map(({ at: f, major }) => (
-            <span key={f} className={cn("absolute bottom-[1px] w-px", major ? "h-[6px] bg-ink/25" : "h-[4px] bg-ink/15")} style={{ left: `${f * 100}%` }} />
-          ))}
-        </div>
-
         {/* The playhead. */}
         <div aria-hidden className="pointer-events-none absolute inset-y-0 left-[calc(var(--p,0)_*_100%)] w-0">
           <div className={cn("absolute inset-y-0 -left-px w-[1.5px] bg-(--device-rec) transition-shadow duration-(--duration-exit)", scrubbing && "shadow-[0_0_0_2px_color-mix(in_oklab,var(--device-rec)_22%,transparent)]")} />
-          <div className="absolute -left-[3.5px] top-0 size-[6px] rounded-full bg-(--device-rec)" />
+          <div className="absolute -left-[3px] top-[3px] size-[5px] rounded-full bg-(--device-rec)" />
         </div>
 
         {/* Which take is where. */}

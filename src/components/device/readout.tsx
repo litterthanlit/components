@@ -9,7 +9,7 @@ export type Transport = "play" | "pause" | "stop";
 
 /* --- Meters ---------------------------------------------------------------- */
 
-/** The printed scale, evenly spaced as on a recorder: the top end gets the room. */
+/** The meters' scale, evenly spaced as on a recorder: the top end gets the room. */
 const SCALE: [number, number][] = [
   [-60, 0],
   [-40, 0.2],
@@ -49,13 +49,11 @@ function Meters({ activity, playing, reduced }: { activity: RefObject<number>; p
 
   useEffect(() => {
     const rows = [...ref.current!.querySelectorAll<HTMLElement>("[data-meter]")];
-    const labels = rows.map((row) => row.querySelector<HTMLElement>("[data-db]")!);
     const levels: [number, number] = [0, 0];
     const shown = [-60, -60];
     const peak = [-60, -60];
     const peakAt = [0, 0];
     let last = performance.now();
-    let lastText = 0;
     let raf = 0;
 
     const frame = (now: number) => {
@@ -80,11 +78,6 @@ function Meters({ activity, playing, reduced }: { activity: RefObject<number>; p
         rows[c].style.setProperty("--l", toScale(shown[c]).toFixed(4));
         rows[c].style.setProperty("--pk", toScale(peak[c]).toFixed(4));
       }
-      // Numbers settle at a readable rate.
-      if (now - lastText > 140) {
-        lastText = now;
-        labels.forEach((label, c) => (label.textContent = `${Math.min(0, Math.round(peak[c]))}dB`));
-      }
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
@@ -92,34 +85,20 @@ function Meters({ activity, playing, reduced }: { activity: RefObject<number>; p
   }, [activity, reduced]);
 
   const meter = (channel: "L" | "R") => (
-    <div data-meter className="contents">
-      <span className="text-[0.66em] font-medium text-(--device-label)">{channel}</span>
-      <span className="relative h-[0.72em] text-(--device-meter-on)">
+    <div data-meter className="flex items-center gap-[0.5em]">
+      <span className="w-[0.8em] text-[0.66em] font-medium text-(--device-label)">{channel}</span>
+      <span className="relative h-[0.72em] flex-1 text-(--device-meter-on)">
         {/* Unlit: a hairline. Lit: fine bars up to the level, and a heavier peak mark. */}
         <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-(--device-meter-off)" />
         <span className="meter-ticks absolute inset-0 [clip-path:inset(0_calc(100%_-_var(--l,0)_*_100%)_0_0)]" />
         <span className="absolute -inset-y-[12%] left-[calc(var(--pk,0)_*_100%_-_1px)] w-[2px] rounded-[1px] bg-current" />
       </span>
-      <span data-db className="text-right text-[0.66em] font-medium tabular-nums text-(--device-label)">
-        -60dB
-      </span>
     </div>
   );
 
-  // The two rows share a grid with the scale between them. Each row's wrapper is display: contents,
-  // so its cells sit in the grid while still inheriting the row's CSS variables.
   return (
-    <div ref={ref} aria-hidden className="grid grid-cols-[auto_1fr_3.6em] items-center gap-x-[0.45em] gap-y-[0.35em]">
+    <div ref={ref} aria-hidden className="flex flex-col gap-[0.55em]">
       {meter("L")}
-      <span />
-      <span className="flex justify-between text-[0.5em] tabular-nums text-(--device-label-quiet)">
-        {SCALE.map(([db]) => (
-          <span key={db} className={cn(db === -12 && "font-semibold text-(--device-label)")}>
-            {db}
-          </span>
-        ))}
-      </span>
-      <span />
       {meter("R")}
     </div>
   );
@@ -167,21 +146,10 @@ export function paintClock(el: HTMLParagraphElement | null, seconds: number) {
   }
 }
 
-const tagNames: Record<string, string> = { a11y: "A11y", css: "CSS", svg: "SVG", webgl: "WebGL", ai: "AI" };
-const tagName = (tag: string) => tagNames[tag] ?? tag[0].toUpperCase() + tag.slice(1);
-
-function size(bytes: number) {
-  return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
-}
-
-function day(iso: string) {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
-}
-
 /**
  * The readout, after the recorder's: a black LCD with the transport, the
- * take's place on the tape, its tags and a running clock; beside it, the
- * file it plays and live level meters. Both sit in one well pressed into
+ * take's place on the tape and a running clock; beside it, the file it plays
+ * and live level meters. Both sit in one well pressed into
  * the body.
  */
 export function Readout({
@@ -208,35 +176,24 @@ export function Readout({
       {/* The LCD mirrors what the status line and announcements already say, so it stays out of the reading order. */}
       <div
         aria-hidden
-        className="relative flex h-[9em] w-[13.4em] shrink-0 flex-col overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.75em] pt-[0.7em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge) wide:h-[10em] wide:w-[15em] wide:px-[0.9em] wide:pb-[0.85em] wide:pt-[0.8em]"
+        className="relative flex h-[7.4em] w-[13.4em] shrink-0 flex-col justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.75em] pt-[0.7em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge) wide:h-[8.2em] wide:w-[15em] wide:px-[0.9em] wide:pb-[0.85em] wide:pt-[0.8em]"
       >
         <div className="flex items-center gap-[0.55em]">
           <span className="inline-flex items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
             <ChipGlyph transport={transport} />
             <span className="text-[0.6em] font-semibold uppercase leading-none tracking-[0.02em]">{chip[transport]}</span>
           </span>
-          <span className="text-[0.62em] font-medium uppercase tracking-[0.04em] text-(--device-lcd-dim)">TSX</span>
           <span className="ml-auto text-[0.66em] tabular-nums text-(--device-lcd-ink)">
             {at + 1}/{n}
           </span>
         </div>
-        <p key={study.slug} className="mt-auto truncate text-[0.7em] text-(--device-lcd-dim)">
-          {study.tags.map(tagName).join(" · ")}
-        </p>
-        <div className="mt-[0.35em]">
-          <Clock clockRef={clockRef} />
-        </div>
+        <Clock clockRef={clockRef} />
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col justify-between px-[0.45em] py-[0.55em] wide:w-[12em] wide:flex-none wide:px-[0.6em]">
-        <div className="min-w-0">
-          <p key={study.slug} className="animate-enter truncate text-[0.9em] font-medium leading-tight text-ink">
-            {study.file}
-          </p>
-          <p className="mt-[0.3em] truncate text-[0.68em] tabular-nums text-(--device-label)">
-            {size(study.bytes)} · {day(study.date)}
-          </p>
-        </div>
+      <div className="flex min-w-0 flex-1 flex-col justify-between px-[0.45em] py-[0.6em] wide:w-[11em] wide:flex-none wide:px-[0.6em]">
+        <p key={study.slug} className="animate-enter truncate text-[0.9em] font-medium leading-tight text-ink">
+          {study.file}
+        </p>
         <Meters activity={activity} playing={transport === "play"} reduced={reduced} />
       </div>
     </div>

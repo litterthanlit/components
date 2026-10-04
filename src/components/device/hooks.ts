@@ -65,9 +65,6 @@ function createPreference<T extends string>(key: string, values: readonly T[], i
   return { read, write, use };
 }
 
-/** Scanlines over the display. */
-export const scanlines = createPreference("device-grid", ["on", "off"] as const, "on");
-
 /** How long the tape stays on each study while it plays, in seconds. */
 export const takeLengths = ["3", "4", "6"] as const;
 export const takeLength = createPreference("device-take", takeLengths, "4");

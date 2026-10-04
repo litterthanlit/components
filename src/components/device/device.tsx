@@ -6,7 +6,7 @@ import { setTheme, useTheme } from "@/components/gallery/theme-toggle";
 import { VOLUME_DEFAULT, VOLUME_MAX, getVolume, isMuted, play, setMuted, setVolume, subscribeMuted, subscribeVolume } from "@/lib/sound";
 import { site } from "@/site.config";
 import { Dial, type DialButton } from "./dial";
-import { scanlines, takeLength, takeLengths, usePageVisible, useReducedMotion } from "./hooks";
+import { takeLength, takeLengths, usePageVisible, useReducedMotion } from "./hooks";
 import { DeviceKey, DeviceKeyLink, FlatKey, HoldSwitch, RoundKey } from "./keys";
 import { LogoWindow } from "./logo-window";
 import { Readout, paintClock, type Transport } from "./readout";
@@ -32,12 +32,11 @@ const onOff = [
 ] as const;
 const lengths = takeLengths.map((value) => ({ value, label: `${value} s` }));
 
-type Option = "theme" | "sound" | "volume" | "lines" | "take";
+type Option = "theme" | "sound" | "volume" | "take";
 const options: { key: Option; label: string }[] = [
   { key: "theme", label: "Theme" },
   { key: "sound", label: "Sound" },
   { key: "volume", label: "Volume" },
-  { key: "lines", label: "Scanlines" },
   { key: "take", label: "Time per study" },
 ];
 
@@ -93,7 +92,6 @@ export function Device({ studies }: { studies: Study[] }) {
 
   const muted = useSyncExternalStore(subscribeMuted, isMuted, () => false);
   const volume = useSyncExternalStore(subscribeVolume, getVolume, () => VOLUME_DEFAULT);
-  const lines = scanlines.use() === "on";
   const take = takeLength.use();
   const takeSeconds = Number(take);
   const reduced = useReducedMotion();
@@ -312,8 +310,6 @@ export function Device({ studies }: { studies: Study[] }) {
       <Choice value={muted ? "off" : "on"} options={onOff} />
     ) : key === "volume" ? (
       <VolumeBar volume={volume} onSet={(v) => setVolumeFromPanel(v)} />
-    ) : key === "lines" ? (
-      <Choice value={lines ? "on" : "off"} options={onOff} />
     ) : (
       <Choice value={take} options={lengths} />
     );
@@ -387,10 +383,7 @@ export function Device({ studies }: { studies: Study[] }) {
       setTheme(theme === "dark" ? "light" : "dark");
     } else if (option === "sound") toggleHold();
     else if (option === "volume") nudgeVolume(delta);
-    else if (option === "lines") {
-      play("toggle");
-      scanlines.write(lines ? "off" : "on");
-    } else {
+    else {
       const next = takeLengths[(takeLengths.indexOf(take) + delta + takeLengths.length) % takeLengths.length];
       play("tick");
       takeLength.write(next);
@@ -572,7 +565,7 @@ export function Device({ studies }: { studies: Study[] }) {
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             {/* The screen: full width, edge to edge under the bumper. */}
             <div className="@container/display relative isolate flex min-h-0 flex-1 animate-wake flex-col overflow-hidden bg-canvas">
-              <StatusBar title={title} playing={playing} held={muted} />
+              <StatusBar title={title} />
 
               <div className="relative min-h-0 flex-1">
                 <div
@@ -624,9 +617,6 @@ export function Device({ studies }: { studies: Study[] }) {
                         onPick={pick}
                         className="-mx-4 min-h-[180px] flex-1 @[720px]/display:max-h-[200px] @[720px]/display:min-h-[190px]"
                       />
-                      <p className="mt-3 hidden text-[11px] text-muted [@media(hover:hover)]:@[720px]/display:block">
-                        ← → studies · ↑ ↓ volume · Space plays · Enter shows details · / finds · M mutes
-                      </p>
                     </div>
                   </div>
                 </Panel>
@@ -688,7 +678,6 @@ export function Device({ studies }: { studies: Study[] }) {
                 </Panel>
               </div>
 
-              {lines && <div aria-hidden className="screen-grid pointer-events-none absolute inset-0 z-40" />}
               {/* Glass, and the backlight's bloom as the screen wakes. */}
               <div aria-hidden className="pointer-events-none absolute inset-0 z-40 [background:var(--screen-glass)]" />
               <div
@@ -699,19 +688,17 @@ export function Device({ studies }: { studies: Study[] }) {
 
             <Tape
               takes={studies}
-              at={dialled}
-              takeSeconds={takeSeconds}
               slider={{ label: "Tape", now: dialled + 1, max: n, text: `${study.title}, ${dialled + 1} of ${n}` }}
               hint={hintId}
               onScrub={scrub}
               onScrubEnd={scrubEnd}
-              className="h-[54px] shrink-0 border-t border-black/[0.06] dark:border-white/[0.06] wide:h-[clamp(64px,9vh,92px)] short:h-[46px]"
+              className="h-[38px] shrink-0 border-t border-black/[0.06] dark:border-white/[0.06] wide:h-[44px] short:h-[34px]"
             />
           </div>
 
           {/* The deck. Sized in em from one font size, so it scales as one piece. */}
           <div className="deck-grid shrink-0 content-center justify-center gap-x-[1.3em] gap-y-[0.8em] border-t border-black/[0.07] px-[1.1em] pb-[1.3em] pt-[1.1em] [font-size:clamp(9px,min(3.2vw,1.7vh),15px)] dark:border-white/[0.06] wide:gap-x-[3.2em] wide:px-[2.4em] wide:py-[1.7em] wide:[font-size:clamp(10px,min(1.45vw,1.6vh),16px)] roomy:gap-x-[3em] roomy:[font-size:clamp(10px,min(1.25vw,1.6vh),16px)] short:border-l short:border-t-0 short:px-[1em] short:py-[0.9em] short:[font-size:clamp(8px,2.7vh,12px)]">
-            <LogoWindow live={playing} className="self-center [grid-area:badge] roomy:w-[11.5em] roomy:self-stretch" />
+            <LogoWindow live={playing} className="self-center justify-self-start [grid-area:badge] roomy:w-[11.5em] roomy:self-stretch roomy:justify-self-stretch" />
             <HoldSwitch held={muted} onChange={toggleHold} className="justify-self-end [grid-area:hold]" />
 
             <Readout
@@ -731,9 +718,6 @@ export function Device({ studies }: { studies: Study[] }) {
               </DeviceKey>
               <FlatKey pressed={flash === "home"} aria-pressed={view === "home"} onClick={() => press("home")}>
                 Home
-              </FlatKey>
-              <FlatKey pressed={flash === "back"} onClick={() => press("back")}>
-                Back
               </FlatKey>
               <DeviceKeyLink href={`/c/${study.slug}`} aria-label={`Source: open the ${study.title} page`}>
                 Source

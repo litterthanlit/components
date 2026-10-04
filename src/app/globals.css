@@ -102,11 +102,6 @@ h3 {
 .meter-ticks {
   background-image: repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 3px);
 }
-/* Scanlines over the display: a 1px row every 3px, barely there. */
-.screen-grid {
-  background-image: linear-gradient(var(--screen-grid) 1px, transparent 1px);
-  background-size: 100% 3px;
-}
 
 /* Soft colour washes behind the page, as on litt.design. */
 .atmosphere {

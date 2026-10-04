@@ -35,43 +35,13 @@ export function appZoom({ w, h }: { w: number; h: number }) {
 
 /* --- Status line ---------------------------------------------------------- */
 
-function Battery() {
+/** The title of what's on screen, centred, over a hairline. */
+export function StatusBar({ title }: { title: string }) {
   return (
-    <svg aria-hidden viewBox="0 0 26 12" className="h-[11px] w-auto">
-      <rect x="0.75" y="0.75" width="21.5" height="10.5" rx="3" fill="none" stroke="currentColor" strokeOpacity="0.45" strokeWidth="1.2" />
-      <rect x="2.6" y="2.6" width="15" height="6.8" rx="1.6" fill="currentColor" />
-      <path d="M23.8 4.2c.9.2 1.45.9 1.45 1.8s-.55 1.6-1.45 1.8z" fill="currentColor" fillOpacity="0.45" />
-    </svg>
-  );
-}
-
-/**
- * Title centred, play and hold on the left, battery on the right. A hairline
- * under it fills with the playhead's place on the tape (`--p`).
- */
-export function StatusBar({ title, playing, held }: { title: string; playing: boolean; held: boolean }) {
-  return (
-    <div className="relative z-30 grid h-[32px] shrink-0 grid-cols-[1fr_auto_1fr] items-center bg-canvas px-[24px] text-ink shadow-[0_1px_0_var(--line)] wide:h-[38px] wide:px-[34px]">
-      <div className="flex items-center gap-1.5">
-        {playing && (
-          <svg aria-hidden viewBox="0 0 12 12" className="size-[10px] animate-enter fill-(--device-rec)">
-            <path d="M2.5 1.5 10.5 6l-8 4.5z" />
-          </svg>
-        )}
-        {held && (
-          <svg aria-hidden viewBox="0 0 12 14" className="h-[12px] w-auto animate-enter text-(--device-hold)">
-            <rect x="1" y="6" width="10" height="7.5" rx="1.6" fill="currentColor" />
-            <path d="M3.4 6V4.3a2.6 2.6 0 0 1 5.2 0V6" fill="none" stroke="currentColor" strokeWidth="1.5" />
-          </svg>
-        )}
-      </div>
+    <div className="relative z-30 grid h-[32px] shrink-0 place-items-center bg-canvas px-[24px] text-ink shadow-[0_1px_0_var(--line)] wide:h-[36px] wide:px-[34px]">
       <p key={title} className="max-w-[60cqw] animate-enter truncate text-[13px] font-medium tracking-[-0.01em] wide:text-[14px]">
         {title}
       </p>
-      <div className="flex justify-end">
-        <Battery />
-      </div>
-      <div aria-hidden className="absolute inset-x-0 bottom-0 h-px origin-left scale-x-(--p) bg-accent" />
     </div>
   );
 }
