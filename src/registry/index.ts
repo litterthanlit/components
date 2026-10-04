@@ -45,6 +45,17 @@ export const registry: RegistryEntry[] = [
     background: "plain",
   },
   {
+    slug: "tape-reels",
+    title: "Tape Reels",
+    description:
+      "Progress as a tape transport: two reels behind smoked glass, the tape running between them over two guides and a head. The reels keep real proportions: a pack's radius grows with the square root of the tape on it, so the emptying reel speeds up as it runs down, and its angle comes out in closed form. Progress eases in on a critically damped spring, so a jump whirls both reels like fast-forward. Turn a reel by hand to scrub; it clicks every 30°.",
+    tagline: "A progress bar with two reels and real tape physics.",
+    tags: ["feedback", "sound", "pointer", "motion"],
+    date: "2026-10-04",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "agent-shapes",
     title: "Agent Shapes",
     description:
