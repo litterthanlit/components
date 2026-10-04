@@ -64,35 +64,19 @@ export function DeviceKeyLink({ pressed, children, className, ...props }: KeyPro
   );
 }
 
-/** Lettering printed straight on the well, no key face: it gives a little under the finger. */
-export function FlatKey({ pressed, children, className, ...props }: KeyProps & Omit<ComponentPropsWithoutRef<"button">, "children">) {
-  return (
-    <button
-      type="button"
-      data-pressed={pressed || undefined}
-      {...sounds}
-      {...props}
-      className={cn(
-        "group/key grid h-[2.5em] place-items-center rounded-[0.6em] px-[0.6em] text-(--device-label) outline-offset-2 transition-[background-color,transform] duration-(--duration-exit) ease-out hover:bg-black/[0.035] active:translate-y-px active:duration-75 data-pressed:translate-y-px dark:hover:bg-white/[0.04]",
-        className,
-      )}
-    >
-      <span className={lettering}>{children}</span>
-    </button>
-  );
-}
-
 /**
- * A round transport key: a white cap seated in a shallow collar, its caption
- * printed underneath.
+ * A round key: a white cap seated in a shallow collar, with its caption
+ * printed underneath when it has one. `small` is the satellite size, for a
+ * key that sits beside the dial.
  */
 export function RoundKey({
   caption,
+  small,
   pressed,
   children,
   className,
   ...props
-}: KeyProps & { caption: string } & Omit<ComponentPropsWithoutRef<"button">, "children">) {
+}: KeyProps & { caption?: string; small?: boolean } & Omit<ComponentPropsWithoutRef<"button">, "children">) {
   return (
     <button
       type="button"
@@ -101,12 +85,17 @@ export function RoundKey({
       {...props}
       className={cn("group/key flex flex-col items-center gap-[0.7em] rounded-full outline-offset-4", className)}
     >
-      <span className="grid size-[5.4em] place-items-center rounded-full bg-black/[0.035] p-[0.32em] shadow-(--device-recess) dark:bg-black/30">
+      <span
+        className={cn(
+          "grid place-items-center rounded-full bg-black/[0.035] shadow-(--device-recess) dark:bg-black/30",
+          small ? "size-[3.6em] p-[0.26em]" : "size-[5.4em] p-[0.32em]",
+        )}
+      >
         <span className={cn("grid size-full place-items-center rounded-full [background:var(--device-wheel-face)] shadow-(--device-key-shadow)", sink)}>
           {children}
         </span>
       </span>
-      <span className={cn(lettering, "text-(--device-label)")}>{caption}</span>
+      {caption && <span className={cn(lettering, "text-(--device-label)")}>{caption}</span>}
     </button>
   );
 }

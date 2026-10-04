@@ -3,7 +3,6 @@
 import { useEffect, useRef, type RefObject } from "react";
 import { cn } from "@/design-system";
 import { readLevels } from "@/lib/sound";
-import type { Study } from "./screen";
 
 export type Transport = "play" | "pause" | "stop";
 
@@ -34,8 +33,8 @@ const HOLD = 900; // ms the peak marker waits before it falls
 const PEAK_FALL = 12; // dB per second
 
 /**
- * Left and right level meters. They show what the device's sounds are really
- * sending to the speakers (read from the sound bus every frame), what the
+ * Left and right level meters, lit on the LCD's glass. They show what the
+ * device's sounds are really sending to the speakers (read from the sound bus every frame), what the
  * hand is doing on the screen (`activity`, 0 to 1, which the meters let decay)
  * and, under both, a faint room tone that rises while the tape plays. Drawn
  * by writing CSS variables, so React never re-renders for them.
@@ -87,11 +86,11 @@ function Meters({ activity, playing, reduced }: { activity: RefObject<number>; p
   }, [activity, reduced]);
 
   const meter = (channel: "L" | "R") => (
-    <div data-meter className="flex items-center gap-[0.5em]">
-      <span className="w-[0.8em] text-[0.66em] font-medium text-(--device-label)">{channel}</span>
-      <span className="relative h-[0.72em] flex-1 text-(--device-meter-on)">
+    <div data-meter className="flex flex-1 items-center gap-[0.45em]">
+      <span className="text-[0.6em] font-medium text-(--device-lcd-dim)">{channel}</span>
+      <span className="relative h-[0.62em] flex-1 text-(--device-lcd-ink)">
         {/* Unlit: a hairline. Lit: fine bars up to the level, and a heavier peak mark. */}
-        <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-(--device-meter-off)" />
+        <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/15" />
         <span className="meter-ticks absolute inset-0 [clip-path:inset(0_calc(100%_-_var(--l,0)_*_100%)_0_0)]" />
         <span className="absolute -inset-y-[12%] left-[calc(var(--pk,0)_*_100%_-_1px)] w-[2px] rounded-[1px] bg-current" />
       </span>
@@ -99,7 +98,7 @@ function Meters({ activity, playing, reduced }: { activity: RefObject<number>; p
   );
 
   return (
-    <div ref={ref} aria-hidden className="flex flex-col gap-[0.55em]">
+    <div ref={ref} aria-hidden className="flex min-w-0 flex-1 items-center gap-[0.9em]">
       {meter("L")}
       {meter("R")}
     </div>
@@ -125,7 +124,7 @@ function ChipGlyph({ transport }: { transport: Transport }) {
 function Clock({ clockRef }: { clockRef: RefObject<HTMLParagraphElement | null> }) {
   const unit = "mr-[0.45em] ml-[0.1em] text-[0.3em] font-normal text-(--device-lcd-dim) last:mr-0";
   return (
-    <p ref={clockRef} className="flex items-baseline whitespace-nowrap text-[2.35em] font-light leading-none tracking-[-0.03em] tabular-nums">
+    <p ref={clockRef} className="flex items-baseline whitespace-nowrap text-[2em] font-light leading-none tracking-[-0.03em] tabular-nums">
       <span>00</span>
       <span className={unit}>M</span>
       <span>00</span>
@@ -149,13 +148,12 @@ export function paintClock(el: HTMLParagraphElement | null, seconds: number) {
 }
 
 /**
- * The readout, after the recorder's: a black LCD with the transport, the
- * take's place on the tape and a running clock; beside it, the file it plays
- * and live level meters. Both sit in one well pressed into
- * the body.
+ * The readout: one LCD in a well pressed into the body. Along the top, the
+ * transport's state and a running clock; along the bottom, live level meters
+ * and the take's place on the tape. The screen already names the study, so
+ * the LCD doesn't.
  */
 export function Readout({
-  study,
   at,
   n,
   transport,
@@ -164,7 +162,6 @@ export function Readout({
   reduced,
   className,
 }: {
-  study: Study;
   at: number;
   n: number;
   transport: Transport;
@@ -175,29 +172,25 @@ export function Readout({
 }) {
   return (
     // Callers set its display, so they can hide it.
-    <div className={cn("gap-[0.45em] rounded-[1.05em] bg-(--device-well) p-[0.45em] shadow-(--device-recess)", className)}>
+    <div className={cn("rounded-[1.05em] bg-(--device-well) p-[0.45em] shadow-(--device-recess)", className)}>
       {/* The LCD mirrors what the status line and announcements already say, so it stays out of the reading order. */}
       <div
         aria-hidden
-        className="relative flex h-[7.4em] w-[13.4em] shrink-0 flex-col justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.75em] pt-[0.7em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge) wide:h-[8.2em] wide:w-[15em] wide:px-[0.9em] wide:pb-[0.85em] wide:pt-[0.8em]"
+        className="relative flex h-[6.4em] w-[21em] flex-col justify-between overflow-hidden rounded-[0.7em] px-[0.9em] pb-[0.85em] pt-[0.8em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge) roomy:w-[23em]"
       >
-        <div className="flex items-center gap-[0.55em]">
+        <div className="flex items-center justify-between gap-[0.8em]">
           <span className="inline-flex items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
             <ChipGlyph transport={transport} />
             <span className="text-[0.6em] font-semibold uppercase leading-none tracking-[0.02em]">{chip[transport]}</span>
           </span>
-          <span className="ml-auto text-[0.66em] tabular-nums text-(--device-lcd-ink)">
+          <Clock clockRef={clockRef} />
+        </div>
+        <div className="flex items-center gap-[1.1em]">
+          <Meters activity={activity} playing={transport === "play"} reduced={reduced} />
+          <span className="text-[0.66em] tabular-nums text-(--device-lcd-dim)">
             {at + 1}/{n}
           </span>
         </div>
-        <Clock clockRef={clockRef} />
-      </div>
-
-      <div className="flex min-w-0 flex-1 flex-col justify-between px-[0.45em] py-[0.6em] wide:w-[11em] wide:flex-none wide:px-[0.6em]">
-        <p key={study.slug} className="animate-enter truncate text-[0.9em] font-medium leading-tight text-ink">
-          {study.file}
-        </p>
-        <Meters activity={activity} playing={transport === "play"} reduced={reduced} />
       </div>
     </div>
   );

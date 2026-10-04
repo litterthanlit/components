@@ -8,7 +8,7 @@ The values live in code. `src/design-system/tokens.css` is the source of truth (
 
 ### The player is an object, not a page
 
-The home page is a player after a field recorder: a near-white body in a black bumper, a full-width screen, wells pressed into the body, keys that sink 2px onto their base, a dial, a tape of waveforms with a red playhead. It is something you could hold, and it runs the studies one at a time.
+The home page is a player after a field recorder: a near-white body in a machined frame, a full-width screen, wells pressed into the body, keys that sink 2px onto their base, a dial with PLAY at its centre, a tape of waveforms with a red playhead. It is something you could hold, and it runs the studies one at a time.
 
 An object gives every study the same frame and makes polish legible: a lit edge, a recess or a 2px base is either right or it isn't. So a study is a part of the same instrument, built from the same materials, never a card on a screen and never a second player. When a click-wheel player ran inside the player's screen, it competed with it, and it was taken out.
 
@@ -34,7 +34,9 @@ What a study does by itself asks the player first (the transport rule, under Sou
 
 Monochrome, plus red for REC and the playhead, orange for HOLD, and one blue on the screen for selection. Figures are tabular, so a count never shuffles sideways. Grey text, hairlines and one weight change on the page. The work should be the loudest thing here, and when a colour only ever means one thing, it reads at once.
 
-Restraint is also subtraction. The player lost its battery icon, timecodes, scanlines, a BACK key and a keyboard legend because each one repeated something the screen, the LCD or the hold switch already said.
+Restraint is also subtraction. The player lost its battery icon, timecodes, scanlines, a BACK key and a keyboard legend because each one repeated something the screen, the LCD or the hold switch already said. Later it lost the file name beside the LCD (the screen names the study), the dial's four arrows (the dial turns) and the captions under the transport (▶ and ■ need no words).
+
+It is after a field recorder, not a copy of one. Its parts are arranged around what this player does: it runs studies by itself, so PLAY is the largest key on the deck, at the centre of the dial that steps through them.
 
 ### Physics carry the feel
 
@@ -58,7 +60,7 @@ Colour, centre, dialled; synthesized, motorized. Numbers carry units and real sy
 
 The player is built from a few materials, each a small group of `--device-*` tokens with a light and a dark value. Studies use the same tokens, so a study reads as a part of the same object in either theme. The dark player is a charcoal body, not an inverted one: its keys are lighter than the plate, its engraving casts the other way.
 
-They combine in one order: **plate, then well, then part**. Wells are pressed into the plate; keys, LCDs, windows and collars sit in wells; caps sit in collars. Screens sit behind a bumper or a bezel. Everything on a plate is sized in em from the plate's one font size, so the object scales as one piece, and radii nest as they go in: plate 1.25em, well 1.05em, key or LCD 0.7em, chip 0.4em.
+They combine in one order: **plate, then well, then part**. Wells are pressed into the plate; keys, LCDs, windows and collars sit in wells; caps sit in collars. The player sits in a frame; a second screen, LCD cells and dot-matrix strips sit behind a black bezel. Everything on a plate is sized in em from the plate's one font size, so the object scales as one piece, and radii nest as they go in: plate 1.25em, well 1.05em, key or LCD 0.7em, chip 0.4em.
 
 ### Plate
 
@@ -84,9 +86,16 @@ Every study starts here:
 </div>
 ```
 
-### Bumper and bezel
+### Frame and bezel
 
-Black, with a polished edge catching the light. The bumper frames the player (`rounded-[34px] p-[5px]`, 46px and 8px on wide decks) and, at `rounded-[1.5em] p-[0.4em]`, a second screen such as the Command Menu, which shows the site's own ground under glass. A bezel is the same black around LCD cells and dot-matrix strips, set into the plate: `bg-(--device-rim) p-[0.3em]` with `shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)]` (the highlight drops to 0.06 in dark).
+The frame is machined: a band a shade darker than the body in light (lighter in dark, so it still catches the light), lit along its top edge. It holds the player (`rounded-[34px] p-[5px]`, 46px and 8px on wide decks). It replaced a black bumper, whose stark outline round a white body was the most recognisable thing about the recorder it came from.
+
+| Token | Light | Dark |
+| --- | --- | --- |
+| `--device-frame` | `linear-gradient(180deg, #dededc 0%, #d5d5d3 55%, #cdcdcb 100%)` | `linear-gradient(180deg, #3a3a3c 0%, #313133 55%, #2a2a2c 100%)` |
+| `--device-frame-edge` | `inset 0 1px 0 rgb(255 255 255 / 0.85), inset 0 0 0 1px rgb(0 0 0 / 0.07), 0 0 0 0.5px rgb(0 0 0 / 0.12)` | `inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 1px rgb(0 0 0 / 0.5), 0 0 0 0.5px rgb(0 0 0 / 0.8)` |
+
+A bezel is black, with a polished edge catching the light: round a second screen such as the Command Menu (`rounded-[1.5em] p-[0.4em]`), which shows the site's own ground under glass, and round LCD cells and dot-matrix strips set into the plate: `bg-(--device-rim) p-[0.3em]` with `shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)]` (the highlight drops to 0.06 in dark).
 
 | Token | Light | Dark |
 | --- | --- | --- |
@@ -127,7 +136,7 @@ The site's own buttons are keys too, from the `--key-*` tokens: 2px corners, a l
 
 ### Cap and collar
 
-Round caps and the dial, lit from above. A transport key is a cap seated in a collar (`size-[5.4em] p-[0.32em]`), its caption printed underneath. The cap uses `--device-wheel-face` with the key shadows, so it sinks like a key. The dial uses the wheel shadows and rocks 5° toward the side pressed (`perspective(600px) translateY(1.5px) rotateX(±5deg)`), its centre a key of its own dropping 2px into a well. A knob's cap carries knurling, `repeating-conic-gradient(from var(--a), …)`, so it turns without a transform.
+Round caps and the dial, lit from above. A cap seated in a collar (`size-[5.4em] p-[0.32em]`, or `size-[3.6em] p-[0.26em]` for a satellite) uses `--device-wheel-face` with the key shadows, so it sinks like a key; a caption, when it has one, is printed underneath. The dial is a ring on the wheel shadows in a collar, which only turns: a dimple near its rim, a shallow cup for a fingertip, travels with the hand (`rotate: var(--a)` inside an `overflow-hidden` circle). Its centre is the deck's main key, dropping 2px into a well: PLAY or pause in red on a take, OK on a list. STOP is a satellite cap beside it, between three and four o'clock, as a turntable's start key sits by its platter. A knob's cap carries knurling, `repeating-conic-gradient(from var(--a), …)`, so it turns without a transform.
 
 | Token | Light | Dark |
 | --- | --- | --- |
@@ -289,7 +298,7 @@ A study may tune its own spring for its mechanism, as below, and run it in the u
 ### Mechanisms
 
 - **Motor and hand** (Knob, Fader). Values set from outside travel on the motor (Knob: `springs.gentle` in degrees; Fader: stiffness 240, damping 30, a whisker under critical, in permille of travel). Values set by hand land at once. While a hand is on a motorized cap the motor lets go of it; when the hand leaves, the motor takes the cap to wherever the value moved on to. One spring update draws the cap, the lights, the LCD and makes the clicks, so what you hear always matches what you see.
-- **Detents.** A click for every detent the spring passes, pitched with the value (`play("tick", { gain: 0.55, pitch: 0.9 + (detent / detents) * 0.25 })`), so a motor recalling a scene sounds like a desk resetting itself. The dial clicks every 15° (a press that slides more than 8° becomes a turn), a reel every 30°. The Fader's unity detent catches the cap within 1.2% of the range and holds it until the hand pulls 3.5% clear.
+- **Detents.** A click for every detent the spring passes, pitched with the value (`play("tick", { gain: 0.55, pitch: 0.9 + (detent / detents) * 0.25 })`), so a motor recalling a scene sounds like a desk resetting itself. The dial clicks every 15° (a press on its centre never turns), a reel every 30°. The Fader's unity detent catches the cap within 1.2% of the range and holds it until the hand pulls 3.5% clear.
 - **Over-centre** (Switch). A small integrator at 480 Hz, not a transition. Under a finger the cap lags further and further toward the centre (3% breakout; it reaches the centre at 72% of finger travel), through a stiff follower (2200, 84). At the centre it snaps through, driven by a spring of 40 preload plus 260 at its peak, onto a hard stop (16000, 180) with 2 to 4% of give, while the finger is still down. On release short of the centre the cap is projected 150ms ahead at the finger's speed: a flick decides by velocity, not position. Past either end it rubber-bands (up to a tenth of its travel) and bumps once. The snap plays `toggle`, calls `navigator.vibrate(8)` and reports the change on the same frame the light comes on.
 - **Tape** (Tape Reels). A pack's radius grows with the square root of the tape on it, `r = √(r_hub² + p · (R² − r_hub²))`, so the emptying reel visibly speeds up, and each reel's angle comes out in closed form, `θ = 2(r − r_hub) / k`. Progress eases in on stiffness 140, damping 24 (critically damped: the reels have mass), so a jump whirls both reels like fast-forward. The tape is redrawn every frame as tangents to the packs.
 - **VU ballistics** (VU Meter). 99% of a steady tone in about 300ms with about 1.5% overshoot (stiffness 166, damping 20.2). A detector with a 60ms release ahead of the spring lets a key press swing the needle toward 0 without pinning it, as a real VU under-reads transients; the peak light holds 600ms past +3 VU. The scale is linear in voltage, 0 VU seven tenths of the way across, calibrated to the slate tone leaving the bus.

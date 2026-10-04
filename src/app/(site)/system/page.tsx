@@ -17,7 +17,7 @@ const code = "rounded-sm bg-panel px-1 py-0.5 font-mono text-[12px] text-ink";
 const principles = [
   {
     title: "An object, not a page",
-    body: "The home page is a player you could hold: a body in a bumper, wells pressed into it, keys that sink 2px. A study is a part of the same instrument, never a card on a screen.",
+    body: "The home page is a player you could hold: a body in a machined frame, wells pressed into it, keys that sink 2px. A study is a part of the same instrument, never a card on a screen.",
   },
   {
     title: "An instrument's vocabulary",

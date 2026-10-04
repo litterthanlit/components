@@ -36,13 +36,36 @@ export function appZoom({ w, h }: { w: number; h: number }) {
 
 /* --- Status line ---------------------------------------------------------- */
 
-/** The title of what's on screen, centred, over a hairline. */
-export function StatusBar({ title }: { title: string }) {
+/** The title of what's on screen, centred, over a hairline. On a take it opens the study's details. */
+export function StatusBar({ title, details }: { title: string; details?: { open: boolean; onToggle: () => void } }) {
+  const text = (
+    <p key={title} className="max-w-[60cqw] animate-enter truncate text-[13px] font-medium tracking-[-0.01em] wide:text-[14px]">
+      {title}
+    </p>
+  );
   return (
     <div className="relative z-30 grid h-[32px] shrink-0 place-items-center bg-canvas px-[24px] text-ink shadow-[0_1px_0_var(--line)] wide:h-[36px] wide:px-[34px]">
-      <p key={title} className="max-w-[60cqw] animate-enter truncate text-[13px] font-medium tracking-[-0.01em] wide:text-[14px]">
-        {title}
-      </p>
+      {details ? (
+        // On a take, the title is the way in to what the study is.
+        <button
+          type="button"
+          aria-expanded={details.open}
+          aria-label={`${title}: ${details.open ? "hide" : "show"} details`}
+          onClick={details.onToggle}
+          className="group/title flex max-w-full items-center gap-1.5 rounded-sm px-1.5 outline-offset-2"
+        >
+          {text}
+          <svg
+            aria-hidden
+            viewBox="0 0 16 16"
+            className="size-[13px] shrink-0 text-muted transition-[color,rotate] duration-(--duration-exit) ease-out group-hover/title:text-ink group-hover/title:duration-(--duration-enter) group-aria-expanded/title:rotate-180"
+          >
+            <path d="M4.5 6.5 8 10l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      ) : (
+        text
+      )}
     </div>
   );
 }

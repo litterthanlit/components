@@ -57,6 +57,8 @@ export const colorRoles: { token: ColorToken; role: string }[] = [
  */
 export const device = {
   light: {
+    frame: "linear-gradient(180deg, #dededc 0%, #d5d5d3 55%, #cdcdcb 100%)",
+    "frame-edge": "inset 0 1px 0 rgb(255 255 255 / 0.85), inset 0 0 0 1px rgb(0 0 0 / 0.07), 0 0 0 0.5px rgb(0 0 0 / 0.12)",
     rim: "#0d0d0e",
     "rim-edge": "inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 -1px 0 rgb(255 255 255 / 0.06), 0 0 0 0.5px rgb(0 0 0 / 0.6)",
     body: "linear-gradient(180deg, #f7f7f6 0%, #f2f2f1 55%, #ecebea 100%)",
@@ -90,6 +92,8 @@ export const device = {
     "screen-glass": "linear-gradient(158deg, rgb(255 255 255 / 0.07) 0%, rgb(255 255 255 / 0.02) 38%, transparent 38.2%)",
   },
   dark: {
+    frame: "linear-gradient(180deg, #3a3a3c 0%, #313133 55%, #2a2a2c 100%)",
+    "frame-edge": "inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 1px rgb(0 0 0 / 0.5), 0 0 0 0.5px rgb(0 0 0 / 0.8)",
     rim: "#000000",
     "rim-edge": "inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 0 0 1px rgb(255 255 255 / 0.05), 0 0 0 1px rgb(255 255 255 / 0.05)",
     body: "linear-gradient(180deg, #262628 0%, #212123 55%, #1b1b1d 100%)",
@@ -132,7 +136,8 @@ export const deviceVar = (token: DeviceToken) => (token.startsWith("screen-") ? 
 /** The hardware materials, each with the tokens it is made from. Documented on /system and in DESIGN.md. */
 export const materials: { name: string; tokens: DeviceToken[]; use: string }[] = [
   { name: "Plate", tokens: ["body", "body-edge", "grain"], use: "The body's bead-blasted finish: a lit top edge, soft-light noise over a vertical gradient. Every study sits on one." },
-  { name: "Bumper", tokens: ["rim", "rim-edge", "body-shadow"], use: "The black frame round the player and round a second screen, its polished edge catching the light." },
+  { name: "Frame", tokens: ["frame", "frame-edge", "body-shadow"], use: "The player's machined frame: a band a shade darker than the body (lighter, in dark), lit along its top edge." },
+  { name: "Bezel", tokens: ["rim", "rim-edge"], use: "Black, round LCD cells, dot-matrix strips and a second screen, its polished edge catching the light." },
   { name: "Well", tokens: ["well", "recess"], use: "Anything pressed into the plate: the readout, the key row, a fader's slot, a collar." },
   { name: "Key", tokens: ["key-face", "key-ink", "key-shadow", "key-shadow-pressed"], use: "A raised key on a 2px base it sinks onto. Both shadows keep the same five layers, so they interpolate." },
   { name: "Cap", tokens: ["wheel-face", "wheel-shadow", "wheel-shadow-pressed"], use: "Round caps and the dial: lit from above, seated in a collar cut from the well." },
