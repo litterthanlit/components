@@ -232,7 +232,7 @@ function indexItems(items: CommandItem[]): Index {
  * each group's best match). Rows are those groups' headings and options in
  * turn, so a row's place follows from the group sizes alone.
  */
-type Results = { words: Uint16Array[]; order: Int32Array; groups: { name: string; first: number; size: number }[]; ms: number };
+type Results = { words: Uint16Array[]; order: Int32Array; groups: { name: string; first: number; size: number }[] };
 
 // Scores are whole numbers, so a score and an item's index pack into one float that sorts best first, ties in order.
 const SLOT = 2 ** 21; // room for two million items
@@ -240,7 +240,6 @@ const OFFSET = 2 ** 20;
 
 /** Ranks items against a query: words match independently, scores add up, ties keep their order. Allocates almost nothing per item. */
 function search({ prepared, group, names }: Index, query: string): Results {
-  const started = performance.now();
   const words = query.toLowerCase().split(/\s+/).filter(Boolean).map(codesOf);
   const n = prepared.length;
   let ranked = new Int32Array(n);
@@ -274,7 +273,7 @@ function search({ prepared, group, names }: Index, query: string): Results {
   const order = new Int32Array(count);
   const next = groups.map((g) => g.first);
   for (const i of ranked) order[next[seen[group[i]]]++] = i;
-  return { words, order, groups, ms: performance.now() - started };
+  return { words, order, groups };
 }
 
 /** Where a query's words fell in a label, in reading order: worked out only for the rows on screen. */
@@ -446,7 +445,7 @@ export function CommandMenu<T extends CommandItem>({
 
   const index = useMemo(() => indexItems(items), [items]);
   const results = useMemo(() => search(index, query), [index, query]);
-  const { order, groups, words, ms } = results;
+  const { order, groups, words } = results;
   const total = order.length; // options; rows are these plus a heading per group
 
   // The highlight is an option's index; a new query puts it back on the best match.
@@ -821,12 +820,6 @@ export function CommandMenu<T extends CommandItem>({
               <span key={`${lcd.text}|${lcd.detail ?? ""}`} className="min-w-0 animate-enter truncate text-[0.7em] leading-none tabular-nums">
                 <span className="font-semibold uppercase tracking-[0.06em]">{lcd.text}</span>
                 {lcd.detail && <span className="text-(--device-lcd-dim)"> {lcd.detail}</span>}
-                {!status && query.trim() && (
-                  <span suppressHydrationWarning className="hidden text-(--device-lcd-dim) @[26rem]:inline">
-                    {" "}
-                    · {ms < 0.1 ? "<0.1" : ms.toFixed(1)} ms
-                  </span>
-                )}
               </span>
             </span>
           </div>
