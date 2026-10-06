@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "merge-box",
+    title: "Merge Box",
+    description:
+      "A pull request's merge box on a recorder. Each required check has a light on a shutter: it fires red while the check runs, latches when it passes and holds red when it fails. Once every check has passed, MERGE lights orange for the hand. Merging lifts the shutter and seven drums spin up behind it; when the commit comes back, each brakes onto its figure on a spring, blurred by its own speed, and clicks into place.",
+    tagline: "Checks on a shutter, and the merge commit on spinning drums.",
+    tags: ["feedback", "motion", "sound", "a11y"],
+    date: "2026-10-06",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "agent-indicators",
     title: "Agent Indicators",
     description:

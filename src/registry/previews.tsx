@@ -10,6 +10,7 @@ import type { ComponentType } from "react";
 const loading = () => <div className="size-6 animate-pulse rounded-full bg-line" />;
 
 export const previews: Record<string, ComponentType> = {
+  "merge-box": dynamic(() => import("./components/merge-box"), { loading }),
   "agent-indicators": dynamic(() => import("./components/agent-indicators"), { loading }),
   "agent-status": dynamic(() => import("./components/agent-status"), { loading }),
   "command-menu": dynamic(() => import("./components/command-menu"), { loading }),
