@@ -16,6 +16,10 @@
  * clipping. On touch screens the bus sits 2.5 dB lower: phone speakers are
  * small, bright and close to the ear, and a tap on glass needs less.
  *
+ * Volume (`setVolume`, eleven steps, 2 dB apart) scales the bus; the default
+ * step is the level every sound was tuned at. `readLevels` reports what
+ * leaves the bus, for the device's level meters.
+ *
  * Physical keys elsewhere on the site (`Button`, `ButtonLink`, `IconButton`)
  * carry `data-sound="key" | "soft"`; the delegated listeners below give them
  * press and release sounds without making the primitives client components.
@@ -43,6 +47,12 @@ export type SoundName =
   | "toggle"
   /** Hitting the end of a list: a duller tick. */
   | "bump"
+  /** The transport engaging: the tape starts rolling. */
+  | "start"
+  /** The transport letting go: stop, or a softer pause. */
+  | "stop"
+  /** The recorder's reference tone: a held 1 kHz sine that a VU meter reads as 0 VU. */
+  | "slate"
   /** First interaction: the device waking. Played at most once per page load. */
   | "wake";
 
@@ -51,10 +61,15 @@ export type PlayOptions = {
   pitch?: number;
   /** Multiplies the base gain (0–1). Default 1. */
   gain?: number;
+  /**
+   * Seconds from now to start, 0 to 0.5, on the audio clock: for sequencers,
+   * which schedule a little ahead so their timing never jitters. Default 0.
+   */
+  delay?: number;
 };
 
 /** Every sound, in the order the /system page shows them. */
-export const soundNames: readonly SoundName[] = ["tick", "bump", "press", "release", "select", "back", "open", "close", "toggle", "wake"];
+export const soundNames: readonly SoundName[] = ["tick", "bump", "press", "release", "select", "back", "open", "close", "toggle", "start", "stop", "slate", "wake"];
 
 /* ------------------------------------------------------------------------ */
 /* Synthesis. Works on any BaseAudioContext, so sounds render offline too.   */
@@ -102,10 +117,14 @@ function roomBuffer(ctx: BaseAudioContext) {
   return buffer;
 }
 
-type Bus = { input: GainNode; master: GainNode };
+type Bus = { input: GainNode; master: GainNode; meters?: [AnalyserNode, AnalyserNode] };
 
-/** input → (dry + faint room) → master level → compressor → destination. */
-function createBus(ctx: BaseAudioContext, destination: AudioNode, level: number): Bus {
+/**
+ * input → (dry + faint room) → master level → compressor → destination.
+ * With `meter`, the compressor's output is also split into two analysers, so
+ * level meters show exactly what leaves the speakers.
+ */
+function createBus(ctx: BaseAudioContext, destination: AudioNode, level: number, meter = false): Bus {
   const input = ctx.createGain();
   const master = ctx.createGain();
   master.gain.value = level;
@@ -125,7 +144,23 @@ function createBus(ctx: BaseAudioContext, destination: AudioNode, level: number)
   input.connect(master);
   input.connect(room).connect(wet).connect(master);
   master.connect(limiter).connect(destination);
-  return { input, master };
+  if (!meter) return { input, master };
+
+  const split = ctx.createChannelSplitter(2);
+  // Silent sink: some engines only process nodes with a path to the destination.
+  const sink = ctx.createGain();
+  sink.gain.value = 0;
+  sink.connect(destination);
+  const meters = [0, 1].map((channel) => {
+    const analyser = ctx.createAnalyser();
+    // ~21ms at 48kHz: longer than a frame, so a 5ms tick is never missed between reads.
+    analyser.fftSize = 1024;
+    split.connect(analyser, channel);
+    analyser.connect(sink);
+    return analyser;
+  }) as [AnalyserNode, AnalyserNode];
+  limiter.connect(split);
+  return { input, master, meters };
 }
 
 type NoiseLayer = {
@@ -149,6 +184,8 @@ type ToneLayer = {
   glide?: number;
   peak: number;
   attack?: number;
+  /** Seconds held at the peak before the decay: for sustained tones. Default 0. */
+  hold?: number;
   decay: number;
   /** Optional lowpass on the tone, swept from `lowpass` to `lowpassTo`. */
   lowpass?: number;
@@ -178,12 +215,13 @@ class Voice {
     this.nodes.push(this.output);
   }
 
-  private envelope(start: number, peak: number, attack: number, decay: number) {
+  private envelope(start: number, peak: number, attack: number, decay: number, hold = 0) {
     const g = this.ctx.createGain();
     g.gain.setValueAtTime(0, start);
     g.gain.linearRampToValueAtTime(peak, start + attack);
-    g.gain.exponentialRampToValueAtTime(SILENT, start + attack + decay);
-    g.gain.setValueAtTime(0, start + attack + decay);
+    if (hold > 0) g.gain.setValueAtTime(peak, start + attack + hold);
+    g.gain.exponentialRampToValueAtTime(SILENT, start + attack + hold + decay);
+    g.gain.setValueAtTime(0, start + attack + hold + decay);
     this.nodes.push(g);
     return g;
   }
@@ -216,7 +254,7 @@ class Voice {
     this.schedule(src, start, stop, Math.random() * (buffer.duration - 0.3));
   }
 
-  tone({ at = 0, type = "sine", freq, freqTo, glide, peak, attack = 0.0008, decay, lowpass, lowpassTo }: ToneLayer) {
+  tone({ at = 0, type = "sine", freq, freqTo, glide, peak, attack = 0.0008, hold = 0, decay, lowpass, lowpassTo }: ToneLayer) {
     const start = this.t0 + at;
     const osc = this.ctx.createOscillator();
     osc.type = type;
@@ -232,8 +270,8 @@ class Voice {
       this.nodes.push(f);
       node = osc.connect(f);
     }
-    node.connect(this.envelope(start, peak, attack, decay)).connect(this.output);
-    this.schedule(osc, start, start + attack + decay + 0.005);
+    node.connect(this.envelope(start, peak, attack, decay, hold)).connect(this.output);
+    this.schedule(osc, start, start + attack + hold + decay + 0.005);
   }
 
   /** Disconnects every node once the last source has finished. */
@@ -314,6 +352,29 @@ const synths: Record<SoundName, (v: Voice) => void> = {
     click(v, 0.016, 3000, 0.75, 0.004);
     v.tone({ at: 0.016, freq: 520, peak: 0.12, decay: 0.008 });
   },
+  // Tape rolling: the transport latching (a firm thock), then a short rising
+  // two-note beep (A5, E6), the way a recorder confirms it is running.
+  start(v) {
+    v.noise({ filter: "lowpass", freq: 1200, q: 0.9, peak: 1, attack: 0.0008, decay: 0.022 });
+    v.tone({ freq: 190, freqTo: 120, glide: 0.03, peak: 0.5, attack: 0.001, decay: 0.04 });
+    click(v, 0, 3600, 0.7, 0.004);
+    v.tone({ at: 0.035, type: "triangle", freq: 880, peak: 0.07, attack: 0.003, decay: 0.05, lowpass: 2600 });
+    v.tone({ at: 0.085, type: "triangle", freq: 1318.5, peak: 0.065, attack: 0.003, decay: 0.08, lowpass: 3200 });
+  },
+  // Transport letting go: a heavier, duller thock and a low partial winding
+  // down, like reels coming to rest.
+  stop(v) {
+    v.noise({ filter: "lowpass", freq: 850, q: 0.9, peak: 1.2, attack: 0.0008, decay: 0.035 });
+    v.tone({ freq: 150, freqTo: 68, glide: 0.09, peak: 0.6, attack: 0.001, decay: 0.1 });
+    click(v, 0, 2300, 0.6, 0.004);
+  },
+  // Line-up tone: a pure 1 kHz sine held for most of a second, as a recorder
+  // sends before a take so the meters can be set. Soft edges, so it never
+  // clicks on or off; quieter than its -18 dBFS namesake, since a held tone
+  // sounds far louder than a click at the same peak.
+  slate(v) {
+    v.tone({ freq: 1000, peak: 0.16, attack: 0.012, hold: 0.9, decay: 0.07 });
+  },
   // Power on: open fifths (D5, A5, E6) blooming in turn and settling into
   // pitch, over a filtered triangle that opens like a screen warming up.
   wake(v) {
@@ -345,7 +406,7 @@ export async function renderSound(
 ): Promise<{ buffer: AudioBuffer; duration: number } | null> {
   try {
     if (typeof OfflineAudioContext === "undefined") return null;
-    const offline = new OfflineAudioContext(2, Math.ceil(sampleRate * 1), sampleRate);
+    const offline = new OfflineAudioContext(2, Math.ceil(sampleRate * 1.5), sampleRate);
     const bus = createBus(offline, offline.destination, LEVEL * (options?.touch ? TOUCH_TRIM : 1));
     const voice = synthesize(name, offline, bus.input, 0, options).done();
     const buffer = await offline.startRendering();
@@ -370,6 +431,9 @@ const minGap: Record<SoundName, number> = {
   open: 80,
   close: 80,
   toggle: 40,
+  start: 80,
+  stop: 80,
+  slate: 1000,
   wake: 0,
 };
 const MAX_VOICES = 8;
@@ -409,7 +473,7 @@ function context(): AudioContext | null {
     const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AC) return null;
     ctx = new AC({ latencyHint: "interactive" });
-    bus = createBus(ctx, ctx.destination, LEVEL * (isTouch() ? TOUCH_TRIM : 1));
+    bus = createBus(ctx, ctx.destination, masterLevel(), true);
     noiseBuffer(ctx);
     resumedAt = performance.now();
     if (ctx.state !== "running") ctx.resume().catch(() => {});
@@ -439,24 +503,30 @@ function ready(ac: AudioContext) {
 
 function start(name: SoundName, options: PlayOptions | undefined, limited: boolean) {
   try {
-    if (!isBrowser() || isMuted()) return;
+    if (!isBrowser() || isMuted() || getVolume() === 0) return;
     if (document.visibilityState === "hidden") return;
     const ac = context();
     if (!ac || !bus || !ready(ac)) return;
+    const delay = lead(options?.delay);
+    // Scheduled sounds need a running clock: on a suspended one they would bunch up and burst out together.
+    if (delay > 0 && ac.state !== "running") return;
 
-    const now = performance.now();
+    // The rate limit counts when a sound will be heard, so notes queued ahead are spaced like ones played now.
+    const at = performance.now() + delay * 1000;
     if (limited) {
       const last = lastPlayed[name];
-      if (last !== undefined && now - last < minGap[name]) return;
+      if (last !== undefined && Math.abs(at - last) < minGap[name]) return;
     }
 
     const t = ac.currentTime;
     while (voiceEnds.length && voiceEnds[0] <= t) voiceEnds.shift();
-    if (voiceEnds.length >= MAX_VOICES) return;
+    // Scheduled sounds leave two voices free, so the interface's own clicks always get through.
+    if (voiceEnds.length >= (delay > 0 ? MAX_VOICES - 2 : MAX_VOICES)) return;
 
-    lastPlayed[name] = now;
-    const voice = synthesize(name, ac, bus.input, t, options).done();
-    const end = t + voice.end;
+    lastPlayed[name] = at;
+    const when = t + delay;
+    const voice = synthesize(name, ac, bus.input, when, options).done();
+    const end = when + voice.end;
     const i = voiceEnds.findIndex((e) => e > end);
     voiceEnds.splice(i === -1 ? voiceEnds.length : i, 0, end);
   } catch {}
@@ -535,6 +605,128 @@ export function subscribeMuted(callback: () => void): () => void {
   };
 }
 
+/* ------------------------------------------------------------------------ */
+/* Volume: eleven steps, persisted per viewer, shared across tabs.           */
+/* ------------------------------------------------------------------------ */
+
+const VOLUME_KEY = "sound-volume";
+export const VOLUME_MAX = 10;
+/** The designed level: what every sound was tuned at. */
+export const VOLUME_DEFAULT = 7;
+let volume: number | null = null;
+const volumeListeners = new Set<() => void>();
+
+/** 2 dB a step around the default: 10 is +6 dB, 1 is -12 dB, 0 is silent. */
+function volumeGain(step: number) {
+  return step <= 0 ? 0 : Math.pow(10, (2 * (step - VOLUME_DEFAULT)) / 20);
+}
+
+function masterLevel() {
+  return LEVEL * (isTouch() ? TOUCH_TRIM : 1) * volumeGain(getVolume());
+}
+
+function readStoredVolume() {
+  try {
+    const value = localStorage.getItem(VOLUME_KEY);
+    if (value === null) return VOLUME_DEFAULT;
+    const step = Math.round(Number(value));
+    return Number.isFinite(step) ? Math.min(VOLUME_MAX, Math.max(0, step)) : VOLUME_DEFAULT;
+  } catch {
+    return VOLUME_DEFAULT;
+  }
+}
+
+function applyVolume() {
+  try {
+    if (ctx && bus) bus.master.gain.setTargetAtTime(masterLevel(), ctx.currentTime, 0.008);
+  } catch {}
+}
+
+function notifyVolume() {
+  for (const l of [...volumeListeners]) {
+    try {
+      l();
+    } catch {}
+  }
+}
+
+/** The volume step, 0 (silent) to VOLUME_MAX. Independent of mute. */
+export function getVolume(): number {
+  if (!isBrowser()) return VOLUME_DEFAULT;
+  if (volume === null) volume = readStoredVolume();
+  return volume;
+}
+
+export function setVolume(step: number): void {
+  if (!isBrowser() || !Number.isFinite(step)) return;
+  const next = Math.min(VOLUME_MAX, Math.max(0, Math.round(step)));
+  try {
+    localStorage.setItem(VOLUME_KEY, String(next));
+  } catch {}
+  if (next === getVolume()) return;
+  volume = next;
+  applyVolume();
+  notifyVolume();
+}
+
+/** Subscribes to volume changes, for useSyncExternalStore. Returns the unsubscribe. */
+export function subscribeVolume(callback: () => void): () => void {
+  volumeListeners.add(callback);
+  return () => {
+    volumeListeners.delete(callback);
+  };
+}
+
+/* ------------------------------------------------------------------------ */
+/* Levels: what the sounds are sending to the speakers, for meters.          */
+/* ------------------------------------------------------------------------ */
+
+let meterData: Float32Array<ArrayBuffer> | null = null;
+
+/**
+ * The peak level per channel over the last ~20ms, linear from 0 to 1, read
+ * after the compressor. Writes into `out` (left, right) and returns it, so a
+ * meter can call it every frame without allocating. Zeros until the first
+ * sound has created the audio context, and whenever it isn't running.
+ */
+export function readLevels(out: [number, number] = [0, 0]): [number, number] {
+  out[0] = 0;
+  out[1] = 0;
+  try {
+    const meters = bus?.meters;
+    if (!meters || !ctx || ctx.state !== "running") return out;
+    if (!meterData || meterData.length !== meters[0].fftSize) meterData = new Float32Array(meters[0].fftSize);
+    for (let c = 0; c < 2; c++) {
+      meters[c].getFloatTimeDomainData(meterData);
+      let peak = 0;
+      for (let i = 0; i < meterData.length; i++) {
+        const a = Math.abs(meterData[i]);
+        if (a > peak) peak = a;
+      }
+      out[c] = peak;
+    }
+  } catch {}
+  return out;
+}
+
+/* ------------------------------------------------------------------------ */
+/* Hosts: a study that makes sound of its own asks whoever runs it.          */
+/* ------------------------------------------------------------------------ */
+
+export type HostTransport = "play" | "pause" | "stop";
+
+/**
+ * The transport of whatever is running `el`. The home page's player marks the
+ * study on its screen with `data-transport`: a study plays aloud while the
+ * tape plays, keeps quiet while it's paused (until the viewer works the study
+ * itself) and stays put once it's stopped. Anywhere else, a component page or
+ * a capture frame, there is no host and a study runs as if playing.
+ */
+export function hostTransport(el: Element | null | undefined): HostTransport {
+  const value = el?.closest("[data-transport]")?.getAttribute("data-transport");
+  return value === "pause" || value === "stop" ? value : "play";
+}
+
 /** React binding: `const { muted, setMuted, play } = useSound()`. */
 export function useSound() {
   const value = useSyncExternalStore(subscribeMuted, isMuted, () => false);
@@ -608,6 +800,14 @@ function onKeyUp(e: KeyboardEvent) {
 }
 
 function onStorage(e: StorageEvent) {
+  if (e.key === VOLUME_KEY || e.key === null) {
+    const next = readStoredVolume();
+    if (next !== volume) {
+      volume = next;
+      applyVolume();
+      notifyVolume();
+    }
+  }
   if (e.key !== STORAGE_KEY && e.key !== null) return;
   const next = readStored();
   if (next === muted) return;
@@ -645,6 +845,11 @@ function isSound(name: unknown): name is SoundName {
 
 function clamp(n: number, min: number, max: number) {
   return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : 1;
+}
+
+/** A `delay` in seconds: 0 to 0.5, and 0 for anything that isn't a number. */
+function lead(delay: number | undefined) {
+  return delay !== undefined && Number.isFinite(delay) ? Math.min(0.5, Math.max(0, delay)) : 0;
 }
 
 installSound();

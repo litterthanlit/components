@@ -1,103 +1,189 @@
 "use client";
 
 import Link from "next/link";
-import { useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useLayoutEffect, useRef, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { Preview } from "@/components/gallery/preview";
 import { cn, createSpring, springs, type Spring } from "@/design-system";
+import { VOLUME_MAX } from "@/lib/sound";
 import type { StageBackground } from "@/registry";
 import { site } from "@/site.config";
+import { useBoxSize } from "./hooks";
+import type { Transport } from "./readout";
 
-export type Study = { slug: string; title: string; tagline: string; background?: StageBackground };
-
-export type Row = { kind: "study"; study: Study; at: number } | { kind: "about" } | { kind: "system" } | { kind: "portfolio" };
-
-export const rowLabel = (row: Row) =>
-  row.kind === "study" ? row.study.title : row.kind === "about" ? "About" : row.kind === "system" ? "System" : "litt.design";
-
-/* --- Sizing ------------------------------------------------------------- */
-
-/** The content box of an element, kept current with a ResizeObserver. */
-export function useBoxSize(ref: RefObject<HTMLElement | null>) {
-  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const observer = new ResizeObserver(([entry]) => {
-      const { width: w, height: h } = entry.contentRect;
-      setSize((s) => (s && Math.abs(s.w - w) < 0.5 && Math.abs(s.h - h) < 0.5 ? s : { w, h }));
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [ref]);
-  return size;
-}
+export type Study = {
+  slug: string;
+  title: string;
+  tagline: string;
+  description: string;
+  tags: string[];
+  date: string;
+  background?: StageBackground;
+  /** The component's source file and its size, as the readout shows them. */
+  file: string;
+  bytes: number;
+};
 
 const floor2 = (z: number) => Math.floor(z * 100) / 100;
 
 /**
- * How much to zoom a running prototype. Demos are made for stages from a
- * phone's (about 330 × 380) up to a desktop's, so a smaller screen shrinks
- * them uniformly instead of clipping, and a big one grows them a little.
+ * How much to zoom a running study. Demos are made for stages from a phone's
+ * (about 330 × 380) up to a desktop's, so a smaller screen shrinks them
+ * uniformly instead of clipping, and a big one grows them a little.
  */
 export function appZoom({ w, h }: { w: number; h: number }) {
   return floor2(w >= 680 && h >= 480 ? Math.min(1.3, w / 680, h / 480) : Math.min(1, w / 330, h / 380));
 }
 
-/** The preview beside the menu is a live thumbnail: a desktop-sized stage, scaled down to the pane. */
-export function previewZoom({ w, h }: { w: number; h: number }) {
-  return floor2(Math.min(1, w / 560, h / 400));
-}
+/* --- Status line ---------------------------------------------------------- */
 
-/* --- Status bar --------------------------------------------------------- */
-
-function Battery() {
+/** The title of what's on screen, centred, over a hairline. */
+export function StatusBar({ title }: { title: string }) {
   return (
-    <svg aria-hidden viewBox="0 0 26 12" className="h-[11px] w-auto">
-      <rect x="0.75" y="0.75" width="21.5" height="10.5" rx="3" fill="none" stroke="currentColor" strokeOpacity="0.45" strokeWidth="1.2" />
-      <rect x="2.6" y="2.6" width="15" height="6.8" rx="1.6" fill="currentColor" />
-      <path d="M23.8 4.2c.9.2 1.45.9 1.45 1.8s-.55 1.6-1.45 1.8z" fill="currentColor" fillOpacity="0.45" />
-    </svg>
-  );
-}
-
-/**
- * Title centred, play and hold on the left, battery on the right, as on the
- * 2009 screen. Inside a prototype a hairline under it fills with the position.
- */
-export function StatusBar({ title, shuffle, held, progress }: { title: string; shuffle: boolean; held: boolean; progress: number | null }) {
-  return (
-    <div className="relative z-10 grid h-[30px] shrink-0 grid-cols-[1fr_auto_1fr] items-center bg-canvas px-3 text-ink shadow-[0_1px_0_var(--line)] @[640px]/display:h-[36px] @[640px]/display:px-4">
-      <div className="flex items-center gap-1.5">
-        {shuffle && (
-          <svg aria-hidden viewBox="0 0 12 12" className="size-[10px] animate-enter fill-accent-strong">
-            <path d="M2.5 1.5 10.5 6l-8 4.5z" />
-          </svg>
-        )}
-        {held && (
-          <svg aria-hidden viewBox="0 0 12 14" className="h-[12px] w-auto animate-enter text-(--device-hold)">
-            <rect x="1" y="6" width="10" height="7.5" rx="1.6" fill="currentColor" />
-            <path d="M3.4 6V4.3a2.6 2.6 0 0 1 5.2 0V6" fill="none" stroke="currentColor" strokeWidth="1.5" />
-          </svg>
-        )}
-      </div>
-      <p key={title} className="max-w-[60cqw] animate-enter truncate text-[13px] font-medium tracking-[-0.01em] @[640px]/display:text-[14px]">
+    <div className="relative z-30 grid h-[32px] shrink-0 place-items-center bg-canvas px-[24px] text-ink shadow-[0_1px_0_var(--line)] wide:h-[36px] wide:px-[34px]">
+      <p key={title} className="max-w-[60cqw] animate-enter truncate text-[13px] font-medium tracking-[-0.01em] wide:text-[14px]">
         {title}
       </p>
-      <div className="flex justify-end">
-        <Battery />
-      </div>
-      <div
-        aria-hidden
-        className="absolute inset-x-0 bottom-0 h-px origin-left bg-accent transition-[transform,opacity] duration-(--duration-move) ease-out"
-        style={{ transform: `scaleX(${progress ?? 0})`, opacity: progress === null ? 0 : 1 }}
-      />
     </div>
   );
 }
 
-/* --- Menu --------------------------------------------------------------- */
+/* --- The running study ----------------------------------------------------- */
 
-function Chevron({ external }: { external?: boolean }) {
+/**
+ * A running study, filling the screen at a zoom that fits it. It carries the
+ * transport as `data-transport`, so a study that makes sound can tell whether
+ * the tape is playing (see `hostTransport` in lib/sound).
+ */
+export function AppStage({ study, from, transport }: { study: Study; from: number; transport: Transport }) {
+  const box = useRef<HTMLDivElement>(null);
+  const size = useBoxSize(box);
+  return (
+    <div ref={box} data-app data-transport={transport} className="take-in absolute inset-0" style={{ "--from": from } as CSSProperties}>
+      {size && <Preview slug={study.slug} background={study.background} zoom={appZoom(size)} className="h-full" />}
+    </div>
+  );
+}
+
+/* --- Lists on the screen ---------------------------------------------------- */
+
+export type ListItem = { key: string; label: ReactNode; detail?: ReactNode; trailing?: ReactNode };
+
+const rowClass = "flex h-[40px] items-center gap-3 px-4 @[640px]/display:h-[44px] @[640px]/display:px-5 @[640px]/display:text-[15px]";
+
+/**
+ * A list on the screen with the player's highlight bar. The bar is a second
+ * copy of the rows in accent and white, clipped to the selection by a spring,
+ * so it glides between rows and the text inside it changes colour exactly
+ * where the bar is.
+ */
+export function ScreenList({
+  items,
+  index,
+  label,
+  idPrefix,
+  reduced,
+  listRef,
+  onPick,
+  className,
+}: {
+  items: ListItem[];
+  index: number;
+  label: string;
+  idPrefix: string;
+  reduced: boolean;
+  listRef: RefObject<HTMLDivElement | null>;
+  onPick: (index: number) => void;
+  className?: string;
+}) {
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const bar = useRef<Spring | null>(null);
+  const placed = useRef(false);
+
+  useLayoutEffect(() => {
+    const el = overlayRef.current!;
+    const s = createSpring(0, springs.snappy, (y) => el.style.setProperty("--y", `${y}px`));
+    bar.current = s;
+    return () => s.stop();
+  }, []);
+
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const row = list?.querySelector<HTMLElement>(`[data-row="${index}"]`);
+    if (!list || !row) return;
+    const animate = placed.current && !reduced;
+    overlayRef.current?.style.setProperty("--h", `${row.offsetHeight}px`);
+    if (animate) bar.current?.set(row.offsetTop);
+    else bar.current?.jump(row.offsetTop);
+    // Keep a row of context above and below the highlight.
+    const top = row.offsetTop - row.offsetHeight;
+    const bottom = row.offsetTop + row.offsetHeight * 2;
+    let next = list.scrollTop;
+    if (top < list.scrollTop) next = Math.max(0, top);
+    else if (bottom > list.scrollTop + list.clientHeight) next = bottom - list.clientHeight;
+    if (next !== list.scrollTop) list.scrollTo({ top: next, behavior: animate ? "smooth" : "auto" });
+    placed.current = true;
+  }, [index, reduced, items.length, listRef]);
+
+  // Row heights change with the screen's size; put the bar back without a glide.
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const observer = new ResizeObserver(() => {
+      const row = list.querySelector<HTMLElement>("[aria-selected=true]");
+      if (!row) return;
+      overlayRef.current?.style.setProperty("--h", `${row.offsetHeight}px`);
+      bar.current?.jump(row.offsetTop);
+    });
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [listRef]);
+
+  const content = (item: ListItem) => (
+    <>
+      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+      {item.detail && <span className="hidden min-w-0 max-w-[45%] truncate text-[13px] opacity-60 @[520px]/display:block">{item.detail}</span>}
+      {item.trailing}
+    </>
+  );
+
+  return (
+    <div className={cn("relative min-h-0", className)}>
+      <div
+        ref={listRef}
+        id={idPrefix}
+        role="listbox"
+        tabIndex={0}
+        aria-label={label}
+        aria-activedescendant={items.length ? `${idPrefix}-${index}` : undefined}
+        className="absolute inset-0 overflow-y-auto overscroll-contain py-1.5 text-[14px] text-ink outline-offset-[-2px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <div className="relative">
+          {items.map((item, i) => (
+            <div key={item.key} id={`${idPrefix}-${i}`} role="option" aria-selected={i === index} data-row={i} onClick={() => onPick(i)} className={cn(rowClass, "cursor-default")}>
+              {content(item)}
+            </div>
+          ))}
+          <div
+            ref={overlayRef}
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute inset-0 bg-accent text-accent-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.18)] [clip-path:inset(var(--y,0px)_6px_calc(100%_-_var(--y,0px)_-_var(--h,0px))_6px_round_7px)]",
+              !items.length && "hidden",
+            )}
+          >
+            {items.map((item) => (
+              <div key={item.key} className={rowClass}>
+                {content(item)}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function Chevron({ external }: { external?: boolean }) {
   return external ? (
     <svg aria-hidden viewBox="0 0 12 12" className="size-[10px] shrink-0 opacity-70">
       <path d="M3.5 8.5 8.5 3.5M4.5 3.5h4v4" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
@@ -109,194 +195,27 @@ function Chevron({ external }: { external?: boolean }) {
   );
 }
 
-function RowContent({ row }: { row: Row }) {
+/* --- Panels: screens that take over the display ------------------------------ */
+
+/** A screen over the running study. Mounted throughout, so it can slide; inert while closed. Callers set its layout. */
+export function Panel({ open, label, children, className }: { open: boolean; label: string; children: ReactNode; className?: string }) {
   return (
-    <>
-      <span className="w-[2ch] shrink-0 text-[11px] tabular-nums opacity-45">{row.kind === "study" ? String(row.at + 1).padStart(2, "0") : ""}</span>
-      <span className="min-w-0 flex-1 truncate">{rowLabel(row)}</span>
-      {row.kind !== "about" && <Chevron external={row.kind === "portfolio"} />}
-    </>
-  );
-}
-
-const rowClass = "flex h-[38px] items-center gap-3 px-4 @[640px]/display:h-[42px] @[640px]/display:px-5 @[640px]/display:text-[15px]";
-
-/**
- * The list. The highlight is a second copy of the rows in accent and white,
- * clipped to the selection by a spring, so the bar glides between rows and
- * the text inside it changes colour exactly where the bar is.
- */
-export function MenuList({
-  rows,
-  index,
-  idPrefix,
-  reduced,
-  listRef,
-  onPick,
-  className,
-}: {
-  rows: Row[];
-  index: number;
-  idPrefix: string;
-  reduced: boolean;
-  listRef: RefObject<HTMLDivElement | null>;
-  onPick: (index: number) => void;
-  className?: string;
-}) {
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const thumbRef = useRef<HTMLDivElement>(null);
-  const bar = useRef<Spring | null>(null);
-  const placed = useRef(false);
-
-  useLayoutEffect(() => {
-    const el = overlayRef.current!;
-    const s = createSpring(0, springs.snappy, (y) => el.style.setProperty("--y", `${y}px`));
-    bar.current = s;
-    return () => s.stop();
-  }, []);
-
-  /** Where the scroll position puts the thumb of the classic scrollbar. */
-  function syncThumb() {
-    const list = listRef.current;
-    const thumb = thumbRef.current;
-    if (!list || !thumb) return;
-    const overflow = list.scrollHeight - list.clientHeight;
-    thumb.style.opacity = overflow > 1 ? "1" : "0";
-    const size = list.clientHeight / list.scrollHeight;
-    thumb.style.height = `${size * 100}%`;
-    thumb.style.transform = `translateY(${overflow > 0 ? (list.scrollTop / overflow) * (1 / size - 1) * 100 : 0}%)`;
-  }
-
-  useLayoutEffect(() => {
-    const list = listRef.current;
-    const row = list?.querySelector<HTMLElement>(`[data-row="${index}"]`);
-    if (!list || !row) return;
-    const animate = placed.current && !reduced;
-    overlayRef.current?.style.setProperty("--h", `${row.offsetHeight}px`);
-    if (animate) bar.current?.set(row.offsetTop);
-    else bar.current?.jump(row.offsetTop);
-    // Keep a row of context above and below the highlight, as the original did.
-    const top = row.offsetTop - row.offsetHeight;
-    const bottom = row.offsetTop + row.offsetHeight * 2;
-    let next = list.scrollTop;
-    if (top < list.scrollTop) next = Math.max(0, top);
-    else if (bottom > list.scrollTop + list.clientHeight) next = bottom - list.clientHeight;
-    if (next !== list.scrollTop) list.scrollTo({ top: next, behavior: animate ? "smooth" : "auto" });
-    placed.current = true;
-    syncThumb();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index, reduced, rows.length]);
-
-  // Row heights change with the screen's size; put the bar back without a glide.
-  useLayoutEffect(() => {
-    const list = listRef.current;
-    if (!list) return;
-    const observer = new ResizeObserver(() => {
-      const row = list.querySelector<HTMLElement>("[aria-selected=true]");
-      if (!row) return;
-      overlayRef.current?.style.setProperty("--h", `${row.offsetHeight}px`);
-      bar.current?.jump(row.offsetTop);
-      syncThumb();
-    });
-    observer.observe(list);
-    return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listRef]);
-
-  const divider = (i: number) => i > 0 && rows[i].kind !== "study" && rows[i - 1].kind === "study";
-
-  return (
-    <div className={cn("relative min-h-0", className)}>
-      <div
-        ref={listRef}
-        role="listbox"
-        tabIndex={0}
-        aria-label="Studies"
-        aria-activedescendant={`${idPrefix}-${index}`}
-        onScroll={syncThumb}
-        className="absolute inset-0 overflow-y-auto overscroll-contain py-1.5 text-[14px] text-ink outline-offset-[-2px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-      >
-        <div className="relative">
-          {rows.map((row, i) => (
-            <div key={i}>
-              {divider(i) && <div aria-hidden className="mx-4 my-1.5 h-px bg-line" />}
-              <div
-                id={`${idPrefix}-${i}`}
-                role="option"
-                aria-selected={i === index}
-                data-row={i}
-                onClick={() => onPick(i)}
-                className={cn(rowClass, "cursor-default")}
-              >
-                <RowContent row={row} />
-              </div>
-            </div>
-          ))}
-          {/* The highlight: the same rows in white on accent, clipped to the selected one. */}
-          <div
-            ref={overlayRef}
-            aria-hidden
-            className="pointer-events-none absolute inset-0 bg-accent text-accent-ink shadow-[inset_0_1px_0_rgb(255_255_255/0.18)] [clip-path:inset(var(--y,0px)_6px_calc(100%-var(--y,0px)-var(--h,0px))_6px_round_6px)]"
-          >
-            {rows.map((row, i) => (
-              <div key={i}>
-                {divider(i) && <div className="mx-4 my-1.5 h-px" />}
-                <div className={rowClass}>
-                  <RowContent row={row} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      {/* The classic scrollbar, only while the list overflows. */}
-      <div aria-hidden className="pointer-events-none absolute inset-y-2 right-[3px] w-[3px] overflow-hidden rounded-full">
-        <div ref={thumbRef} className="w-full rounded-full bg-ink/25 opacity-0 transition-opacity duration-(--duration-exit)" />
-      </div>
-    </div>
-  );
-}
-
-/* --- Panes beside the menu ------------------------------------------------ */
-
-/** A live, inert thumbnail of the highlighted prototype; a click opens it. */
-export function StudyPane({ study, mounted, caption, onOpen }: { study: Study | null; mounted: Study | null; caption: boolean; onOpen: () => void }) {
-  const box = useRef<HTMLDivElement>(null);
-  const size = useBoxSize(box);
-  return (
-    <div className="flex size-full min-h-0 flex-col">
-      <div ref={box} onClick={onOpen} data-device-preview className="group/pane relative min-h-0 flex-1 cursor-pointer">
-        {mounted && size && (
-          <div inert className="pointer-events-none absolute inset-0">
-            <Preview key={mounted.slug} slug={mounted.slug} background={mounted.background} zoom={previewZoom(size)} className="h-full" />
-          </div>
-        )}
-        <span className="pointer-events-none absolute bottom-2.5 right-2.5 rounded-full bg-surface/85 px-2.5 py-1 text-[11px] font-medium text-ink opacity-0 shadow-sm backdrop-blur-sm transition-opacity duration-(--duration-exit) group-hover/pane:opacity-100 group-hover/pane:duration-(--duration-enter)">
-          Open
-        </span>
-      </div>
-      {caption && study && (
-        <div className="hidden shrink-0 items-center gap-3 px-4 py-3 shadow-[0_-1px_0_var(--line)] @[520px]/display:flex @[640px]/display:px-5">
-          <div className="min-w-0 flex-1">
-            <p key={study.slug} className="animate-enter truncate font-medium text-ink">
-              {study.title}
-            </p>
-            <p className="truncate text-meta text-muted">{study.tagline}</p>
-          </div>
-          <Link href={`/c/${study.slug}`} className="shrink-0 rounded-sm text-meta text-muted transition-colors duration-(--duration-exit) hover:text-ink hover:duration-(--duration-enter)">
-            Open page <span aria-hidden>→</span>
-          </Link>
-        </div>
+    <section
+      aria-label={label}
+      inert={!open}
+      data-open={open || undefined}
+      className={cn(
+        // Visibility only transitions on the way out, so an opening panel can take focus in its first frame.
+        "invisible absolute inset-0 z-20 bg-canvas opacity-0 transition-[opacity,transform,visibility] duration-(--duration-exit) ease-out [transform:translateY(12px)] data-open:visible data-open:opacity-100 data-open:transition-[opacity,transform] data-open:[transform:none] data-open:duration-(--duration-enter)",
+        className,
       )}
-    </div>
+    >
+      {children}
+    </section>
   );
 }
 
 const quietLink = "rounded-sm text-muted transition-colors duration-(--duration-exit) hover:text-ink hover:duration-(--duration-enter)";
-
-function InfoPane({ children }: { children: ReactNode }) {
-  return <div className="flex size-full min-h-0 animate-enter flex-col justify-center gap-3 overflow-hidden px-5 py-4 @[640px]/display:px-8">{children}</div>;
-}
 
 const socials = [
   { href: site.links.x, label: "X" },
@@ -305,16 +224,19 @@ const socials = [
   { href: site.links.github, label: "GitHub" },
 ];
 
-export function AboutPane() {
+/** Home: who made this, and where else to go. */
+export function HomeAbout() {
   return (
-    <InfoPane>
+    <div className="flex min-w-0 flex-col justify-end gap-3 @[720px]/display:justify-center">
       {/* The Litt mark in ink: the logo's alpha as a mask, so it takes the theme. */}
       <span
         aria-hidden
-        className="block aspect-[24/17] h-9 bg-ink [mask-position:left_center] [mask-repeat:no-repeat] [mask-size:contain] @[640px]/display:h-12"
+        className="block aspect-[24/17] h-8 bg-ink [mask-position:left_center] [mask-repeat:no-repeat] [mask-size:contain] @[720px]/display:h-11"
         style={{ maskImage: `url(${site.basePath}/logo-mark.png)` }}
       />
-      <p className="max-w-[24ch] text-[15px] font-medium leading-snug tracking-[-0.015em] text-ink @[640px]/display:text-title">{site.intro}</p>
+      <p className="max-w-[22ch] text-[17px] font-medium leading-snug tracking-[-0.02em] text-ink @[720px]/display:text-[26px] @[720px]/display:leading-[1.2]">
+        {site.intro}
+      </p>
       <p className="text-meta text-muted">
         {site.author}, {site.role.toLowerCase()}.
       </p>
@@ -332,46 +254,89 @@ export function AboutPane() {
           </a>
         </li>
       </ul>
-    </InfoPane>
+    </div>
   );
 }
 
-export function SystemPane() {
+/** The volume as ten segments, lit up to the level. Clicking one sets it. */
+export function VolumeBar({ volume, onSet, className }: { volume: number; onSet?: (volume: number) => void; className?: string }) {
   return (
-    <InfoPane>
-      <p className="text-[15px] font-medium text-ink @[640px]/display:text-title">Design system</p>
-      <p className="max-w-[36ch] text-meta text-muted @[640px]/display:text-body">
-        Colour, type, shape, motion and the primitives every study is built from, rendered from the real tokens.
-      </p>
-      <Link href="/system" className={cn(quietLink, "self-start text-meta")}>
-        Open System <span aria-hidden>→</span>
-      </Link>
-    </InfoPane>
+    <span className={cn("flex items-end gap-[3px]", className)}>
+      {Array.from({ length: VOLUME_MAX }, (_, i) => (
+        <span
+          key={i}
+          onClick={
+            onSet &&
+            ((e) => {
+              e.stopPropagation();
+              onSet(i + 1 === volume ? i : i + 1);
+            })
+          }
+          className={cn("w-[4px] rounded-[1px] bg-current transition-opacity duration-(--duration-exit)", i < volume ? "opacity-100" : "opacity-20", onSet && "cursor-pointer")}
+          style={{ height: `${6 + i * 0.9}px` }}
+        />
+      ))}
+    </span>
   );
 }
 
-export function PortfolioPane() {
+/** Choices printed side by side, the current one in ink. */
+export function Choice<T extends string>({ value, options }: { value: T; options: readonly { value: T; label: string }[] }) {
   return (
-    <InfoPane>
-      <p className="text-[15px] font-medium text-ink @[640px]/display:text-title">litt.design</p>
-      <p className="max-w-[36ch] text-meta text-muted @[640px]/display:text-body">
-        Selected work, writing and the rest of {site.author.split(" ")[0]}&rsquo;s portfolio.
-      </p>
-      {/* Same domain, different app: a plain <a> for a full page load. */}
-      <a href={site.links.portfolio} className={cn(quietLink, "self-start text-meta")}>
-        Visit litt.design <span aria-hidden>↗</span>
-      </a>
-    </InfoPane>
+    <span className="flex shrink-0 items-center gap-2.5 text-[13px]">
+      {options.map((o) => (
+        <span key={o.value} className={cn("transition-opacity duration-(--duration-exit)", o.value === value ? "font-medium opacity-100" : "opacity-40")}>
+          {o.label}
+        </span>
+      ))}
+    </span>
   );
 }
 
-/** A running prototype, filling the screen at a zoom that fits it. */
-export function AppStage({ study }: { study: Study }) {
-  const box = useRef<HTMLDivElement>(null);
-  const size = useBoxSize(box);
+/* --- Info sheet and HUD ------------------------------------------------------ */
+
+/** Details of the study on screen, pulled up over its lower edge by OK. */
+export function InfoSheet({ study, at, n, open, onClose }: { study: Study; at: number; n: number; open: boolean; onClose: () => void }) {
   return (
-    <div ref={box} data-app className="absolute inset-0">
-      {size && <Preview key={study.slug} slug={study.slug} background={study.background} zoom={appZoom(size)} className="h-full" />}
+    <section
+      aria-label={`About ${study.title}`}
+      inert={!open}
+      data-open={open || undefined}
+      className="invisible absolute inset-x-2 bottom-2 z-10 translate-y-[calc(100%+40px)] rounded-[14px] bg-surface/88 p-4 shadow-lg backdrop-blur-xl transition-[translate,visibility] duration-(--duration-move) ease-drawer data-open:visible data-open:translate-y-0 data-open:transition-[translate] @[640px]/display:inset-x-auto @[640px]/display:left-1/2 @[640px]/display:w-[min(640px,calc(100%-32px))] @[640px]/display:-translate-x-1/2 @[640px]/display:p-5 @[640px]/display:bottom-4"
+    >
+      <div className="flex items-baseline gap-3">
+        <span className="text-meta tabular-nums text-muted">
+          {String(at + 1).padStart(2, "0")} / {String(n).padStart(2, "0")}
+        </span>
+        <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium tracking-[-0.01em] text-ink">{study.title}</h2>
+        <button type="button" onClick={onClose} className={cn(quietLink, "text-meta")}>
+          Close
+        </button>
+      </div>
+      <p className="mt-2 line-clamp-4 text-body text-muted @[640px]/display:line-clamp-none">{study.description}</p>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <p className="font-mono text-meta text-muted">
+          {study.file} · {study.bytes < 1024 ? `${study.bytes} B` : `${(study.bytes / 1024).toFixed(1)} KB`}
+        </p>
+        <Link href={`/c/${study.slug}`} className="rounded-sm text-meta font-medium text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink">
+          View source <span aria-hidden>→</span>
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+/** A readout over the screen while something is being set: where the dial has got to, or the volume. */
+export function Hud({ show, children }: { show: boolean; children: ReactNode }) {
+  return (
+    <div
+      aria-hidden
+      className={cn(
+        "pointer-events-none absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-surface/85 px-3 py-1.5 text-meta text-ink shadow-md backdrop-blur-md transition-[opacity,transform] ease-out",
+        show ? "opacity-100 duration-(--duration-enter)" : "translate-y-1 opacity-0 duration-(--duration-move)",
+      )}
+    >
+      {children}
     </div>
   );
 }

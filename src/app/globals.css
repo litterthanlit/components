@@ -1,6 +1,14 @@
 @import "tailwindcss";
 @import "../design-system/tokens.css";
 
+/* The device's arrangements: its deck under the screen in a column (phones,
+   the default), in a row (tablets and up, `wide`), in a row with room for
+   the maker's window to stand tall (`roomy`), or beside the screen when the
+   viewport is a short landscape (phones on their side, `short`). */
+@custom-variant wide (@media (min-width: 720px) and (min-height: 521px));
+@custom-variant roomy (@media (min-width: 1100px) and (min-height: 521px));
+@custom-variant short (@media (orientation: landscape) and (max-height: 520px));
+
 html {
   background: var(--canvas);
 }
@@ -32,6 +40,12 @@ h3 {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
+/* Focus that followed the hand (focusQuietly, in the design system): no ring
+   until a key is pressed. Unlayered and more specific than the rule above,
+   so it wins without !important. */
+[data-quiet]:focus-visible {
+  outline: none;
+}
 
 /* The device on the home page. Grain: fine, even noise blended over the
    body's gradient, so it reads as bead-blasted metal rather than paint. */
@@ -41,10 +55,52 @@ h3 {
   mix-blend-mode: soft-light;
   opacity: var(--device-grain);
 }
-/* Scanlines over the display: a 1px row every 3px, barely there. */
-.screen-grid {
-  background-image: linear-gradient(var(--screen-grid) 1px, transparent 1px);
-  background-size: 100% 3px;
+/* The deck's grid, one per arrangement (see the variants above). On phones
+   the screen comes first: no readout, the maker's window and the hold
+   switch tucked into the corners beside the dial, above the transport keys,
+   and the key row along the bottom edge, under the thumbs. On wide decks
+   the readout returns, the transport keys share a column and the window is
+   a nameplate over the readout, until the deck is roomy enough for it to
+   stand the full height of the deck on its left. */
+.deck-grid {
+  display: grid;
+  grid-template-columns: auto auto auto;
+  grid-template-areas:
+    "badge dial hold"
+    "stop dial play"
+    "keys keys keys";
+}
+@media (min-width: 720px) and (min-height: 521px) {
+  .deck-grid {
+    grid-template-areas:
+      "badge . hold"
+      "well dial transport"
+      "keys dial transport";
+  }
+}
+@media (min-width: 1100px) and (min-height: 521px) {
+  .deck-grid {
+    grid-template-columns: auto auto auto auto;
+    grid-template-areas:
+      "badge . . hold"
+      "badge well dial transport"
+      "badge keys dial transport";
+  }
+}
+/* A take coming onto the screen: in from the side it was dialled from. */
+@keyframes take-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(var(--from, 1) * 2.5%));
+    filter: blur(6px);
+  }
+}
+.take-in {
+  animation: take-in 320ms var(--ease-out) both;
+}
+/* Level meter segments: thin bars, as printed on the reference's LCD panel. */
+.meter-ticks {
+  background-image: repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 3px);
 }
 
 /* Soft colour washes behind the page, as on litt.design. */
