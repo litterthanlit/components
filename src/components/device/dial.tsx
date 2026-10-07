@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type PointerEvent, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode, type RefObject } from "react";
 import { cn } from "@/design-system";
 import { play } from "@/lib/sound";
 import { focusQuietly } from "./hooks";
@@ -21,11 +21,14 @@ type DialProps = {
   labels: Record<DialButton, string>;
   /** What the centre key shows: it changes with the screen (PLAY on a take, OK on a list). */
   centre: ReactNode;
+  /** Holding the centre this long does this instead of a press (STOP, on a take). Left out, the centre only presses. */
+  onHold?: () => void;
   className?: string;
 };
 
 const DETENT = 15; // degrees of turn per click
 const SLOP = 8; // degrees a press may slide before it becomes a turn
+const HOLD = 600; // ms the centre has to be held to stop instead of play or pause
 
 /*
  * Each side of the ring sinks and rocks toward the press, as a D-pad does;
@@ -49,14 +52,27 @@ const triangle = "w-[max(7px,4.6cqw)] fill-current opacity-80";
  * Handlers sit on the whole dial, so a press on an arrow can still turn into
  * a turn.
  *
+ * The centre has a second function under a held press: after 600ms it fires
+ * `onHold` (STOP, on a take) while the finger is still down, and a ring in its
+ * well fills over those 600ms so the hand can see it coming. Letting go
+ * sooner is an ordinary press.
+ *
  * The four arrows and the centre are real buttons, left out of the tab order
  * because the ring (a slider) takes the keyboard for all of them.
  */
-export function Dial({ flash, onTurn, onPress, slider, sliderRef, hint, labels, centre, className }: DialProps) {
+export function Dial({ flash, onTurn, onPress, slider, sliderRef, hint, labels, centre, onHold, className }: DialProps) {
   const dialRef = useRef<HTMLDivElement>(null);
   const trailRef = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ id: number; angle: number; acc: number; travel: number; button: DialButton | null; turns: boolean } | null>(null);
+  const drag = useRef<{ id: number; angle: number; acc: number; travel: number; button: DialButton | null; turns: boolean; spent: boolean } | null>(null);
+  const holdTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // The hold fires from a timer, so it reads the latest handler rather than the one the press began with.
+  const holdRef = useRef(onHold);
+  useEffect(() => {
+    holdRef.current = onHold;
+  });
+  useEffect(() => () => clearTimeout(holdTimer.current), []);
   const [held, setHeld] = useState<DialButton | null>(null);
+  const [charging, setCharging] = useState(false);
   const pressed = held ?? flash;
 
   function polar(e: PointerEvent) {
@@ -89,10 +105,21 @@ export function Dial({ flash, onTurn, onPress, slider, sliderRef, hint, labels, 
     e.currentTarget.setPointerCapture(e.pointerId);
     const hit = (e.target as Element).closest<HTMLElement>("[data-dial]");
     const button = (hit?.dataset.dial as DialButton | undefined) ?? null;
-    drag.current = { id: e.pointerId, angle, acc: 0, travel: 0, button, turns: button !== "centre" };
+    drag.current = { id: e.pointerId, angle, acc: 0, travel: 0, button, turns: button !== "centre", spent: false };
     if (button) {
       setHeld(button);
       play("press");
+    }
+    if (button === "centre" && onHold) {
+      setCharging(true);
+      holdTimer.current = setTimeout(() => {
+        const g = drag.current;
+        if (!g || g.button !== "centre") return;
+        // The press is spent on the hold: letting go won't play or pause as well.
+        g.spent = true;
+        setCharging(false);
+        holdRef.current?.();
+      }, HOLD);
     }
   }
 
@@ -132,9 +159,12 @@ export function Dial({ flash, onTurn, onPress, slider, sliderRef, hint, labels, 
     if (!g || g.id !== e.pointerId) return;
     drag.current = null;
     trail(null);
+    clearTimeout(holdTimer.current);
+    setCharging(false);
     if (!g.button) return;
     setHeld(null);
     play("release");
+    if (g.spent) return;
     // A centre press only counts if it lets go over the centre.
     const over = g.button !== "centre" || polar(e).distance < 0.44;
     if (commit && over) onPress(g.button);
@@ -217,6 +247,23 @@ export function Dial({ flash, onTurn, onPress, slider, sliderRef, hint, labels, 
           >
             {centre}
           </button>
+          {/* The hold: a ring in the well that fills while the centre is held, and drains at once when it lets go. */}
+          {onHold && (
+            <svg aria-hidden viewBox="0 0 100 100" className="pointer-events-none absolute inset-0 -rotate-90 text-(--device-key-ink)">
+              <circle
+                cx="50"
+                cy="50"
+                r="47.5"
+                pathLength={1}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeDasharray="1"
+                className="opacity-55 transition-[stroke-dashoffset] ease-linear"
+                style={{ strokeDashoffset: charging ? 0 : 1, transitionDuration: charging ? `${HOLD}ms` : "0ms" }}
+              />
+            </svg>
+          )}
         </div>
       </div>
     </div>

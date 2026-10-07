@@ -143,7 +143,7 @@ export const materials: { name: string; tokens: DeviceToken[]; use: string }[] =
   { name: "Cap", tokens: ["wheel-face", "wheel-shadow", "wheel-shadow-pressed"], use: "Round caps and the dial: lit from above, seated in a collar cut from the well." },
   { name: "LCD", tokens: ["lcd", "lcd-edge", "lcd-ink", "lcd-dim"], use: "Black glass with a diagonal sheen. Light figures, a white chip for the state, dim units." },
   { name: "Window", tokens: ["window", "window-edge"], use: "Smoked glass set deeper than the LCD: the maker's window, the reels, a fine grille behind it." },
-  { name: "Lights", tokens: ["meter-on", "meter-off", "rec", "hold"], use: "Monochrome when lit, red for REC and the playhead, orange for HOLD. Signal colours glow; meter segments don't." },
+  { name: "Lights", tokens: ["meter-on", "meter-off", "rec", "hold"], use: "Monochrome when lit, red for REC and the playhead, orange for a hand on it. Signal colours glow; meter segments don't." },
   { name: "Lettering", tokens: ["label", "label-quiet", "engrave", "engrave-glyph"], use: "Tiny tracked capitals printed on the body, with a 1px highlight on the side away from the light." },
   { name: "Glass", tokens: ["screen-glass", "screen-glow"], use: "Over a screen: a sheen where the light catches it, and the backlight's bloom as it wakes." },
 ];

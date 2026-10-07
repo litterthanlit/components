@@ -14,7 +14,7 @@ An object gives every study the same frame and makes polish legible: a lit edge,
 
 ### It uses an instrument's vocabulary
 
-Takes, the tape, the transport (PLAY, pause, STOP), a slate, detents, HOLD, scenes, automation in READ and TOUCH, `take_04.wav`. An instrument's words arrive with behaviour people already know: STOP rewinds to the first frame, HOLD locks the controls (here, it mutes), a motorized fader lets go when you touch it. The interface needs fewer explanations because the vocabulary carries them.
+Takes, the tape, the transport (PLAY, pause, STOP), a slate, detents, scenes, automation in READ and TOUCH, `take_04.wav`. An instrument's words arrive with behaviour people already know: STOP rewinds to the first frame, a motorized fader lets go when you touch it. The interface needs fewer explanations because the vocabulary carries them.
 
 The vocabulary dresses the demo, not the component. A Fader is a range slider with a real API; its demo plays back a mix.
 
@@ -26,15 +26,15 @@ A hand always wins. A touch ends the ghost for good, a motor lets go of a cap th
 
 ### It makes sound
 
-Every press clicks: a key goes down with a low thock and comes up lighter, the dial ticks once per 15° detent, the end of a list bumps. Sound confirms a press faster than sight, and it makes the hardware believable. Everything is synthesized with Web Audio, so nothing loads; it is quiet and dry, silent until the viewer's first gesture, and the HOLD switch (or M) mutes it.
+Every press clicks: a key goes down with a low thock and comes up lighter, the dial ticks once per 15° detent, the end of a list bumps. Sound confirms a press faster than sight, and it makes the hardware believable. Everything is synthesized with Web Audio, so nothing loads; it is quiet and dry, silent until the viewer's first gesture, and Options › Sound (or M) mutes it.
 
 What a study does by itself asks the player first (the transport rule, under Sound). What the viewer does always sounds.
 
 ### It is restrained
 
-Monochrome, plus red for REC and the playhead, orange for HOLD, and one blue on the screen for selection. Figures are tabular, so a count never shuffles sideways. Grey text, hairlines and one weight change on the page. The work should be the loudest thing here, and when a colour only ever means one thing, it reads at once.
+Monochrome, plus red for REC and the playhead, orange for a hand on it, and one blue on the screen for selection. Figures are tabular, so a count never shuffles sideways. Grey text, hairlines and one weight change on the page. The work should be the loudest thing here, and when a colour only ever means one thing, it reads at once.
 
-Restraint is also subtraction. The player lost its battery icon, timecodes, scanlines, a BACK key and a keyboard legend because each one repeated something the screen, the LCD or the hold switch already said. Later it lost the file name beside the LCD (the screen names the study), the captions under the transport (▶ and ■ need no words) a maker's window that stood the full height of the deck (it is a nameplate now: the maker stays quiet beside the controls), the LCD's running clock and level meters (the tape already shows where the playhead is, so the LCD says only the state and the take), and a FIND key (Find is on Home, and on /). The mark in the nameplate animates only under a mouse: on the deck, nothing moves by itself but the tape and the lights.
+Restraint is also subtraction. The player lost its battery icon, timecodes, scanlines, a BACK key and a keyboard legend because each one repeated something the screen, the LCD or the hold switch already said. Later it lost the file name beside the LCD (the screen names the study), the captions under the transport (▶ and ■ need no words), a maker's window that stood the full height of the deck (it is a nameplate now: the maker stays quiet beside the controls), the LCD's running clock and level meters (the tape already shows where the playhead is, so the LCD says only the state and the take), a FIND key (Find is on Home, and on /), the HOLD switch (Options › Sound and M already muted), the STOP key (hold the dial's centre) and the deck's key row (Menu and Source sit at the screen's top corners, and Options is on Menu). The deck keeps only what plays the tape: the nameplate, the LCD and the dial. The mark in the nameplate animates only under a mouse: on the deck, nothing moves by itself but the tape and the lights.
 
 It is after a field recorder, not a copy of one. Its parts are arranged around what this player does: it runs studies by itself, so PLAY is the largest key on the deck, at the centre of the dial that steps through them. It is printed in the same grey as every other legend. On the body, colour is a signal (the LCD's play dot, the playhead, the window's light), never a way to make a key look important.
 
@@ -104,7 +104,7 @@ A bezel is black, with a polished edge catching the light: round a second screen
 
 ### Well
 
-Anything pressed into the plate: the readout, the key row, a fader's slot, the window's recess. `rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess)`. A collar is a round well, `bg-black/[0.035]` (`dark:bg-black/30`) with the same recess.
+Anything pressed into the plate: the readout, a fader's slot, the window's recess. `rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess)`. A collar is a round well, `bg-black/[0.035]` (`dark:bg-black/30`) with the same recess.
 
 | Token | Light | Dark |
 | --- | --- | --- |
@@ -136,7 +136,7 @@ The site's own buttons are keys too, from the `--key-*` tokens: 2px corners, a l
 
 ### Cap and collar
 
-Round caps and the dial, lit from above. A cap seated in a collar (`size-[5.4em] p-[0.32em]`, or `size-[3.6em] p-[0.26em]` for a satellite) uses `--device-wheel-face` with the key shadows, so it sinks like a key; a caption, when it has one, is printed underneath. The dial is a D-pad on the wheel shadows in a collar, that also turns, and rocks 5° toward the side pressed (`perspective(600px) translateY(1.5px) rotateX(±5deg)`). Its arrows are four small solid triangles, the size of a legend, pointing the way the arrow keys they stand for do. Its centre is the deck's main key, dropping 2px into a well: PLAY or pause on a take, OK on a list, printed in the keys' grey. STOP is a satellite cap beside it, between three and four o'clock, as a turntable's start key sits by its platter. A knob's cap carries knurling, `repeating-conic-gradient(from var(--a), …)`, so it turns without a transform.
+Round caps and the dial, lit from above. A cap seated in a collar (`size-[5.4em] p-[0.32em]`) uses `--device-wheel-face` with the key shadows, so it sinks like a key; a caption, when it has one, is printed underneath. The dial is a D-pad on the wheel shadows in a collar, that also turns, and rocks 5° toward the side pressed (`perspective(600px) translateY(1.5px) rotateX(±5deg)`). Its arrows are four small solid triangles, the size of a legend, pointing the way the arrow keys they stand for do. Its centre is the deck's main key, dropping 2px into a well: PLAY or pause on a take, OK on a list, printed in the keys' grey. Held for 600ms on a take, the centre is STOP: a ring in its well fills over those 600ms (a press's timing, so a linear duration, not a spring), STOP fires while the finger is still down, and letting go does nothing more. Letting go sooner is an ordinary press. S stops from the keyboard. A knob's cap carries knurling, `repeating-conic-gradient(from var(--a), …)`, so it turns without a transform.
 
 | Token | Light | Dark |
 | --- | --- | --- |
@@ -175,7 +175,7 @@ Smoked glass set deeper than the LCD: the maker's window where the Litt mark glo
 | `--device-meter-off` | `rgb(0 0 0 / 0.13)` | `rgb(255 255 255 / 0.13)` | Unlit: a segment, a step, a light that's off |
 | `--device-meter-on` | `#262625` | `#e8e8ea` | Lit, without a signal: meter bars, a knob's ring, a step that's set |
 | `--device-rec` | `#e5484d` | `#ff5c62` | REC, PLAY, the playhead, a light that fires, a wrong code |
-| `--device-hold` | `#ff7a1a` | `#ff8a33` | HOLD, a hand on a motor, an edited scene, a switch that's on |
+| `--device-hold` | `#ff7a1a` | `#ff8a33` | A hand on a motor, an edited scene, a switch that's on |
 
 A signal light glows in its own colour (`shadow-[0_0_0.45em_var(--device-rec)]`); a lit segment does not. A light sits in a small recess, `bg-black/[0.05] shadow-(--device-recess)`. It comes on at once (`duration-0`) and fades out at `--duration-exit`. The meters are `.meter-ticks` (1px bars every 3px) clipped to the level, with a 2px peak mark that holds 900ms before it falls. Orange on the light plate is 2.3:1: it is a light beside a word, never text.
 
@@ -265,7 +265,7 @@ On the page, objects get a ring, not a box: `shadow-sm`, `shadow-md` and `shadow
 | `--ease-out` | `cubic-bezier(0.23, 1, 0.32, 1)` | Default for anything entering or responding to input |
 | `--ease-in-out` | `cubic-bezier(0.77, 0, 0.175, 1)` | Things moving on screen from A to B |
 | `--ease-drawer` | `cubic-bezier(0.32, 0.72, 0, 1)` | Sheets and drawers |
-| `--ease-spring` | `cubic-bezier(0.34, 1.36, 0.64, 1)` | A small overshoot for playful returns (the HOLD switch's cap) |
+| `--ease-spring` | `cubic-bezier(0.34, 1.36, 0.64, 1)` | A small overshoot for playful returns |
 | `--duration-exit` | 150ms | Leaving, closing, hover-out, a key coming back up |
 | `--duration-enter` | 210ms | Appearing, opening, hover-in |
 | `--duration-move` | 400ms | Layout and position changes |
