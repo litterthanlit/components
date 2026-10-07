@@ -9,7 +9,7 @@ import { Dial, type DialButton } from "./dial";
 import { takeLength, takeLengths, usePageVisible, useReducedMotion } from "./hooks";
 import { DeviceKey, DeviceKeyLink, HoldSwitch, RoundKey } from "./keys";
 import { LogoWindow } from "./logo-window";
-import { Readout, paintClock, type Transport } from "./readout";
+import { Readout, type Transport } from "./readout";
 import { AppStage, Chevron, Choice, HomeAbout, Hud, InfoSheet, Panel, ScreenList, StatusBar, VolumeBar, type ListItem, type Study } from "./screen";
 import { Tape } from "./tape";
 
@@ -74,16 +74,16 @@ function CentreGlyph({ take, playing }: { take: boolean; playing: boolean }) {
  * The home page: a player after a field recorder, whose screen runs the
  * studies, one at a time and full width. Under the screen, the tape lays
  * every study end to end as a take with its own waveform, and a red playhead
- * marks the one on screen. Under that, the deck: an LCD with live meters, a
- * row of keys, and the dial, whose centre is PLAY, with STOP beside it.
+ * marks the one on screen. Under that, the deck: an LCD with the take
+ * number, three keys, and the dial, whose centre is PLAY, with STOP beside it.
  *
  * Driving it: the dial's arrows (or ← →) step through studies, turning it
  * (or dragging along the tape) scrubs, and PLAY, at the dial's centre, rolls
  * the tape so each study plays for a few seconds before the next. STOP
  * rewinds the study to its first frame. The title on the screen (or Enter)
- * shows what the study is; ↑ ↓ set the volume. FIND, HOME and OPTIONS bring
- * up screens of their own, which the dial then drives, its centre turning
- * into OK.
+ * shows what the study is; ↑ ↓ set the volume. HOME (Find is on it, and on
+ * /) and OPTIONS bring up screens of their own, which the dial then drives,
+ * its centre turning into OK.
  * A running study keeps its own keys, except an Escape it leaves unhandled.
  * Every press clicks (src/lib/sound.ts); the hold switch mutes it.
  *
@@ -116,7 +116,6 @@ export function Device({ studies }: { studies: Study[] }) {
 
   const rootRef = useRef<HTMLDivElement>(null);
   const sliderRef = useRef<HTMLDivElement>(null);
-  const clockRef = useRef<HTMLParagraphElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const homeList = useRef<HTMLDivElement>(null);
   const optionsList = useRef<HTMLDivElement>(null);
@@ -127,7 +126,6 @@ export function Device({ studies }: { studies: Study[] }) {
   const atRef = useRef(0); // `at`, ahead of the render that shows it, for the tape's frame loop
   const scrubbing = useRef(false);
   const lastTouch = useRef(0);
-  const activity = useRef(0); // the hand on the screen, for the meters
   const woke = useRef(false);
   const flashTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -144,10 +142,9 @@ export function Device({ studies }: { studies: Study[] }) {
 
   /* --- The playhead ------------------------------------------------------ */
 
-  /** Writes the playhead to the page: `--p` for the tape and status line, digits for the LCD clock. */
+  /** Writes the playhead to the page as `--p`, for the tape. */
   function paint() {
     rootRef.current?.style.setProperty("--p", clamp(pos.current / n, 0, 1).toFixed(5));
-    paintClock(clockRef.current, pos.current * takeSeconds);
   }
   useLayoutEffect(paint);
 
@@ -588,12 +585,8 @@ export function Device({ studies }: { studies: Study[] }) {
                 <div
                   ref={stageRef}
                   inert={view !== "take"}
-                  onPointerDown={() => {
-                    lastTouch.current = performance.now();
-                    activity.current = Math.min(1, activity.current + 0.55);
-                  }}
+                  onPointerDown={() => (lastTouch.current = performance.now())}
                   onPointerMove={(e) => {
-                    activity.current = Math.min(1, activity.current + Math.hypot(e.movementX, e.movementY) / 260);
                     // A drag still under way (a knob, a reel) keeps the tape waiting, however long it takes.
                     if (e.buttons) lastTouch.current = performance.now();
                   }}
@@ -725,18 +718,12 @@ export function Device({ studies }: { studies: Study[] }) {
               at={dialled}
               n={n}
               transport={transport}
-              clockRef={clockRef}
-              activity={activity}
-              reduced={reduced}
               // Phones give its room to the screen; the screen and the HUD already say what it says.
-              className="hidden self-end [grid-area:well] wide:flex"
+              className="hidden self-end [grid-area:well] wide:block"
             />
 
-            {/* Four keys of one size, on one grid, each lettered with what it does. */}
-            <div className="grid grid-cols-4 gap-[0.3em] rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess) [grid-area:keys] wide:self-start">
-              <DeviceKey aria-label="Find a study" pressed={flash === "find"} aria-pressed={view === "find"} onClick={() => press("find")}>
-                Find
-              </DeviceKey>
+            {/* Three keys of one size, on one grid, each lettered with what it does. Find lives on Home (and /). */}
+            <div className="grid grid-cols-3 gap-[0.3em] rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess) [grid-area:keys] wide:self-start">
               <DeviceKey pressed={flash === "home"} aria-pressed={view === "home"} onClick={() => press("home")}>
                 Home
               </DeviceKey>

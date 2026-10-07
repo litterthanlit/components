@@ -34,7 +34,7 @@ What a study does by itself asks the player first (the transport rule, under Sou
 
 Monochrome, plus red for REC and the playhead, orange for HOLD, and one blue on the screen for selection. Figures are tabular, so a count never shuffles sideways. Grey text, hairlines and one weight change on the page. The work should be the loudest thing here, and when a colour only ever means one thing, it reads at once.
 
-Restraint is also subtraction. The player lost its battery icon, timecodes, scanlines, a BACK key and a keyboard legend because each one repeated something the screen, the LCD or the hold switch already said. Later it lost the file name beside the LCD (the screen names the study), the captions under the transport (▶ and ■ need no words) and a maker's window that stood the full height of the deck (it is a nameplate now: the maker stays quiet beside the controls).
+Restraint is also subtraction. The player lost its battery icon, timecodes, scanlines, a BACK key and a keyboard legend because each one repeated something the screen, the LCD or the hold switch already said. Later it lost the file name beside the LCD (the screen names the study), the captions under the transport (▶ and ■ need no words) a maker's window that stood the full height of the deck (it is a nameplate now: the maker stays quiet beside the controls), the LCD's running clock and level meters (the tape already shows where the playhead is, so the LCD says only the state and the take), and a FIND key (Find is on Home, and on /). The mark in the nameplate animates only under a mouse: on the deck, nothing moves by itself but the tape and the lights.
 
 It is after a field recorder, not a copy of one. Its parts are arranged around what this player does: it runs studies by itself, so PLAY is the largest key on the deck, at the centre of the dial that steps through them. It is printed in the same grey as every other legend. On the body, colour is a signal (the LCD's play dot, the playhead, the window's light), never a way to make a key look important.
 
@@ -156,12 +156,12 @@ Black glass with a diagonal sheen: the gradient breaks hard at 47%, where the li
 | `--device-lcd-dim` | `rgb(255 255 255 / 0.64)` (6.6:1) | `rgb(255 255 255 / 0.62)` (7.5:1) |
 
 - **The chip** is `bg-white text-black rounded-[0.4em] px-[0.42em] py-[0.24em]`, a glyph and a word at 0.58 to 0.6em, semibold capitals tracked 0.02em. The glyph says the state before the word does: a red dot that pulses for play, record or recall; two bars for pause; a square for stop; a black dot for ready or loaded; an orange dot for a hand on it (TOUCH, edited) or a hand needed (an agent waiting for your OK); a red square for a fault (an agent's error), the stop's shape so it never reads as a run.
-- **Figures** are light (300), tabular, tracked −0.03em; units at 0.3em in `--device-lcd-dim`. The player's clock reads minutes, seconds and frames at 25 fps (`00M 14S 06F`).
+- **Figures** are light (300), tabular, tracked −0.03em; units at 0.3em in `--device-lcd-dim`. The player's LCD shows the take as a track number (`05 / 22`); a clock, where a study has one, reads minutes, seconds and frames at 25 fps (`00M 14S 06F`).
 - **Other faces of the same glass:** seven-segment cells over the faint 8 of their unlit segments (One-Time Code), and a dot matrix with ghost dots at 8% (Ticker).
 
 ### Window
 
-Smoked glass set deeper than the LCD: the maker's window where the Litt mark glows, and the Tape Reels' transport. A fine grille behind the glass (`radial-gradient(rgb(255 255 255/0.07) 0.7px, transparent 0.9px)` at 5px), a lamp's falloff, and a sheen over the top. Artwork that is black on white is inverted and screened onto it (`invert(1) contrast(1.25)`, `mix-blend-screen`), so the ink glows and the paper disappears.
+Smoked glass set deeper than the LCD: the maker's window where the Litt mark glows, and the Tape Reels' transport. The maker's window rests on the brush-drawn poster and plays the mark's film only while a mouse or pen is over it, from the top each time; touch and reduced motion keep it still. A fine grille behind the glass (`radial-gradient(rgb(255 255 255/0.07) 0.7px, transparent 0.9px)` at 5px), a lamp's falloff, and a sheen over the top. Artwork that is black on white is inverted and screened onto it (`invert(1) contrast(1.25)`, `mix-blend-screen`), so the ink glows and the paper disappears.
 
 | Token | Light | Dark |
 | --- | --- | --- |
@@ -244,7 +244,7 @@ Small sizes, tight tracking, weights 400 and 500 on the page. The hardware adds 
 | Engraved caption | 0.6em (9px on the deck) | 600 | Capitals, 0.16em |
 | Key lettering | 0.8em | 500 | Capitals, 0.03em |
 | LCD chip | 0.58 to 0.6em | 600 | Capitals, 0.02em |
-| LCD figures | 1.05em for a name, 2.35em for the clock | 300 | Tabular, −0.01 to −0.03em |
+| LCD figures | 1.05em for a name, 1.9em for the take number, 2.35em for a clock | 300 | Tabular, −0.01 to −0.03em |
 
 Every figure that changes is `tabular-nums`, on the screen and on the hardware.
 

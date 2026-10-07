@@ -18,7 +18,7 @@ type TapeProps = {
   className?: string;
 };
 
-const BAR_PITCH = 5; // px between bars
+const BAR_PITCH = 8; // px between bars: sparse enough to read as a line, not a texture
 
 /** A small, seedable PRNG (mulberry32), so every take draws the same waveform on every visit. */
 function random(seed: number) {
@@ -154,7 +154,7 @@ export function Tape({ takes, slider, hint, onScrub, onScrubEnd, className }: Ta
         <div ref={waveRef} aria-hidden className="absolute inset-x-0 inset-y-[22%]">
           {size && (
             <>
-              <svg viewBox={`0 0 ${size.w} ${size.h}`} className="absolute inset-0 size-full overflow-visible text-ink opacity-[0.16]">
+              <svg viewBox={`0 0 ${size.w} ${size.h}`} className="absolute inset-0 size-full overflow-visible text-ink opacity-[0.12]">
                 <path d={path} stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none" />
               </svg>
               <svg
