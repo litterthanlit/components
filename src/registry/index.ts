@@ -253,11 +253,11 @@ export const registry: RegistryEntry[] = [
     slug: "copy-button",
     title: "Copy Button",
     description:
-      "Copy, and the command glitches away from right to left in falling-code katakana while the icons cross-fade and the checkmark draws itself in. When the check goes, the text decodes back in from the left. Nothing around it moves, a re-click turns the wave around mid-flight, and screen readers get the plain text and a “Copied”.",
-    tagline: "Copy, and the command glitches out like falling code.",
-    tags: ["button", "feedback", "motion", "svg"],
+      "A key that copies a command and comes up with a check that draws itself, beside a character LCD that lets the command go: a wave runs through it from right to left, each character scrambling through the display's katakana before it clears, then decodes back in from the left. Every character clicks as it settles, nothing on the line moves, and a second copy turns the wave round mid-flight.",
+    tagline: "Copy, and the LCD scrambles the command away.",
+    tags: ["button", "feedback", "sound", "a11y"],
     date: "2026-09-01",
-    background: "dots",
+    background: "plain",
   },
 ];
 
