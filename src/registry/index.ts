@@ -253,9 +253,9 @@ export const registry: RegistryEntry[] = [
     slug: "copy-button",
     title: "Copy Button",
     description:
-      "Icons cross-fade with scale and blur, and the checkmark draws itself in. A live region announces the result for screen readers.",
-    tagline: "The smallest delight: a check that draws itself.",
-    tags: ["button", "feedback", "svg"],
+      "Copy, and the command glitches away from right to left in falling-code katakana while the icons cross-fade and the checkmark draws itself in. When the check goes, the text decodes back in from the left. Nothing around it moves, a re-click turns the wave around mid-flight, and screen readers get the plain text and a “Copied”.",
+    tagline: "Copy, and the command glitches out like falling code.",
+    tags: ["button", "feedback", "motion", "svg"],
     date: "2026-09-01",
     background: "dots",
   },
