@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "send-money",
+    title: "Send Money",
+    description:
+      "Sending money on a payment terminal's screen and keypad, cut like a motion-design reel. Recent contacts roll under a fixed accent bar, a click per row; the one you pick keeps its place across a match cut into the amount, where each figure rises blurred by its own speed. Hold SEND and eight lights fire in turn; at the last, its sound leads a smash cut to the receipt.",
+    tagline: "Pick, type and hold to send, cut like a reel.",
+    tags: ["input", "motion", "sound", "a11y"],
+    date: "2026-10-07",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "agent-indicators",
     title: "Agent Indicators",
     description:
