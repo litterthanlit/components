@@ -88,7 +88,7 @@ Every study starts here:
 
 ### Frame and bezel
 
-The frame is machined: a band a shade darker than the body in light (lighter in dark, so it still catches the light), lit along its top edge. It holds the player (`rounded-[34px] p-[5px]`, 46px and 8px on wide decks). The player is as tall as the window and 80% of its width, between 864px and 1344px (`max-w-[min(1344px,max(864px,80vw))]`), so narrower windows give it their whole width and a wide monitor leaves it an object on the desk, not a wall. It replaced a black bumper, whose stark outline round a white body was the most recognisable thing about the recorder it came from.
+The frame is machined: a band a shade darker than the body in light (lighter in dark, so it still catches the light), lit along its top edge. It holds the player (`rounded-[34px] p-[5px]`, 46px and 8px on wide decks). The player is as tall as the window and 80% of its width, between 864px and 1200px (`max-w-[min(1200px,max(864px,80vw))]`), so narrower windows give it their whole width and a wide monitor leaves it an object on the desk, not a wall. It replaced a black bumper, whose stark outline round a white body was the most recognisable thing about the recorder it came from.
 
 | Token | Light | Dark |
 | --- | --- | --- |
@@ -144,21 +144,21 @@ Round caps, lit from above. A cap seated in a collar (`size-[5.4em] p-[0.32em]`)
 | `--device-wheel-shadow` | `inset 0 1.5px 0 #ffffff, inset 0 -3px 8px rgb(0 0 0 / 0.04), 0 0 0 1px rgb(0 0 0 / 0.12), 0 2px 0 0 #a8acb3, 0 12px 28px -12px rgb(0 0 0 / 0.3)` | `inset 0 1.5px 0 rgb(255 255 255 / 0.12), inset 0 -3px 8px rgb(0 0 0 / 0.2), 0 0 0 1px rgb(0 0 0 / 0.75), 0 2px 0 0 #0d0d0e, 0 12px 28px -12px rgb(0 0 0 / 0.8)` |
 | `--device-wheel-shadow-pressed` | `inset 0 1.5px 0 rgb(255 255 255 / 0.7), inset 0 -3px 8px rgb(0 0 0 / 0.06), 0 0 0 1px rgb(0 0 0 / 0.14), 0 0.5px 0 0 #a8acb3, 0 4px 10px -6px rgb(0 0 0 / 0.26)` | `inset 0 1.5px 0 rgb(255 255 255 / 0.06), inset 0 -3px 8px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.75), 0 0.5px 0 0 #0d0d0e, 0 4px 10px -6px rgb(0 0 0 / 0.7)` |
 
-The dial: the body's opposite, as a click wheel is: black on the silver body, silver on the graphite one. It keeps its own recess, engraving and the light that trails the finger, because the body's would light it the wrong way (a white lip under black glass, a black one on silver), and studies' caps keep `--device-wheel-*`.
+The dial: the body's opposite, as a click wheel is: black on the silver body, a near-white silver on the graphite one. It keeps its own recess, engraving and the light that trails the finger, because the body's would light it the wrong way (a white lip under black glass, a black one on silver), and studies' caps keep `--device-wheel-*`.
 
 | Token | Light | Dark |
 | --- | --- | --- |
-| `--device-dial-face` | `radial-gradient(120% 120% at 50% 0%, #2c2e33 0%, #1b1c20 55%, #111215 100%)` | `radial-gradient(120% 120% at 50% 0%, #e6e8ec 0%, #d1d4d9 55%, #bec2c8 100%)` |
-| `--device-dial-shadow` | `inset 0 1.5px 0 rgb(255 255 255 / 0.14), inset 0 -3px 8px rgb(0 0 0 / 0.4), 0 0 0 1px rgb(0 0 0 / 0.6), 0 2px 0 0 #08090a, 0 12px 28px -12px rgb(0 0 0 / 0.5)` | `inset 0 1.5px 0 rgb(255 255 255 / 0.75), inset 0 -3px 8px rgb(0 0 0 / 0.12), 0 0 0 1px rgb(0 0 0 / 0.6), 0 2px 0 0 #0f1012, 0 12px 28px -12px rgb(0 0 0 / 0.85)` |
-| `--device-dial-shadow-pressed` | `inset 0 1.5px 0 rgb(255 255 255 / 0.08), inset 0 -3px 8px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(0 0 0 / 0.6), 0 0.5px 0 0 #08090a, 0 4px 10px -6px rgb(0 0 0 / 0.45)` | `inset 0 1.5px 0 rgb(255 255 255 / 0.5), inset 0 -3px 8px rgb(0 0 0 / 0.16), 0 0 0 1px rgb(0 0 0 / 0.6), 0 0.5px 0 0 #0f1012, 0 4px 10px -6px rgb(0 0 0 / 0.75)` |
-| `--device-dial-recess` | `inset 0 1px 3px rgb(0 0 0 / 0.75), inset 0 0 0 1px rgb(0 0 0 / 0.5), 0 1px 0 rgb(255 255 255 / 0.08)` | `inset 0 1px 2px rgb(0 0 0 / 0.22), inset 0 0 0 1px rgb(0 0 0 / 0.08), 0 1px 0 rgb(255 255 255 / 0.6)` |
-| `--device-dial-key-face` | `radial-gradient(120% 120% at 50% 0%, #26282c 0%, #1a1b1f 60%, #141518 100%)` | `radial-gradient(120% 120% at 50% 0%, #f6f7f9 0%, #e3e5e9 60%, #d4d7dc 100%)` |
-| `--device-dial-key-shadow` | `inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.8), 0 2px 0 0 #050506, 0 5px 12px -4px rgb(0 0 0 / 0.6)` | `inset 0 1px 0 #ffffff, inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.2), 0 2px 0 0 #8e9299, 0 5px 12px -4px rgb(0 0 0 / 0.35)` |
-| `--device-dial-key-shadow-pressed` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(0 0 0 / 0.8), 0 0 0 0 #050506, 0 1px 1px -1px rgb(0 0 0 / 0.5)` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.16), 0 0 0 1px rgb(0 0 0 / 0.22), 0 0 0 0 #8e9299, 0 1px 2px -1px rgb(0 0 0 / 0.2)` |
-| `--device-dial-ink` | `#d4d6db` (11.7:1 on the face) | `#2a2c31` (9.2:1) |
+| `--device-dial-face` | `radial-gradient(120% 120% at 50% 0%, #2c2e33 0%, #1b1c20 55%, #111215 100%)` | `radial-gradient(120% 120% at 50% 0%, #fafbfc 0%, #e6e8eb 55%, #d6d9dd 100%)` |
+| `--device-dial-shadow` | `inset 0 1.5px 0 rgb(255 255 255 / 0.14), inset 0 -3px 8px rgb(0 0 0 / 0.4), 0 0 0 1px rgb(0 0 0 / 0.6), 0 2px 0 0 #08090a, 0 12px 28px -12px rgb(0 0 0 / 0.5)` | `inset 0 1.5px 0 #ffffff, inset 0 -3px 8px rgb(0 0 0 / 0.1), 0 0 0 1px rgb(0 0 0 / 0.6), 0 2px 0 0 #0f1012, 0 12px 28px -12px rgb(0 0 0 / 0.85)` |
+| `--device-dial-shadow-pressed` | `inset 0 1.5px 0 rgb(255 255 255 / 0.08), inset 0 -3px 8px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(0 0 0 / 0.6), 0 0.5px 0 0 #08090a, 0 4px 10px -6px rgb(0 0 0 / 0.45)` | `inset 0 1.5px 0 rgb(255 255 255 / 0.6), inset 0 -3px 8px rgb(0 0 0 / 0.14), 0 0 0 1px rgb(0 0 0 / 0.6), 0 0.5px 0 0 #0f1012, 0 4px 10px -6px rgb(0 0 0 / 0.75)` |
+| `--device-dial-recess` | `inset 0 1px 3px rgb(0 0 0 / 0.75), inset 0 0 0 1px rgb(0 0 0 / 0.5), 0 1px 0 rgb(255 255 255 / 0.08)` | `inset 0 1px 2px rgb(0 0 0 / 0.2), inset 0 0 0 1px rgb(0 0 0 / 0.07), 0 1px 0 rgb(255 255 255 / 0.75)` |
+| `--device-dial-key-face` | `radial-gradient(120% 120% at 50% 0%, #26282c 0%, #1a1b1f 60%, #141518 100%)` | `radial-gradient(120% 120% at 50% 0%, #ffffff 0%, #f3f4f6 60%, #e7e9ec 100%)` |
+| `--device-dial-key-shadow` | `inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.8), 0 2px 0 0 #050506, 0 5px 12px -4px rgb(0 0 0 / 0.6)` | `inset 0 1px 0 #ffffff, inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.16), 0 2px 0 0 #a2a6ad, 0 5px 12px -4px rgb(0 0 0 / 0.3)` |
+| `--device-dial-key-shadow-pressed` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(0 0 0 / 0.8), 0 0 0 0 #050506, 0 1px 1px -1px rgb(0 0 0 / 0.5)` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.14), 0 0 0 1px rgb(0 0 0 / 0.18), 0 0 0 0 #a2a6ad, 0 1px 2px -1px rgb(0 0 0 / 0.18)` |
+| `--device-dial-ink` | `#d4d6db` (11.7:1 on the face) | `#2a2c31` (11.4:1) |
 | `--device-dial-trail` | `rgb(255 255 255 / 0.1)` | `rgb(0 0 0 / 0.07)` |
-| `--device-dial-engrave` | `0 -1px 0 rgb(0 0 0 / 0.85)` | `0 1px 0 rgb(255 255 255 / 0.6)` |
-| `--device-dial-engrave-glyph` | `drop-shadow(0 -1px 0 rgb(0 0 0 / 0.85))` | `drop-shadow(0 1px 0 rgb(255 255 255 / 0.6))` |
+| `--device-dial-engrave` | `0 -1px 0 rgb(0 0 0 / 0.85)` | `0 1px 0 rgb(255 255 255 / 0.8)` |
+| `--device-dial-engrave-glyph` | `drop-shadow(0 -1px 0 rgb(0 0 0 / 0.85))` | `drop-shadow(0 1px 0 rgb(255 255 255 / 0.8))` |
 
 ### LCD
 

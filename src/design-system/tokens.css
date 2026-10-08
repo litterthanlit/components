@@ -91,7 +91,7 @@
   --device-wheel-face: radial-gradient(120% 120% at 50% 0%, #ffffff 0%, #f3f4f6 55%, #e6e8ec 100%);
   --device-wheel-shadow: inset 0 1.5px 0 #ffffff, inset 0 -3px 8px rgb(0 0 0 / 0.04), 0 0 0 1px rgb(0 0 0 / 0.12), 0 2px 0 0 #a8acb3, 0 12px 28px -12px rgb(0 0 0 / 0.3);
   --device-wheel-shadow-pressed: inset 0 1.5px 0 rgb(255 255 255 / 0.7), inset 0 -3px 8px rgb(0 0 0 / 0.06), 0 0 0 1px rgb(0 0 0 / 0.14), 0 0.5px 0 0 #a8acb3, 0 4px 10px -6px rgb(0 0 0 / 0.26);
-  /* The player's dial: the body's opposite, black on silver (and silver on graphite in dark), as a click wheel is. Its own recess, engraving and trail, because the body's would light it the wrong way. */
+  /* The player's dial: the body's opposite, black on silver (and near-white silver on graphite in dark), as a click wheel is. Its own recess, engraving and trail, because the body's would light it the wrong way. */
   --device-dial-face: radial-gradient(120% 120% at 50% 0%, #2c2e33 0%, #1b1c20 55%, #111215 100%);
   --device-dial-shadow: inset 0 1.5px 0 rgb(255 255 255 / 0.14), inset 0 -3px 8px rgb(0 0 0 / 0.4), 0 0 0 1px rgb(0 0 0 / 0.6), 0 2px 0 0 #08090a, 0 12px 28px -12px rgb(0 0 0 / 0.5);
   --device-dial-shadow-pressed: inset 0 1.5px 0 rgb(255 255 255 / 0.08), inset 0 -3px 8px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(0 0 0 / 0.6), 0 0.5px 0 0 #08090a, 0 4px 10px -6px rgb(0 0 0 / 0.45);
@@ -174,16 +174,16 @@
   --device-wheel-face: radial-gradient(120% 120% at 50% 0%, #46484d 0%, #3c3e43 55%, #34363a 100%);
   --device-wheel-shadow: inset 0 1.5px 0 rgb(255 255 255 / 0.12), inset 0 -3px 8px rgb(0 0 0 / 0.2), 0 0 0 1px rgb(0 0 0 / 0.75), 0 2px 0 0 #0d0d0e, 0 12px 28px -12px rgb(0 0 0 / 0.8);
   --device-wheel-shadow-pressed: inset 0 1.5px 0 rgb(255 255 255 / 0.06), inset 0 -3px 8px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.75), 0 0.5px 0 0 #0d0d0e, 0 4px 10px -6px rgb(0 0 0 / 0.7);
-  --device-dial-face: radial-gradient(120% 120% at 50% 0%, #e6e8ec 0%, #d1d4d9 55%, #bec2c8 100%);
-  --device-dial-shadow: inset 0 1.5px 0 rgb(255 255 255 / 0.75), inset 0 -3px 8px rgb(0 0 0 / 0.12), 0 0 0 1px rgb(0 0 0 / 0.6), 0 2px 0 0 #0f1012, 0 12px 28px -12px rgb(0 0 0 / 0.85);
-  --device-dial-shadow-pressed: inset 0 1.5px 0 rgb(255 255 255 / 0.5), inset 0 -3px 8px rgb(0 0 0 / 0.16), 0 0 0 1px rgb(0 0 0 / 0.6), 0 0.5px 0 0 #0f1012, 0 4px 10px -6px rgb(0 0 0 / 0.75);
-  --device-dial-recess: inset 0 1px 2px rgb(0 0 0 / 0.22), inset 0 0 0 1px rgb(0 0 0 / 0.08), 0 1px 0 rgb(255 255 255 / 0.6);
-  --device-dial-key-face: radial-gradient(120% 120% at 50% 0%, #f6f7f9 0%, #e3e5e9 60%, #d4d7dc 100%);
-  --device-dial-key-shadow: inset 0 1px 0 #ffffff, inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.2), 0 2px 0 0 #8e9299, 0 5px 12px -4px rgb(0 0 0 / 0.35);
-  --device-dial-key-shadow-pressed: inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.16), 0 0 0 1px rgb(0 0 0 / 0.22), 0 0 0 0 #8e9299, 0 1px 2px -1px rgb(0 0 0 / 0.2);
+  --device-dial-face: radial-gradient(120% 120% at 50% 0%, #fafbfc 0%, #e6e8eb 55%, #d6d9dd 100%);
+  --device-dial-shadow: inset 0 1.5px 0 #ffffff, inset 0 -3px 8px rgb(0 0 0 / 0.1), 0 0 0 1px rgb(0 0 0 / 0.6), 0 2px 0 0 #0f1012, 0 12px 28px -12px rgb(0 0 0 / 0.85);
+  --device-dial-shadow-pressed: inset 0 1.5px 0 rgb(255 255 255 / 0.6), inset 0 -3px 8px rgb(0 0 0 / 0.14), 0 0 0 1px rgb(0 0 0 / 0.6), 0 0.5px 0 0 #0f1012, 0 4px 10px -6px rgb(0 0 0 / 0.75);
+  --device-dial-recess: inset 0 1px 2px rgb(0 0 0 / 0.2), inset 0 0 0 1px rgb(0 0 0 / 0.07), 0 1px 0 rgb(255 255 255 / 0.75);
+  --device-dial-key-face: radial-gradient(120% 120% at 50% 0%, #ffffff 0%, #f3f4f6 60%, #e7e9ec 100%);
+  --device-dial-key-shadow: inset 0 1px 0 #ffffff, inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.16), 0 2px 0 0 #a2a6ad, 0 5px 12px -4px rgb(0 0 0 / 0.3);
+  --device-dial-key-shadow-pressed: inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.14), 0 0 0 1px rgb(0 0 0 / 0.18), 0 0 0 0 #a2a6ad, 0 1px 2px -1px rgb(0 0 0 / 0.18);
   --device-dial-ink: #2a2c31;
-  --device-dial-engrave: 0 1px 0 rgb(255 255 255 / 0.6);
-  --device-dial-engrave-glyph: drop-shadow(0 1px 0 rgb(255 255 255 / 0.6));
+  --device-dial-engrave: 0 1px 0 rgb(255 255 255 / 0.8);
+  --device-dial-engrave-glyph: drop-shadow(0 1px 0 rgb(255 255 255 / 0.8));
   --device-dial-trail: rgb(0 0 0 / 0.07);
   --device-lcd: linear-gradient(112deg, #151516 0%, #111112 47%, #0b0b0c 47.2%, #080809 100%);
   --device-lcd-edge: inset 0 0 0 1px rgb(255 255 255 / 0.07), inset 0 1px 0 rgb(255 255 255 / 0.07), 0 1px 0 rgb(255 255 255 / 0.04);
