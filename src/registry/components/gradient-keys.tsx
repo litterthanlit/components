@@ -389,24 +389,22 @@ export function StreakField({ palette, seed = 0, active = false, paused = false,
 /* --- GradientPreview: the window ------------------------------------------ */
 
 type GradientPreviewProps = {
+  /** The link's accessible name; nothing is printed on the glass. */
   title: string;
+  /** Said to screen readers as the link's description. */
   description: string;
-  meta?: string;
   href: string;
   palette: Palette;
   seed?: number;
   /** Hold the motion. */
   paused?: boolean;
-  /** The selection is stepping by itself: the chip's light pulses red. */
-  cycling?: boolean;
 };
 
 /**
- * A screen behind a black bezel showing a project large: its long exposure,
- * its title and line over a scrim at the foot, its year on a chip. The
- * screen is the project's link.
+ * A screen behind a black bezel showing a project's long exposure large,
+ * with nothing printed over it. The screen is the project's link.
  */
-export function GradientPreview({ title, description, meta, href, palette, seed = 0, paused = false, cycling = false }: GradientPreviewProps) {
+export function GradientPreview({ title, description, href, palette, seed = 0, paused = false }: GradientPreviewProps) {
   const descriptionId = useId();
 
   return (
@@ -426,28 +424,10 @@ export function GradientPreview({ title, description, meta, href, palette, seed 
         <span className="absolute inset-0 overflow-hidden rounded-[inherit]">
           <StreakField palette={palette} seed={seed} paused={paused} />
         </span>
-        {/* A scrim at the foot, so the words hold 4.5:1 on the lightest stop of any palette (0.68 is the least the
-            dimmer line needs, 0.54 the title); the top of the window stays clear. */}
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[linear-gradient(to_top,rgb(0_0_0/0.75),rgb(0_0_0/0.62)_34%,rgb(0_0_0/0.28)_52%,transparent_70%)]"
-        />
         {/* The glass: a sheen where the light catches it, and its edge. */}
         <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
-
-        {meta && (
-          <span aria-hidden className="pointer-events-none absolute left-[0.75em] top-[0.75em] inline-flex items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
-            <span className={cycling ? "size-[0.55em] animate-pulse rounded-full bg-(--device-rec) motion-reduce:animate-none" : "size-[0.55em] rounded-full bg-black"} />
-            <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em] tabular-nums">{meta}</span>
-          </span>
-        )}
-        <span key={title} className="pointer-events-none absolute inset-x-[0.85em] bottom-[0.8em] flex animate-enter flex-col gap-[0.4em]">
-          <span aria-hidden className="truncate text-[1.6em] font-medium leading-none tracking-[-0.02em] text-(--device-lcd-ink)">
-            {title}
-          </span>
-          <span id={descriptionId} className="truncate text-[0.85em] leading-none text-(--device-lcd-dim)">
-            {description}
-          </span>
+        <span id={descriptionId} hidden>
+          {description}
         </span>
       </a>
     </div>
@@ -508,11 +488,10 @@ export function GradientKey({ title, palette, seed = 0, selected = false, paused
 
 /* --- Demo: a launcher, its window and three keys -------------------------- */
 
-const PROJECTS: { title: string; description: string; year: string; href: string; palette: Palette; seed: number }[] = [
+const PROJECTS: { title: string; description: string; href: string; palette: Palette; seed: number }[] = [
   {
     title: "Wavr",
     description: "Shader code in, motion graphics out.",
-    year: "2026",
     href: "https://litt.design",
     palette: ["#264d35", "#3b6e4e", "#6da47a", "#a9cba3", "#e1ecdc"], // 若竹 wakatake: young bamboo
     seed: 3,
@@ -520,7 +499,6 @@ const PROJECTS: { title: string; description: string; year: string; href: string
   {
     title: "Carson",
     description: "Learn a layout by wrecking one.",
-    year: "2026",
     href: "https://litt.design",
     palette: ["#16213d", "#1f2f54", "#3f5f8f", "#7fa6c2", "#c9dde6"], // 藍 ai, indigo, to 浅葱 asagi
     seed: 1,
@@ -528,7 +506,6 @@ const PROJECTS: { title: string; description: string; year: string; href: string
   {
     title: "litt.works",
     description: "Prints and long-form pieces.",
-    year: "2024–26",
     href: "https://litt.design",
     palette: ["#b06e7c", "#d796a6", "#e9b5c1", "#f5d8de", "#fbf2ee"], // 桜 sakura to 胡粉 gofun, shell white
     seed: 5,
@@ -651,12 +628,10 @@ export default function Demo() {
         <GradientPreview
           title={project.title}
           description={project.description}
-          meta={project.year}
           href={project.href}
           palette={project.palette}
           seed={WINDOW_SEED}
           paused={paused}
-          cycling={cycling}
         />
 
         {/* The keys: each puts its project in the window. */}
