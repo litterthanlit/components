@@ -41,7 +41,7 @@ const ROCK: Record<Exclude<DialButton, "centre">, string> = {
   next: "perspective(600px) translateY(1.5px) rotateY(5deg)",
 };
 
-const position = "absolute grid place-items-center text-(--device-key-ink) [filter:var(--device-engrave-glyph)]";
+const position = "absolute grid place-items-center text-(--device-dial-ink) [filter:var(--device-dial-engrave-glyph)]";
 // One small solid triangle per side, the same size as the centre's legend, pointing the way its arrow key does.
 const triangle = "w-[max(7px,4.6cqw)] fill-current opacity-80";
 
@@ -59,6 +59,10 @@ const triangle = "w-[max(7px,4.6cqw)] fill-current opacity-80";
  *
  * The four arrows and the centre are real buttons, left out of the tab order
  * because the ring (a slider) takes the keyboard for all of them.
+ *
+ * It is black on the silver body, as a click wheel is: the one part the hand
+ * works is the one that stands out. It has its own `--device-dial-*` tokens,
+ * so the white caps on the studies keep theirs.
  */
 export function Dial({ flash, onTurn, onPress, slider, sliderRef, hint, labels, centre, onHold, className }: DialProps) {
   const dialRef = useRef<HTMLDivElement>(null);
@@ -180,7 +184,7 @@ export function Dial({ flash, onTurn, onPress, slider, sliderRef, hint, labels, 
   return (
     <div className={cn("@container relative aspect-square select-none", className)}>
       {/* The collar: a round well the dial sits in. */}
-      <div aria-hidden className="absolute inset-0 rounded-full bg-black/[0.035] shadow-(--device-recess) dark:bg-black/30" />
+      <div aria-hidden className="absolute inset-0 rounded-full bg-black/[0.06] shadow-(--device-recess) dark:bg-black/30" />
       <div
         ref={dialRef}
         onPointerDown={onPointerDown}
@@ -189,7 +193,7 @@ export function Dial({ flash, onTurn, onPress, slider, sliderRef, hint, labels, 
         onPointerCancel={(e) => onPointerEnd(e, false)}
         onLostPointerCapture={(e) => onPointerEnd(e, false)}
         data-pressed={rocked || undefined}
-        className="absolute inset-[3.5%] touch-none rounded-full [background:var(--device-wheel-face)] shadow-(--device-wheel-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out data-pressed:shadow-(--device-wheel-shadow-pressed) data-pressed:duration-75"
+        className="absolute inset-[3.5%] touch-none rounded-full [background:var(--device-dial-face)] shadow-(--device-dial-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out data-pressed:shadow-(--device-dial-shadow-pressed) data-pressed:duration-75"
         style={{ transform: rocked ? ROCK[pressed] : "perspective(600px)" }}
       >
         {/* The ring itself: the slider, and the keyboard's way in. */}
@@ -210,7 +214,7 @@ export function Dial({ flash, onTurn, onPress, slider, sliderRef, hint, labels, 
         <div
           ref={trailRef}
           aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-full opacity-0 transition-opacity duration-(--duration-move) ease-out [background:conic-gradient(from_calc(var(--a,0deg)-40deg),transparent,rgb(0_0_0/0.05)_40deg,transparent_80deg)] [mask:radial-gradient(circle,transparent_33%,#000_34%,#000_70%,transparent_100%)] dark:[background:conic-gradient(from_calc(var(--a,0deg)-40deg),transparent,rgb(255_255_255/0.12)_40deg,transparent_80deg)]"
+          className="pointer-events-none absolute inset-0 rounded-full opacity-0 transition-opacity duration-(--duration-move) ease-out [background:conic-gradient(from_calc(var(--a,0deg)-40deg),transparent,rgb(255_255_255/0.1)_40deg,transparent_80deg)] [mask:radial-gradient(circle,transparent_33%,#000_34%,#000_70%,transparent_100%)]"
         />
 
         <button type="button" tabIndex={-1} data-dial="up" aria-label={labels.up} onClick={activate("up")} className={cn(position, "left-[30%] top-[2%] h-[25%] w-[40%]")}>
@@ -235,7 +239,7 @@ export function Dial({ flash, onTurn, onPress, slider, sliderRef, hint, labels, 
         </button>
 
         {/* The centre key sits in a well cut through the dial. */}
-        <div className="absolute inset-[29%] rounded-full shadow-(--device-recess)">
+        <div className="absolute inset-[29%] rounded-full shadow-(--device-dial-recess)">
           <button
             type="button"
             tabIndex={-1}
@@ -243,13 +247,13 @@ export function Dial({ flash, onTurn, onPress, slider, sliderRef, hint, labels, 
             aria-label={labels.centre}
             onClick={activate("centre")}
             data-pressed={pressed === "centre" || undefined}
-            className="absolute inset-[5%] grid place-items-center rounded-full [background:var(--device-wheel-face)] text-(--device-key-ink) shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out data-pressed:translate-y-[2px] data-pressed:shadow-(--device-key-shadow-pressed) data-pressed:duration-75"
+            className="absolute inset-[5%] grid place-items-center rounded-full [background:var(--device-dial-key-face)] text-(--device-dial-ink) shadow-(--device-dial-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out data-pressed:translate-y-[2px] data-pressed:shadow-(--device-dial-key-shadow-pressed) data-pressed:duration-75"
           >
             {centre}
           </button>
           {/* The hold: a ring in the well that fills while the centre is held, and drains at once when it lets go. */}
           {onHold && (
-            <svg aria-hidden viewBox="0 0 100 100" className="pointer-events-none absolute inset-0 -rotate-90 text-(--device-key-ink)">
+            <svg aria-hidden viewBox="0 0 100 100" className="pointer-events-none absolute inset-0 -rotate-90 text-(--device-dial-ink)">
               <circle
                 cx="50"
                 cy="50"

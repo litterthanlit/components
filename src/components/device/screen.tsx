@@ -37,13 +37,8 @@ export function appZoom({ w, h }: { w: number; h: number }) {
 
 /* --- Status line ---------------------------------------------------------- */
 
-/** The screen's own lettering: small capitals, tracked, as a player's firmware sets them. */
-const caps = "text-[11px] font-medium uppercase tracking-[0.14em] wide:text-[12px]";
-
-const side = cn(
-  caps,
-  "flex h-full items-center gap-1 rounded-sm px-1.5 text-muted outline-offset-[-2px] transition-colors duration-(--duration-exit) hover:text-ink hover:duration-(--duration-enter)",
-);
+const side =
+  "flex h-full items-center gap-1 rounded-sm px-1.5 text-[13px] text-muted outline-offset-[-2px] transition-colors duration-(--duration-exit) hover:text-ink hover:duration-(--duration-enter) wide:text-[14px]";
 
 /**
  * The screen's top edge. The title of what's on screen sits in the middle, and
@@ -65,7 +60,7 @@ export function StatusBar({
   source?: { href: string; label: string };
 }) {
   const text = (
-    <p key={title} className={cn(caps, "max-w-[48cqw] animate-enter truncate font-semibold tracking-[0.16em]")}>
+    <p key={title} className="max-w-[48cqw] animate-enter truncate text-[13px] font-medium tracking-[-0.01em] wide:text-[14px]">
       {title}
     </p>
   );

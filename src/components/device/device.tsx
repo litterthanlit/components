@@ -7,7 +7,6 @@ import { VOLUME_DEFAULT, VOLUME_MAX, getVolume, isMuted, play, setMuted, setVolu
 import { site } from "@/site.config";
 import { Dial, type DialButton } from "./dial";
 import { takeLength, takeLengths, usePageVisible, useReducedMotion } from "./hooks";
-import { LogoWindow } from "./logo-window";
 import { Readout, type Transport } from "./readout";
 import { AppStage, Chevron, Choice, HomeAbout, Hud, InfoSheet, Panel, ScreenList, StatusBar, TakeArt, TakeWave, VolumeBar, type ListItem, type Study } from "./screen";
 import { Tape } from "./tape";
@@ -51,18 +50,18 @@ function SearchGlyph() {
 
 /**
  * What the dial's centre shows: PLAY or pause on a take, OK on a list. Printed
- * in the keys' grey like every other legend; the LCD's chip and the window's
- * light are what turn red while the tape runs.
+ * in the dial's grey like every other legend on it; the LCD's chip and the
+ * light beside the mark are what turn red while the tape runs.
  */
 function CentreGlyph({ take, playing }: { take: boolean; playing: boolean }) {
   if (!take)
     return (
-      <span aria-hidden className="text-[max(8px,4.4cqw)] font-semibold tracking-[0.08em] opacity-75 [text-shadow:var(--device-engrave)]">
+      <span aria-hidden className="text-[max(8px,4.4cqw)] font-semibold tracking-[0.08em] opacity-75 [text-shadow:var(--device-dial-engrave)]">
         OK
       </span>
     );
   return (
-    <svg aria-hidden viewBox="0 0 16 16" className="size-[7cqw] fill-current [filter:var(--device-engrave-glyph)]">
+    <svg aria-hidden viewBox="0 0 16 16" className="size-[7cqw] fill-current [filter:var(--device-dial-engrave-glyph)]">
       {playing ? <path d="M4 2.5h2.8v11H4zM9.2 2.5H12v11H9.2z" /> : <path d="M5 2.4 13.4 8 5 13.6z" />}
     </svg>
   );
@@ -735,16 +734,8 @@ export function Device({ studies }: { studies: Study[] }) {
 
           {/* The deck. Sized in em from one font size, so it scales as one piece. */}
           <div className="deck-grid shrink-0 content-center justify-center gap-x-[1.3em] gap-y-[0.8em] border-t border-black/[0.07] px-[1.1em] pb-[1.3em] pt-[1.1em] [font-size:clamp(9px,min(3.2vw,1.7vh),15px)] dark:border-white/[0.06] wide:gap-x-[3.2em] wide:px-[2.4em] wide:py-[1.7em] wide:[font-size:clamp(10px,min(1.45vw,1.6vh),16px)] roomy:gap-x-[3em] roomy:[font-size:clamp(10px,min(1.25vw,1.6vh),16px)] short:border-l short:border-t-0 short:px-[1em] short:py-[0.9em] short:[font-size:clamp(8px,2.7vh,12px)]">
-            {/* The maker's mark: a nameplate, quiet beside the controls. */}
-            <LogoWindow live={playing} className="self-start justify-self-start [grid-area:badge] wide:self-end" />
-
-            <Readout
-              at={dialled}
-              n={n}
-              transport={transport}
-              // Phones give its room to the screen; the screen and the HUD already say what it says.
-              className="hidden self-start [grid-area:well] wide:block"
-            />
+            {/* The maker's mark and the LCD, one strip of glass. Phones keep only the mark: the screen and the HUD say the rest. */}
+            <Readout at={dialled} n={n} transport={transport} className="self-start justify-self-start [grid-area:readout] wide:self-center" />
 
             {/* The dial: PLAY at its centre, held for STOP. */}
             <Dial
