@@ -8,7 +8,7 @@ The values live in code. `src/design-system/tokens.css` is the source of truth (
 
 ### The player is an object, not a page
 
-The home page is a player after a field recorder: a cool silver body in a machined frame, a full-width screen, wells pressed into the body, keys that sink 2px onto their base, a black dial with PLAY at its centre, a tape of waveforms with a red playhead. It is something you could hold, and it runs the studies one at a time.
+The home page is a player after a field recorder: a cool silver body in a machined frame, a full-width screen, wells pressed into the body, keys that sink 2px onto their base, a dial in the body's opposite finish with PLAY at its centre, a tape of waveforms with a red playhead. It is something you could hold, and it runs the studies one at a time.
 
 An object gives every study the same frame and makes polish legible: a lit edge, a recess or a 2px base is either right or it isn't. So a study is a part of the same instrument, built from the same materials, never a card on a screen and never a second player. When a click-wheel player ran inside the player's screen, it competed with it, and it was taken out.
 
@@ -36,7 +36,7 @@ Monochrome, plus red for REC and the playhead, orange for a hand on it, and one 
 
 Restraint is also subtraction. The player lost its battery icon, timecodes, scanlines, a BACK key and a keyboard legend because each one repeated something the screen, the LCD or the hold switch already said. Later it lost the file name beside the LCD (the screen names the study), the captions under the transport (▶ and ■ need no words), a maker's window that stood the full height of the deck (it became a nameplate, and then the left end of the LCD: the maker stays quiet inside the readout), the LCD's running clock and level meters (the tape already shows where the playhead is, so the LCD says only the state, the study's name and the take, as a CD player's display does), a FIND key (Find is on Home, and on /), the HOLD switch (Options › Sound and M already muted), the STOP key (hold the dial's centre) and the deck's key row (Menu and Source sit at the screen's top corners, and Options is on Menu). The deck keeps only what plays the tape: the readout (the mark and the LCD on one strip of glass) and the dial. The mark animates only under a mouse: on the deck, nothing moves by itself but the tape and the lights.
 
-It is after a field recorder, not a copy of one, and its finish is after a click-wheel player's: a cool, bead-blasted silver with the dial in black, so the one part the hand works is the one that stands out. Its parts are arranged around what this player does: it runs studies by itself, so PLAY is the largest key on the deck, at the centre of the dial that steps through them. It is printed in the same grey as every other legend. On the body, colour is a signal (the LCD's play dot, the playhead, the window's light), never a way to make a key look important.
+It is after a field recorder, not a copy of one, and its finish is after a click-wheel player's: a cool, bead-blasted silver with the dial in black (in dark, graphite with the dial in silver), so the one part the hand works is the one that stands out. Its parts are arranged around what this player does: it runs studies by itself, so PLAY is the largest key on the deck, at the centre of the dial that steps through them. It is printed in the same grey as every other legend. On the body, colour is a signal (the LCD's play dot, the playhead, the window's light), never a way to make a key look important.
 
 ### Physics carry the feel
 
@@ -58,7 +58,7 @@ Colour, centre, dialled; synthesized, motorized. Numbers carry units and real sy
 
 ## Materials
 
-The player is built from a few materials, each a small group of `--device-*` tokens with a light and a dark value. Studies use the same tokens, so a study reads as a part of the same object in either theme. The greys are cool, a little blue, as anodized aluminium is. The dark player is a graphite body, not an inverted one: its keys are lighter than the plate, its engraving casts the other way, and its dial is still the darkest thing on it.
+The player is built from a few materials, each a small group of `--device-*` tokens with a light and a dark value. Studies use the same tokens, so a study reads as a part of the same object in either theme. The greys are cool, a little blue, as anodized aluminium is. The dark player is a graphite body, not an inverted one: its keys are lighter than the plate, its engraving casts the other way, and its dial turns silver, so it still stands apart from the body.
 
 They combine in one order: **plate, then well, then part**. Wells are pressed into the plate; keys, LCDs, windows and collars sit in wells; caps sit in collars. The player sits in a frame; a second screen, LCD cells and dot-matrix strips sit behind a black bezel. Everything on a plate is sized in em from the plate's one font size, so the object scales as one piece, and radii nest as they go in: plate 1.25em, well 1.05em, key or LCD 0.7em, chip 0.4em.
 
@@ -136,7 +136,7 @@ The site's own buttons are keys too, from the `--key-*` tokens: 2px corners, a l
 
 ### Cap and collar
 
-Round caps, lit from above. A cap seated in a collar (`size-[5.4em] p-[0.32em]`) uses `--device-wheel-face` with the key shadows, so it sinks like a key; a caption, when it has one, is printed underneath. The player's dial is the one round part that is black (its tokens are below). It is a D-pad in a collar, that also turns, and rocks 5° toward the side pressed (`perspective(600px) translateY(1.5px) rotateX(±5deg)`). Its arrows are four small solid triangles, the size of a legend, pointing the way the arrow keys they stand for do. Its centre is the deck's main key, dropping 2px into a well cut through the dial: PLAY or pause on a take, OK on a list, printed in the dial's grey. Held for 600ms on a take, the centre is STOP: a ring in its well fills over those 600ms (a press's timing, so a linear duration, not a spring), STOP fires while the finger is still down, and letting go does nothing more. Letting go sooner is an ordinary press. S stops from the keyboard. A knob's cap carries knurling, `repeating-conic-gradient(from var(--a), …)`, so it turns without a transform.
+Round caps, lit from above. A cap seated in a collar (`size-[5.4em] p-[0.32em]`) uses `--device-wheel-face` with the key shadows, so it sinks like a key; a caption, when it has one, is printed underneath. The player's dial is the one round part in the body's opposite finish (its tokens are below). It is a D-pad in a collar, that also turns, and rocks 5° toward the side pressed (`perspective(600px) translateY(1.5px) rotateX(±5deg)`). Its arrows are four small solid triangles, the size of a legend, pointing the way the arrow keys they stand for do. Its centre is the deck's main key, dropping 2px into a well cut through the dial: PLAY or pause on a take, OK on a list, printed in the dial's grey. Held for 600ms on a take, the centre is STOP: a ring in its well fills over those 600ms (a press's timing, so a linear duration, not a spring), STOP fires while the finger is still down, and letting go does nothing more. Letting go sooner is an ordinary press. S stops from the keyboard. A knob's cap carries knurling, `repeating-conic-gradient(from var(--a), …)`, so it turns without a transform.
 
 | Token | Light | Dark |
 | --- | --- | --- |
@@ -144,20 +144,21 @@ Round caps, lit from above. A cap seated in a collar (`size-[5.4em] p-[0.32em]`)
 | `--device-wheel-shadow` | `inset 0 1.5px 0 #ffffff, inset 0 -3px 8px rgb(0 0 0 / 0.04), 0 0 0 1px rgb(0 0 0 / 0.12), 0 2px 0 0 #a8acb3, 0 12px 28px -12px rgb(0 0 0 / 0.3)` | `inset 0 1.5px 0 rgb(255 255 255 / 0.12), inset 0 -3px 8px rgb(0 0 0 / 0.2), 0 0 0 1px rgb(0 0 0 / 0.75), 0 2px 0 0 #0d0d0e, 0 12px 28px -12px rgb(0 0 0 / 0.8)` |
 | `--device-wheel-shadow-pressed` | `inset 0 1.5px 0 rgb(255 255 255 / 0.7), inset 0 -3px 8px rgb(0 0 0 / 0.06), 0 0 0 1px rgb(0 0 0 / 0.14), 0 0.5px 0 0 #a8acb3, 0 4px 10px -6px rgb(0 0 0 / 0.26)` | `inset 0 1.5px 0 rgb(255 255 255 / 0.06), inset 0 -3px 8px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.75), 0 0.5px 0 0 #0d0d0e, 0 4px 10px -6px rgb(0 0 0 / 0.7)` |
 
-The dial: black on the silver body, as a click wheel is. It keeps its own recess and engraving, because the body's would light it the wrong way (a white lip under black glass), and studies' caps keep the white `--device-wheel-*`.
+The dial: the body's opposite, as a click wheel is: black on the silver body, silver on the graphite one. It keeps its own recess, engraving and the light that trails the finger, because the body's would light it the wrong way (a white lip under black glass, a black one on silver), and studies' caps keep `--device-wheel-*`.
 
 | Token | Light | Dark |
 | --- | --- | --- |
-| `--device-dial-face` | `radial-gradient(120% 120% at 50% 0%, #2c2e33 0%, #1b1c20 55%, #111215 100%)` | `radial-gradient(120% 120% at 50% 0%, #1c1d21 0%, #111215 55%, #0a0b0d 100%)` |
-| `--device-dial-shadow` | `inset 0 1.5px 0 rgb(255 255 255 / 0.14), inset 0 -3px 8px rgb(0 0 0 / 0.4), 0 0 0 1px rgb(0 0 0 / 0.6), 0 2px 0 0 #08090a, 0 12px 28px -12px rgb(0 0 0 / 0.5)` | `inset 0 1.5px 0 rgb(255 255 255 / 0.1), inset 0 -3px 8px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(0 0 0 / 0.85), 0 2px 0 0 #050506, 0 12px 28px -12px rgb(0 0 0 / 0.85)` |
-| `--device-dial-shadow-pressed` | `inset 0 1.5px 0 rgb(255 255 255 / 0.08), inset 0 -3px 8px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(0 0 0 / 0.6), 0 0.5px 0 0 #08090a, 0 4px 10px -6px rgb(0 0 0 / 0.45)` | `inset 0 1.5px 0 rgb(255 255 255 / 0.05), inset 0 -3px 8px rgb(0 0 0 / 0.5), 0 0 0 1px rgb(0 0 0 / 0.85), 0 0.5px 0 0 #050506, 0 4px 10px -6px rgb(0 0 0 / 0.75)` |
-| `--device-dial-recess` | `inset 0 1px 3px rgb(0 0 0 / 0.75), inset 0 0 0 1px rgb(0 0 0 / 0.5), 0 1px 0 rgb(255 255 255 / 0.08)` | `inset 0 1px 3px rgb(0 0 0 / 0.85), inset 0 0 0 1px rgb(0 0 0 / 0.6), 0 1px 0 rgb(255 255 255 / 0.06)` |
-| `--device-dial-key-face` | `radial-gradient(120% 120% at 50% 0%, #26282c 0%, #1a1b1f 60%, #141518 100%)` | `radial-gradient(120% 120% at 50% 0%, #212226 0%, #16171a 60%, #101113 100%)` |
-| `--device-dial-key-shadow` | `inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.8), 0 2px 0 0 #050506, 0 5px 12px -4px rgb(0 0 0 / 0.6)` | `inset 0 1px 0 rgb(255 255 255 / 0.1), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.85), 0 2px 0 0 #030304, 0 5px 12px -4px rgb(0 0 0 / 0.7)` |
-| `--device-dial-key-shadow-pressed` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(0 0 0 / 0.8), 0 0 0 0 #050506, 0 1px 1px -1px rgb(0 0 0 / 0.5)` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.75), 0 0 0 1px rgb(0 0 0 / 0.85), 0 0 0 0 #030304, 0 1px 1px -1px rgb(0 0 0 / 0.5)` |
-| `--device-dial-ink` | `#d4d6db` (11.7:1 on the face) | `#cdd0d5` (12:1) |
-| `--device-dial-engrave` | `0 -1px 0 rgb(0 0 0 / 0.85)` | `0 -1px 0 rgb(0 0 0 / 0.9)` |
-| `--device-dial-engrave-glyph` | `drop-shadow(0 -1px 0 rgb(0 0 0 / 0.85))` | `drop-shadow(0 -1px 0 rgb(0 0 0 / 0.9))` |
+| `--device-dial-face` | `radial-gradient(120% 120% at 50% 0%, #2c2e33 0%, #1b1c20 55%, #111215 100%)` | `radial-gradient(120% 120% at 50% 0%, #e6e8ec 0%, #d1d4d9 55%, #bec2c8 100%)` |
+| `--device-dial-shadow` | `inset 0 1.5px 0 rgb(255 255 255 / 0.14), inset 0 -3px 8px rgb(0 0 0 / 0.4), 0 0 0 1px rgb(0 0 0 / 0.6), 0 2px 0 0 #08090a, 0 12px 28px -12px rgb(0 0 0 / 0.5)` | `inset 0 1.5px 0 rgb(255 255 255 / 0.75), inset 0 -3px 8px rgb(0 0 0 / 0.12), 0 0 0 1px rgb(0 0 0 / 0.6), 0 2px 0 0 #0f1012, 0 12px 28px -12px rgb(0 0 0 / 0.85)` |
+| `--device-dial-shadow-pressed` | `inset 0 1.5px 0 rgb(255 255 255 / 0.08), inset 0 -3px 8px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(0 0 0 / 0.6), 0 0.5px 0 0 #08090a, 0 4px 10px -6px rgb(0 0 0 / 0.45)` | `inset 0 1.5px 0 rgb(255 255 255 / 0.5), inset 0 -3px 8px rgb(0 0 0 / 0.16), 0 0 0 1px rgb(0 0 0 / 0.6), 0 0.5px 0 0 #0f1012, 0 4px 10px -6px rgb(0 0 0 / 0.75)` |
+| `--device-dial-recess` | `inset 0 1px 3px rgb(0 0 0 / 0.75), inset 0 0 0 1px rgb(0 0 0 / 0.5), 0 1px 0 rgb(255 255 255 / 0.08)` | `inset 0 1px 2px rgb(0 0 0 / 0.22), inset 0 0 0 1px rgb(0 0 0 / 0.08), 0 1px 0 rgb(255 255 255 / 0.6)` |
+| `--device-dial-key-face` | `radial-gradient(120% 120% at 50% 0%, #26282c 0%, #1a1b1f 60%, #141518 100%)` | `radial-gradient(120% 120% at 50% 0%, #f6f7f9 0%, #e3e5e9 60%, #d4d7dc 100%)` |
+| `--device-dial-key-shadow` | `inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.8), 0 2px 0 0 #050506, 0 5px 12px -4px rgb(0 0 0 / 0.6)` | `inset 0 1px 0 #ffffff, inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.2), 0 2px 0 0 #8e9299, 0 5px 12px -4px rgb(0 0 0 / 0.35)` |
+| `--device-dial-key-shadow-pressed` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(0 0 0 / 0.8), 0 0 0 0 #050506, 0 1px 1px -1px rgb(0 0 0 / 0.5)` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.16), 0 0 0 1px rgb(0 0 0 / 0.22), 0 0 0 0 #8e9299, 0 1px 2px -1px rgb(0 0 0 / 0.2)` |
+| `--device-dial-ink` | `#d4d6db` (11.7:1 on the face) | `#2a2c31` (9.2:1) |
+| `--device-dial-trail` | `rgb(255 255 255 / 0.1)` | `rgb(0 0 0 / 0.07)` |
+| `--device-dial-engrave` | `0 -1px 0 rgb(0 0 0 / 0.85)` | `0 1px 0 rgb(255 255 255 / 0.6)` |
+| `--device-dial-engrave-glyph` | `drop-shadow(0 -1px 0 rgb(0 0 0 / 0.85))` | `drop-shadow(0 1px 0 rgb(255 255 255 / 0.6))` |
 
 ### LCD
 

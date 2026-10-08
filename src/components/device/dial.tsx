@@ -60,9 +60,10 @@ const triangle = "w-[max(7px,4.6cqw)] fill-current opacity-80";
  * The four arrows and the centre are real buttons, left out of the tab order
  * because the ring (a slider) takes the keyboard for all of them.
  *
- * It is black on the silver body, as a click wheel is: the one part the hand
- * works is the one that stands out. It has its own `--device-dial-*` tokens,
- * so the white caps on the studies keep theirs.
+ * It is the body's opposite, as a click wheel is: black on the silver body,
+ * silver on the graphite one, so the one part the hand works is the one that
+ * stands out. It has its own `--device-dial-*` tokens, so the white caps on
+ * the studies keep theirs.
  */
 export function Dial({ flash, onTurn, onPress, slider, sliderRef, hint, labels, centre, onHold, className }: DialProps) {
   const dialRef = useRef<HTMLDivElement>(null);
@@ -214,7 +215,7 @@ export function Dial({ flash, onTurn, onPress, slider, sliderRef, hint, labels, 
         <div
           ref={trailRef}
           aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-full opacity-0 transition-opacity duration-(--duration-move) ease-out [background:conic-gradient(from_calc(var(--a,0deg)-40deg),transparent,rgb(255_255_255/0.1)_40deg,transparent_80deg)] [mask:radial-gradient(circle,transparent_33%,#000_34%,#000_70%,transparent_100%)]"
+          className="pointer-events-none absolute inset-0 rounded-full opacity-0 transition-opacity duration-(--duration-move) ease-out [background:conic-gradient(from_calc(var(--a,0deg)-40deg),transparent,var(--device-dial-trail)_40deg,transparent_80deg)] [mask:radial-gradient(circle,transparent_33%,#000_34%,#000_70%,transparent_100%)]"
         />
 
         <button type="button" tabIndex={-1} data-dial="up" aria-label={labels.up} onClick={activate("up")} className={cn(position, "left-[30%] top-[2%] h-[25%] w-[40%]")}>
