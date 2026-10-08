@@ -61,12 +61,15 @@
   --key-primary-shadow-pressed: inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.6), 0 0 0 1px #000, 0 0 0 0 #000, 0 1px 1px -1px rgb(0 0 0 / 0.3);
   /*
    * Device: the home page is a player after a field recorder. A near-white,
-   * softly lit body in a black bumper; wells pressed into the body for the
-   * readout and the keys; white keys, a dial and round transport keys that
-   * sink onto a darker base; a black LCD with a glass sheen; red for the
-   * playhead and play. Key shadows keep the same layers pressed and released
-   * so they interpolate.
+   * softly lit body in a machined frame a shade darker; wells pressed into
+   * the body for the readout and the keys; white keys, a dial with PLAY at
+   * its centre and STOP beside it, all sinking onto a darker base; a black
+   * LCD with a glass sheen; red for the playhead and play. Key shadows keep
+   * the same layers pressed and released so they interpolate.
    */
+  --device-frame: linear-gradient(180deg, #dededc 0%, #d5d5d3 55%, #cdcdcb 100%);
+  --device-frame-edge: inset 0 1px 0 rgb(255 255 255 / 0.85), inset 0 0 0 1px rgb(0 0 0 / 0.07), 0 0 0 0.5px rgb(0 0 0 / 0.12);
+  /* Black, for bezels round LCD cells and a second screen. */
   --device-rim: #0d0d0e;
   --device-rim-edge: inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 -1px 0 rgb(255 255 255 / 0.06), 0 0 0 0.5px rgb(0 0 0 / 0.6);
   --device-body: linear-gradient(180deg, #f7f7f6 0%, #f2f2f1 55%, #ecebea 100%);
@@ -138,6 +141,8 @@
   --key-primary-engrave: 0 -0.5px 0 rgb(0 0 0 / 0.3), 0 1px 0 rgb(255 255 255 / 0.85);
   --key-primary-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.9), 0 2px 0 0 #8a8a8a, 0 3px 6px -2px rgb(0 0 0 / 0.6);
   --key-primary-shadow-pressed: inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.35), 0 0 0 1px rgb(0 0 0 / 0.9), 0 0 0 0 #8a8a8a, 0 1px 1px -1px rgb(0 0 0 / 0.5);
+  --device-frame: linear-gradient(180deg, #3a3a3c 0%, #313133 55%, #2a2a2c 100%);
+  --device-frame-edge: inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 1px rgb(0 0 0 / 0.5), 0 0 0 0.5px rgb(0 0 0 / 0.8);
   --device-rim: #000000;
   --device-rim-edge: inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 0 0 1px rgb(255 255 255 / 0.05), 0 0 0 1px rgb(255 255 255 / 0.05);
   --device-body: linear-gradient(180deg, #262628 0%, #212123 55%, #1b1b1d 100%);

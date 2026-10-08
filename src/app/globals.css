@@ -3,8 +3,8 @@
 
 /* The device's arrangements: its deck under the screen in a column (phones,
    the default), in a row (tablets and up, `wide`), in a row with room for
-   the maker's window to stand tall (`roomy`), or beside the screen when the
-   viewport is a short landscape (phones on their side, `short`). */
+   a wider readout (`roomy`), or beside the screen when the viewport is a
+   short landscape (phones on their side, `short`). */
 @custom-variant wide (@media (min-width: 720px) and (min-height: 521px));
 @custom-variant roomy (@media (min-width: 1100px) and (min-height: 521px));
 @custom-variant short (@media (orientation: landscape) and (max-height: 520px));
@@ -55,36 +55,23 @@ h3 {
   mix-blend-mode: soft-light;
   opacity: var(--device-grain);
 }
-/* The deck's grid, one per arrangement (see the variants above). On phones
-   the screen comes first: no readout, the maker's window and the hold
-   switch tucked into the corners beside the dial, above the transport keys,
-   and the key row along the bottom edge, under the thumbs. On wide decks
-   the readout returns, the transport keys share a column and the window is
-   a nameplate over the readout, until the deck is roomy enough for it to
-   stand the full height of the deck on its left. */
+/* The deck's grid, one per arrangement (see the variants above). The deck
+   holds only what plays the tape: the maker's nameplate, the LCD and the
+   dial; the screens and the study's page are on the screen's top edge. On
+   phones the screen comes first: no LCD, the nameplate tucked into the
+   corner beside the dial. On wide decks the nameplate sits over the LCD,
+   beside the dial. */
 .deck-grid {
   display: grid;
-  grid-template-columns: auto auto auto;
-  grid-template-areas:
-    "badge dial hold"
-    "stop dial play"
-    "keys keys keys";
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-areas: "badge dial .";
 }
 @media (min-width: 720px) and (min-height: 521px) {
   .deck-grid {
+    grid-template-columns: auto auto;
     grid-template-areas:
-      "badge . hold"
-      "well dial transport"
-      "keys dial transport";
-  }
-}
-@media (min-width: 1100px) and (min-height: 521px) {
-  .deck-grid {
-    grid-template-columns: auto auto auto auto;
-    grid-template-areas:
-      "badge . . hold"
-      "badge well dial transport"
-      "badge keys dial transport";
+      "badge dial"
+      "well dial";
   }
 }
 /* A take coming onto the screen: in from the side it was dialled from. */

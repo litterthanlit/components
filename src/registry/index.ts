@@ -70,7 +70,7 @@ export const registry: RegistryEntry[] = [
     slug: "switch",
     title: "Switch",
     description:
-      "A settings toggle as an over-centre slide switch, the player's HOLD switch grown up. Under a finger the cap lags further behind toward the centre, then snaps through with a click and lands on the far stop while you're still holding it. Let go short and it falls back, unless you flicked it: release decides by velocity, not just position. Past the ends it gives and bumps. The demo's input plate runs a self-test on power-up.",
+      "A settings toggle as an over-centre slide switch, a recorder's HOLD switch grown up. Under a finger the cap lags further behind toward the centre, then snaps through with a click and lands on the far stop while you're still holding it. Let go short and it falls back, unless you flicked it: release decides by velocity, not just position. Past the ends it gives and bumps. The demo's input plate runs a self-test on power-up.",
     tagline: "A toggle with a real over-centre spring.",
     tags: ["sound", "input", "pointer", "a11y"],
     date: "2026-10-04",

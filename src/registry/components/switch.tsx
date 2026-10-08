@@ -5,7 +5,7 @@ import { focusQuietly } from "@/design-system";
 import { hostTransport, play } from "@/lib/sound";
 
 /*
- * A settings toggle as an over-centre slide switch, the player's HOLD switch
+ * A settings toggle as an over-centre slide switch, a recorder's HOLD switch
  * grown up: a knurled cap in a recessed track, an orange stripe the cap
  * uncovers as it slides on, a light beside it and an engraved label.
  *

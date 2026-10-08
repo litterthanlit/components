@@ -8,13 +8,13 @@ The values live in code. `src/design-system/tokens.css` is the source of truth (
 
 ### The player is an object, not a page
 
-The home page is a player after a field recorder: a near-white body in a black bumper, a full-width screen, wells pressed into the body, keys that sink 2px onto their base, a dial, a tape of waveforms with a red playhead. It is something you could hold, and it runs the studies one at a time.
+The home page is a player after a field recorder: a near-white body in a machined frame, a full-width screen, wells pressed into the body, keys that sink 2px onto their base, a dial with PLAY at its centre, a tape of waveforms with a red playhead. It is something you could hold, and it runs the studies one at a time.
 
 An object gives every study the same frame and makes polish legible: a lit edge, a recess or a 2px base is either right or it isn't. So a study is a part of the same instrument, built from the same materials, never a card on a screen and never a second player. When a click-wheel player ran inside the player's screen, it competed with it, and it was taken out.
 
 ### It uses an instrument's vocabulary
 
-Takes, the tape, the transport (PLAY, pause, STOP), a slate, detents, HOLD, scenes, automation in READ and TOUCH, `take_04.wav`. An instrument's words arrive with behaviour people already know: STOP rewinds to the first frame, HOLD locks the controls (here, it mutes), a motorized fader lets go when you touch it. The interface needs fewer explanations because the vocabulary carries them.
+Takes, the tape, the transport (PLAY, pause, STOP), a slate, detents, scenes, automation in READ and TOUCH, `take_04.wav`. An instrument's words arrive with behaviour people already know: STOP rewinds to the first frame, a motorized fader lets go when you touch it. The interface needs fewer explanations because the vocabulary carries them.
 
 The vocabulary dresses the demo, not the component. A Fader is a range slider with a real API; its demo plays back a mix.
 
@@ -26,15 +26,17 @@ A hand always wins. A touch ends the ghost for good, a motor lets go of a cap th
 
 ### It makes sound
 
-Every press clicks: a key goes down with a low thock and comes up lighter, the dial ticks once per 15° detent, the end of a list bumps. Sound confirms a press faster than sight, and it makes the hardware believable. Everything is synthesized with Web Audio, so nothing loads; it is quiet and dry, silent until the viewer's first gesture, and the HOLD switch (or M) mutes it.
+Every press clicks: a key goes down with a low thock and comes up lighter, the dial ticks once per 15° detent, the end of a list bumps. Sound confirms a press faster than sight, and it makes the hardware believable. Everything is synthesized with Web Audio, so nothing loads; it is quiet and dry, silent until the viewer's first gesture, and Options › Sound (or M) mutes it.
 
 What a study does by itself asks the player first (the transport rule, under Sound). What the viewer does always sounds.
 
 ### It is restrained
 
-Monochrome, plus red for REC and the playhead, orange for HOLD, and one blue on the screen for selection. Figures are tabular, so a count never shuffles sideways. Grey text, hairlines and one weight change on the page. The work should be the loudest thing here, and when a colour only ever means one thing, it reads at once.
+Monochrome, plus red for REC and the playhead, orange for a hand on it, and one blue on the screen for selection. Figures are tabular, so a count never shuffles sideways. Grey text, hairlines and one weight change on the page. The work should be the loudest thing here, and when a colour only ever means one thing, it reads at once.
 
-Restraint is also subtraction. The player lost its battery icon, timecodes, scanlines, a BACK key and a keyboard legend because each one repeated something the screen, the LCD or the hold switch already said.
+Restraint is also subtraction. The player lost its battery icon, timecodes, scanlines, a BACK key and a keyboard legend because each one repeated something the screen, the LCD or the hold switch already said. Later it lost the file name beside the LCD (the screen names the study), the captions under the transport (▶ and ■ need no words), a maker's window that stood the full height of the deck (it is a nameplate now: the maker stays quiet beside the controls), the LCD's running clock and level meters (the tape already shows where the playhead is, so the LCD says only the state and the take), a FIND key (Find is on Home, and on /), the HOLD switch (Options › Sound and M already muted), the STOP key (hold the dial's centre) and the deck's key row (Menu and Source sit at the screen's top corners, and Options is on Menu). The deck keeps only what plays the tape: the nameplate, the LCD and the dial. The mark in the nameplate animates only under a mouse: on the deck, nothing moves by itself but the tape and the lights.
+
+It is after a field recorder, not a copy of one. Its parts are arranged around what this player does: it runs studies by itself, so PLAY is the largest key on the deck, at the centre of the dial that steps through them. It is printed in the same grey as every other legend. On the body, colour is a signal (the LCD's play dot, the playhead, the window's light), never a way to make a key look important.
 
 ### Physics carry the feel
 
@@ -58,7 +60,7 @@ Colour, centre, dialled; synthesized, motorized. Numbers carry units and real sy
 
 The player is built from a few materials, each a small group of `--device-*` tokens with a light and a dark value. Studies use the same tokens, so a study reads as a part of the same object in either theme. The dark player is a charcoal body, not an inverted one: its keys are lighter than the plate, its engraving casts the other way.
 
-They combine in one order: **plate, then well, then part**. Wells are pressed into the plate; keys, LCDs, windows and collars sit in wells; caps sit in collars. Screens sit behind a bumper or a bezel. Everything on a plate is sized in em from the plate's one font size, so the object scales as one piece, and radii nest as they go in: plate 1.25em, well 1.05em, key or LCD 0.7em, chip 0.4em.
+They combine in one order: **plate, then well, then part**. Wells are pressed into the plate; keys, LCDs, windows and collars sit in wells; caps sit in collars. The player sits in a frame; a second screen, LCD cells and dot-matrix strips sit behind a black bezel. Everything on a plate is sized in em from the plate's one font size, so the object scales as one piece, and radii nest as they go in: plate 1.25em, well 1.05em, key or LCD 0.7em, chip 0.4em.
 
 ### Plate
 
@@ -84,9 +86,16 @@ Every study starts here:
 </div>
 ```
 
-### Bumper and bezel
+### Frame and bezel
 
-Black, with a polished edge catching the light. The bumper frames the player (`rounded-[34px] p-[5px]`, 46px and 8px on wide decks) and, at `rounded-[1.5em] p-[0.4em]`, a second screen such as the Command Menu, which shows the site's own ground under glass. A bezel is the same black around LCD cells and dot-matrix strips, set into the plate: `bg-(--device-rim) p-[0.3em]` with `shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)]` (the highlight drops to 0.06 in dark).
+The frame is machined: a band a shade darker than the body in light (lighter in dark, so it still catches the light), lit along its top edge. It holds the player (`rounded-[34px] p-[5px]`, 46px and 8px on wide decks). It replaced a black bumper, whose stark outline round a white body was the most recognisable thing about the recorder it came from.
+
+| Token | Light | Dark |
+| --- | --- | --- |
+| `--device-frame` | `linear-gradient(180deg, #dededc 0%, #d5d5d3 55%, #cdcdcb 100%)` | `linear-gradient(180deg, #3a3a3c 0%, #313133 55%, #2a2a2c 100%)` |
+| `--device-frame-edge` | `inset 0 1px 0 rgb(255 255 255 / 0.85), inset 0 0 0 1px rgb(0 0 0 / 0.07), 0 0 0 0.5px rgb(0 0 0 / 0.12)` | `inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 1px rgb(0 0 0 / 0.5), 0 0 0 0.5px rgb(0 0 0 / 0.8)` |
+
+A bezel is black, with a polished edge catching the light: round a second screen such as the Command Menu (`rounded-[1.5em] p-[0.4em]`), which shows the site's own ground under glass, and round LCD cells and dot-matrix strips set into the plate: `bg-(--device-rim) p-[0.3em]` with `shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)]` (the highlight drops to 0.06 in dark).
 
 | Token | Light | Dark |
 | --- | --- | --- |
@@ -95,7 +104,7 @@ Black, with a polished edge catching the light. The bumper frames the player (`r
 
 ### Well
 
-Anything pressed into the plate: the readout, the key row, a fader's slot, the window's recess. `rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess)`. A collar is a round well, `bg-black/[0.035]` (`dark:bg-black/30`) with the same recess.
+Anything pressed into the plate: the readout, a fader's slot, the window's recess. `rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess)`. A collar is a round well, `bg-black/[0.035]` (`dark:bg-black/30`) with the same recess.
 
 | Token | Light | Dark |
 | --- | --- | --- |
@@ -127,7 +136,7 @@ The site's own buttons are keys too, from the `--key-*` tokens: 2px corners, a l
 
 ### Cap and collar
 
-Round caps and the dial, lit from above. A transport key is a cap seated in a collar (`size-[5.4em] p-[0.32em]`), its caption printed underneath. The cap uses `--device-wheel-face` with the key shadows, so it sinks like a key. The dial uses the wheel shadows and rocks 5° toward the side pressed (`perspective(600px) translateY(1.5px) rotateX(±5deg)`), its centre a key of its own dropping 2px into a well. A knob's cap carries knurling, `repeating-conic-gradient(from var(--a), …)`, so it turns without a transform.
+Round caps and the dial, lit from above. A cap seated in a collar (`size-[5.4em] p-[0.32em]`) uses `--device-wheel-face` with the key shadows, so it sinks like a key; a caption, when it has one, is printed underneath. The dial is a D-pad on the wheel shadows in a collar, that also turns, and rocks 5° toward the side pressed (`perspective(600px) translateY(1.5px) rotateX(±5deg)`). Its arrows are four small solid triangles, the size of a legend, pointing the way the arrow keys they stand for do. Its centre is the deck's main key, dropping 2px into a well: PLAY or pause on a take, OK on a list, printed in the keys' grey. Held for 600ms on a take, the centre is STOP: a ring in its well fills over those 600ms (a press's timing, so a linear duration, not a spring), STOP fires while the finger is still down, and letting go does nothing more. Letting go sooner is an ordinary press. S stops from the keyboard. A knob's cap carries knurling, `repeating-conic-gradient(from var(--a), …)`, so it turns without a transform.
 
 | Token | Light | Dark |
 | --- | --- | --- |
@@ -147,12 +156,12 @@ Black glass with a diagonal sheen: the gradient breaks hard at 47%, where the li
 | `--device-lcd-dim` | `rgb(255 255 255 / 0.64)` (6.6:1) | `rgb(255 255 255 / 0.62)` (7.5:1) |
 
 - **The chip** is `bg-white text-black rounded-[0.4em] px-[0.42em] py-[0.24em]`, a glyph and a word at 0.58 to 0.6em, semibold capitals tracked 0.02em. The glyph says the state before the word does: a red dot that pulses for play, record or recall; two bars for pause; a square for stop; a black dot for ready or loaded; an orange dot for a hand on it (TOUCH, edited) or a hand needed (an agent waiting for your OK); a red square for a fault (an agent's error), the stop's shape so it never reads as a run.
-- **Figures** are light (300), tabular, tracked −0.03em; units at 0.3em in `--device-lcd-dim`. The player's clock reads minutes, seconds and frames at 25 fps (`00M 14S 06F`).
+- **Figures** are light (300), tabular, tracked −0.03em; units at 0.3em in `--device-lcd-dim`. The player's LCD shows the take as a track number (`05 / 22`); a clock, where a study has one, reads minutes, seconds and frames at 25 fps (`00M 14S 06F`).
 - **Other faces of the same glass:** seven-segment cells over the faint 8 of their unlit segments (One-Time Code), and a dot matrix with ghost dots at 8% (Ticker).
 
 ### Window
 
-Smoked glass set deeper than the LCD: the maker's window where the Litt mark glows, and the Tape Reels' transport. A fine grille behind the glass (`radial-gradient(rgb(255 255 255/0.07) 0.7px, transparent 0.9px)` at 5px), a lamp's falloff, and a sheen over the top. Artwork that is black on white is inverted and screened onto it (`invert(1) contrast(1.25)`, `mix-blend-screen`), so the ink glows and the paper disappears.
+Smoked glass set deeper than the LCD: the maker's window where the Litt mark glows, and the Tape Reels' transport. The maker's window rests on the brush-drawn poster and plays the mark's film only while a mouse or pen is over it, from the top each time; touch and reduced motion keep it still. A fine grille behind the glass (`radial-gradient(rgb(255 255 255/0.07) 0.7px, transparent 0.9px)` at 5px), a lamp's falloff, and a sheen over the top. Artwork that is black on white is inverted and screened onto it (`invert(1) contrast(1.25)`, `mix-blend-screen`), so the ink glows and the paper disappears.
 
 | Token | Light | Dark |
 | --- | --- | --- |
@@ -166,7 +175,7 @@ Smoked glass set deeper than the LCD: the maker's window where the Litt mark glo
 | `--device-meter-off` | `rgb(0 0 0 / 0.13)` | `rgb(255 255 255 / 0.13)` | Unlit: a segment, a step, a light that's off |
 | `--device-meter-on` | `#262625` | `#e8e8ea` | Lit, without a signal: meter bars, a knob's ring, a step that's set |
 | `--device-rec` | `#e5484d` | `#ff5c62` | REC, PLAY, the playhead, a light that fires, a wrong code |
-| `--device-hold` | `#ff7a1a` | `#ff8a33` | HOLD, a hand on a motor, an edited scene, a switch that's on |
+| `--device-hold` | `#ff7a1a` | `#ff8a33` | A hand on a motor, an edited scene, a switch that's on |
 
 A signal light glows in its own colour (`shadow-[0_0_0.45em_var(--device-rec)]`); a lit segment does not. A light sits in a small recess, `bg-black/[0.05] shadow-(--device-recess)`. It comes on at once (`duration-0`) and fades out at `--duration-exit`. The meters are `.meter-ticks` (1px bars every 3px) clipped to the level, with a 2px peak mark that holds 900ms before it falls. Orange on the light plate is 2.3:1: it is a light beside a word, never text.
 
@@ -235,7 +244,7 @@ Small sizes, tight tracking, weights 400 and 500 on the page. The hardware adds 
 | Engraved caption | 0.6em (9px on the deck) | 600 | Capitals, 0.16em |
 | Key lettering | 0.8em | 500 | Capitals, 0.03em |
 | LCD chip | 0.58 to 0.6em | 600 | Capitals, 0.02em |
-| LCD figures | 1.05em for a name, 2.35em for the clock | 300 | Tabular, −0.01 to −0.03em |
+| LCD figures | 1.05em for a name, 1.9em for the take number, 2.35em for a clock | 300 | Tabular, −0.01 to −0.03em |
 
 Every figure that changes is `tabular-nums`, on the screen and on the hardware.
 
@@ -256,7 +265,7 @@ On the page, objects get a ring, not a box: `shadow-sm`, `shadow-md` and `shadow
 | `--ease-out` | `cubic-bezier(0.23, 1, 0.32, 1)` | Default for anything entering or responding to input |
 | `--ease-in-out` | `cubic-bezier(0.77, 0, 0.175, 1)` | Things moving on screen from A to B |
 | `--ease-drawer` | `cubic-bezier(0.32, 0.72, 0, 1)` | Sheets and drawers |
-| `--ease-spring` | `cubic-bezier(0.34, 1.36, 0.64, 1)` | A small overshoot for playful returns (the HOLD switch's cap) |
+| `--ease-spring` | `cubic-bezier(0.34, 1.36, 0.64, 1)` | A small overshoot for playful returns |
 | `--duration-exit` | 150ms | Leaving, closing, hover-out, a key coming back up |
 | `--duration-enter` | 210ms | Appearing, opening, hover-in |
 | `--duration-move` | 400ms | Layout and position changes |
