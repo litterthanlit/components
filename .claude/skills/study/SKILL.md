@@ -62,7 +62,7 @@ Every study meets all ten before it goes on the player. The names are DESIGN.md'
 The usual ways work drifts off the language. The section in brackets is where DESIGN.md gives the rule and its reason.
 
 - A flat `shadow-md` card on the hardware, or a study that is a second player. (Elevation; Ethos, The player is an object)
-- A hue or a grey that isn't a token, a colour that means two things, or orange as text: it is 2.3:1 on the plate, a light beside a word. Black or white at an alpha (`bg-black/[0.05]`, `stroke-white/30`) is the idiom and fine. (Ethos, It is restrained; Colour; Lights)
+- A hue or a grey that isn't a token, a colour that means two things, or orange as text: it is 2.3:1 on the plate, a light beside a word. Black or white at an alpha (`bg-black/[0.05]`, `stroke-white/30`) is the idiom and fine, and so is artwork behind a screen's glass, such as a project's cover, in its own palette. (Ethos, It is restrained; Colour; Lights)
 - A colour or shadow typed in when a `--device-*` token holds it. Two shadows have no token and are typed as the recipes type them: the study plate's lighter drop shadow and the bezel's. (Materials)
 - A new sound, or a study's own sounds ignoring `hostTransport`. (Sound: The voices, The host-transport rule)
 - `scale(0)`. Start at 0.95 or more, with opacity. (Curves and durations)
