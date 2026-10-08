@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "gradient-keys",
+    title: "Gradient Keys",
+    description:
+      "Project links as keys with a long exposure on each screen: a camera swung through foliage with the shutter open. The streaks are noise, not pictures: fine across, long along, fanned from a point below the screen, with out-of-focus masses and a few thin glints, run through each project's palette in linear light under fine grain. The camera keeps panning; a hand quickens it and lifts the exposure, and a press pushes a ring through the streaks.",
+    tagline: "Long-exposure covers on project keys.",
+    tags: ["surface", "pointer", "sound", "webgl"],
+    date: "2026-10-08",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "agent-indicators",
     title: "Agent Indicators",
     description:

@@ -216,6 +216,8 @@ Neutral grounds, three text greys, one accent. Every token has a light and a dar
 
 Colour is never decoration. On the body the signals are red (`--device-rec`) and orange (`--device-hold`); everything else that lights is monochrome. Blue belongs to screens and pages: the highlight bar, a caret, a status dot. Colours that must be told apart differ in lightness as well as hue.
 
+Artwork behind a screen's glass is the one exception: a project's cover (Gradient Keys) carries its own palette, the same in both themes, kept clear of red, orange and the accent so it never reads as a signal. It is the work, not the interface, so it may be the loudest thing on the plate.
+
 ### Type
 
 Geist for everything and Geist Mono for code and the page's figures, loaded through `next/font/google` as variable fonts (`--font-geist-sans`, `--font-geist-mono`). OG images use the static `src/assets/fonts/Geist-400.ttf` and `Geist-500.ttf`.
