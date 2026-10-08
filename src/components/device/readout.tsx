@@ -22,10 +22,10 @@ const art = "relative w-[78%] max-w-[300px] [filter:invert(1)_contrast(1.25)] mi
 
 /**
  * The readout: one strip of LCD in a well pressed into the body. The maker's
- * mark glows at its left end, behind a fine grille, and the rest says the
- * transport's state and the take on the tape, as a CD player shows its
- * track. The screen already names the study and the tape already shows where
- * in it the playhead is, so the LCD says only these two things.
+ * mark glows at its left end, behind a fine grille, and the rest reads as a
+ * CD player's display: the transport's state over the name of the study,
+ * and the take on the tape in large figures. The tape already shows where
+ * in the take the playhead is, so the LCD keeps no clock.
  *
  * Phones give its room to the screen: there the strip is only the mark, and
  * a light beside it comes on while the tape plays, because nothing else on
@@ -37,7 +37,7 @@ const art = "relative w-[78%] max-w-[300px] [filter:invert(1)_contrast(1.25)] mi
  * inverted and screened onto the glass: the ink lights up and the paper
  * disappears.
  */
-export function Readout({ at, n, transport, className }: { at: number; n: number; transport: Transport; className?: string }) {
+export function Readout({ at, n, title, transport, className }: { at: number; n: number; title: string; transport: Transport; className?: string }) {
   const { video, playing, reduced, hover } = useHoverPlay();
   return (
     <div {...hover} className={cn("flex rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess)", className)}>
@@ -62,12 +62,17 @@ export function Readout({ at, n, transport, className }: { at: number; n: number
         </div>
 
         {/* The LCD mirrors what the status line and announcements already say, so it stays out of the reading order. */}
-        <div aria-hidden className="hidden w-[16em] items-center justify-between border-l border-white/[0.08] px-[0.9em] wide:flex roomy:w-[18em]">
-          <span className="inline-flex items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
-            <ChipGlyph transport={transport} />
-            <span className="text-[0.6em] font-semibold uppercase leading-none tracking-[0.02em]">{chip[transport]}</span>
-          </span>
-          <p className="flex items-baseline gap-[0.35em] leading-none tabular-nums">
+        <div aria-hidden className="hidden w-[18em] items-center justify-between gap-[0.8em] border-l border-white/[0.08] px-[0.9em] wide:flex roomy:w-[21em]">
+          <div className="flex min-w-0 flex-col items-start gap-[0.4em]">
+            <span className="inline-flex items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
+              <ChipGlyph transport={transport} />
+              <span className="text-[0.6em] font-semibold uppercase leading-none tracking-[0.02em]">{chip[transport]}</span>
+            </span>
+            <span key={title} className="max-w-full animate-enter truncate text-[1.05em] font-light leading-none tracking-[-0.01em]">
+              {title}
+            </span>
+          </div>
+          <p className="flex shrink-0 items-baseline gap-[0.35em] leading-none tabular-nums">
             <span key={at} className="animate-enter text-[1.9em] font-light tracking-[-0.03em]">
               {String(at + 1).padStart(2, "0")}
             </span>
