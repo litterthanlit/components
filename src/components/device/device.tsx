@@ -9,7 +9,7 @@ import { Dial, type DialButton } from "./dial";
 import { takeLength, takeLengths, usePageVisible, useReducedMotion } from "./hooks";
 import { LogoWindow } from "./logo-window";
 import { Readout, type Transport } from "./readout";
-import { AppStage, Chevron, Choice, HomeAbout, Hud, InfoSheet, Panel, ScreenList, StatusBar, VolumeBar, type ListItem, type Study } from "./screen";
+import { AppStage, Chevron, Choice, HomeAbout, Hud, InfoSheet, Panel, ScreenList, StatusBar, TakeArt, TakeWave, VolumeBar, type ListItem, type Study } from "./screen";
 import { Tape } from "./tape";
 
 const SETTLE = 450; // ms the dial or tape has to rest before the study it reached opens
@@ -306,11 +306,12 @@ export function Device({ studies }: { studies: Study[] }) {
 
   /* --- Panels ------------------------------------------------------------- */
 
+  // Home is a menu: every row opens something, so only the one that leaves the player carries a mark.
   const homeItems: (ListItem & { text: string })[] = [
-    { key: "now", text: "Now playing", label: "Now playing", detail: studies[at].title, trailing: <Chevron /> },
-    { key: "find", text: "Find a study", label: "Find a study", trailing: <Chevron /> },
-    { key: "options", text: "Options", label: "Options", detail: "Theme, sound, volume, time per study", trailing: <Chevron /> },
-    { key: "system", text: "Design system", label: "Design system", trailing: <Chevron /> },
+    { key: "now", text: "Now playing", label: "Now playing", detail: studies[at].title },
+    { key: "find", text: "Find a study", label: "Find a study" },
+    { key: "options", text: "Options", label: "Options" },
+    { key: "system", text: "Design system", label: "Design system" },
     { key: "portfolio", text: "litt.design", label: "litt.design", trailing: <Chevron external /> },
   ];
 
@@ -326,16 +327,15 @@ export function Device({ studies }: { studies: Study[] }) {
     );
   const optionItems: (ListItem & { text: string })[] = options.map((o) => ({ key: o.key, text: o.label, label: o.label, trailing: optionValue(o.key) }));
 
+  // Find reads as a track list: the cover, the title over its tagline, a tag, and the take number where a length would be.
   const findItems: (ListItem & { text: string })[] = results.map(({ s, i }) => ({
     key: s.slug,
     text: s.title,
-    label: (
-      <>
-        <span className="mr-3 inline-block w-[2ch] text-[11px] tabular-nums opacity-50">{String(i + 1).padStart(2, "0")}</span>
-        {s.title}
-      </>
-    ),
-    detail: s.tagline,
+    art: <TakeArt slug={s.slug} className="size-[34px] @[640px]/display:size-[38px]" />,
+    label: <span className="font-medium">{s.title}</span>,
+    sub: s.tagline,
+    detail: s.tags[0] && <span className="text-[10px] font-medium uppercase tracking-[0.14em]">{s.tags[0]}</span>,
+    trailing: <span className="w-[2ch] shrink-0 text-right text-[12px] tabular-nums opacity-60">{String(i + 1).padStart(2, "0")}</span>,
   }));
 
   const items = view === "home" ? homeItems : view === "options" ? optionItems : view === "find" ? findItems : [];
@@ -629,7 +629,13 @@ export function Device({ studies }: { studies: Study[] }) {
                   <InfoSheet study={studies[at]} at={at} n={n} open={info && view === "take"} onClose={toggleInfo} />
                 </div>
 
-                <Panel open={view === "home"} label="Home" className="px-6 pb-3 pt-6 @[720px]/display:px-12 @[720px]/display:py-10">
+                <Panel open={view === "home"} label="Home" className="overflow-hidden px-6 pb-3 pt-6 @[720px]/display:px-12 @[720px]/display:py-10">
+                  {/* The take on the tape, its cover blown up behind the menu and fading out towards the words. */}
+                  <TakeWave
+                    key={studies[at].slug}
+                    slug={studies[at].slug}
+                    className="pointer-events-none absolute -right-[12%] top-1/2 -z-10 aspect-square h-[min(118%,96cqw)] -translate-y-1/2 animate-enter text-ink opacity-[0.055] [mask-image:linear-gradient(to_left,black_30%,transparent_78%)] dark:opacity-[0.08] @[720px]/display:-right-[4%] @[720px]/display:[mask-image:linear-gradient(to_left,black_40%,transparent_88%)]"
+                  />
                   <div className="mx-auto grid h-full max-w-[1040px] grid-rows-[auto_minmax(0,1fr)] gap-4 @[720px]/display:grid-cols-[1.1fr_1fr] @[720px]/display:grid-rows-1 @[720px]/display:gap-16">
                     <HomeAbout />
                     <div className="flex min-h-0 flex-col @[720px]/display:justify-center">
@@ -641,7 +647,9 @@ export function Device({ studies }: { studies: Study[] }) {
                         reduced={reduced}
                         listRef={homeList}
                         onPick={pick}
-                        className="-mx-4 min-h-[180px] flex-1 @[720px]/display:max-h-[200px] @[720px]/display:min-h-[190px]"
+                        variant="menu"
+                        // The dot hangs in the margin, so the words line up with the intro.
+                        className="-ml-6 min-h-[200px] flex-1 @[720px]/display:max-h-[264px] @[720px]/display:min-h-[264px]"
                       />
                     </div>
                   </div>
@@ -685,6 +693,9 @@ export function Device({ studies }: { studies: Study[] }) {
                         aria-activedescendant={findItems.length ? `${ids}-find-${cursor}` : undefined}
                         className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-muted"
                       />
+                      <span aria-hidden className="shrink-0 text-[10px] font-medium uppercase tracking-[0.14em] tabular-nums">
+                        {findItems.length} {findItems.length === 1 ? "study" : "studies"}
+                      </span>
                     </label>
                     {findItems.length ? (
                       <ScreenList

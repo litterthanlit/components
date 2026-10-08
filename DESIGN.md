@@ -158,6 +158,7 @@ Black glass with a diagonal sheen: the gradient breaks hard at 47%, where the li
 - **The chip** is `bg-white text-black rounded-[0.4em] px-[0.42em] py-[0.24em]`, a glyph and a word at 0.58 to 0.6em, semibold capitals tracked 0.02em. The glyph says the state before the word does: a red dot that pulses for play, record or recall; two bars for pause; a square for stop; a black dot for ready or loaded; an orange dot for a hand on it (TOUCH, edited) or a hand needed (an agent waiting for your OK); a red square for a fault (an agent's error), the stop's shape so it never reads as a run.
 - **Figures** are light (300), tabular, tracked −0.03em; units at 0.3em in `--device-lcd-dim`. The player's LCD shows the take as a track number (`05 / 22`); a clock, where a study has one, reads minutes, seconds and frames at 25 fps (`00M 14S 06F`).
 - **Other faces of the same glass:** seven-segment cells over the faint 8 of their unlit segments (One-Time Code), and a dot matrix with ghost dots at 8% (Ticker).
+- **A cover** is a study's artwork: its take's waveform, the same seeded signature the tape prints, at nine bold bars in `--device-lcd-ink` on a 6px tile of the glass. Levels are lifted by their square root so quiet bars still draw at 34px. Covers start the rows in Find and head the info sheet; on Home, the cover of the take on the tape stands behind the menu at about 6%, fading out towards the words.
 
 ### Window
 
@@ -304,6 +305,7 @@ A study may tune its own spring for its mechanism, as below, and run it in the u
 - **VU ballistics** (VU Meter). 99% of a steady tone in about 300ms with about 1.5% overshoot (stiffness 166, damping 20.2). A detector with a 60ms release ahead of the spring lets a key press swing the needle toward 0 without pinning it, as a real VU under-reads transients; the peak light holds 600ms past +3 VU. The scale is linear in voltage, 0 VU seven tenths of the way across, calibrated to the slate tone leaving the bus.
 - **Counter drums** (Number Ticker). Each drum turns on its own spring (150, 21) and clicks for each figure that passes. Counting up, drums roll forward through 9 to 0 as a mechanical counter carries; counting down, they roll back. They mount at 0 and roll on the first frame.
 - **The highlight bar** (the player's lists, Command Menu). A second copy of the rows in accent and white, clipped to the selection by a `springs.snappy` spring, so it glides between rows and the text changes colour exactly where the bar is.
+- **The menu dot** (Home). Home is a player's top menu: tracked capitals in grey, the chosen row in ink, and a blue dot hung in the margin beside it, riding the same spring as the bar. The words line up with the text above; the dot sits outside them.
 - **Meters.** Bars fall at 26 dB a second; the peak mark holds 900ms, then falls at 12 dB a second.
 
 ## Sound
@@ -371,7 +373,7 @@ A study that runs a long show (automation, a sequencer) can watch the host's att
 Plain, precise, British-spelled and quiet. Write it the way you would say it to someone at the next desk.
 
 - **Sentence case everywhere.** "Selected work", not "SELECTED WORK" or "Selected Work".
-- **Capitals belong to the hardware.** Lettering on the body is set in capitals by CSS (`uppercase`, tracked); the source, the accessible name and the screen reader keep sentence case: `Hold to erase`.
+- **Capitals belong to the hardware.** Lettering on the body is set in capitals by CSS (`uppercase`, tracked); the source, the accessible name and the screen reader keep sentence case: `Hold to erase`. The screen's own firmware lettering follows the same rule: the status line (11px, 0.14em; the title semibold at 0.16em), Home's menu, and eyebrows and counts such as `02 / 22 · ai` and `22 studies` at 10px.
 - **Labels say what happens.** "Copy command", then "Copied". Not "Submit" or "OK".
 - **British spelling, with -ize.** Colour, centre, dialled, travelling, favouring; but synthesized, motorized, organizing (Oxford spelling). A meter is the instrument; CSS keeps its own `color` and `center`.
 - **Say it once.** If the screen already says it, the LCD doesn't. Repeats are taken out, not restyled.

@@ -9,6 +9,7 @@ import type { StageBackground } from "@/registry";
 import { site } from "@/site.config";
 import { useBoxSize } from "./hooks";
 import type { Transport } from "./readout";
+import { envelope, hash, random } from "./tape";
 
 export type Study = {
   slug: string;
@@ -36,8 +37,13 @@ export function appZoom({ w, h }: { w: number; h: number }) {
 
 /* --- Status line ---------------------------------------------------------- */
 
-const side =
-  "flex h-full items-center gap-1 rounded-sm px-1.5 text-[13px] text-muted outline-offset-[-2px] transition-colors duration-(--duration-exit) hover:text-ink hover:duration-(--duration-enter) wide:text-[14px]";
+/** The screen's own lettering: small capitals, tracked, as a player's firmware sets them. */
+const caps = "text-[11px] font-medium uppercase tracking-[0.14em] wide:text-[12px]";
+
+const side = cn(
+  caps,
+  "flex h-full items-center gap-1 rounded-sm px-1.5 text-muted outline-offset-[-2px] transition-colors duration-(--duration-exit) hover:text-ink hover:duration-(--duration-enter)",
+);
 
 /**
  * The screen's top edge. The title of what's on screen sits in the middle, and
@@ -59,7 +65,7 @@ export function StatusBar({
   source?: { href: string; label: string };
 }) {
   const text = (
-    <p key={title} className="max-w-[48cqw] animate-enter truncate text-[13px] font-medium tracking-[-0.01em] wide:text-[14px]">
+    <p key={title} className={cn(caps, "max-w-[48cqw] animate-enter truncate font-semibold tracking-[0.16em]")}>
       {title}
     </p>
   );
@@ -122,17 +128,87 @@ export function AppStage({ study, from, transport }: { study: Study; from: numbe
   );
 }
 
+/* --- Covers ------------------------------------------------------------------ */
+
+const COVER_BARS = 9; // few and bold: a cover is seen at 34px
+const covers = new Map<string, string>();
+
+/**
+ * A take's waveform on a square: the same seeded signature the tape prints,
+ * at 9 bars, so a study's cover and its stretch of tape are one recording.
+ * Levels are lifted by their square root, as a meter's scale is, so the quiet
+ * bars still draw at 34px and each cover keeps its own silhouette. Rounded to
+ * two decimals, so the server and the browser agree.
+ */
+function coverPath(slug: string) {
+  let d = covers.get(slug);
+  if (d) return d;
+  const amp = envelope(slug);
+  const jitter = random(hash(`${slug}:bars`));
+  d = "";
+  for (let j = 0; j < COVER_BARS; j++) {
+    const x = 6 + (j * 20) / (COVER_BARS - 1);
+    // The tape's envelope fades to nothing at a take's cut; a cover keeps a floor, so every bar shows.
+    const half = 1.2 + Math.sqrt(amp((j + 0.5) / COVER_BARS, jitter())) * 9.3;
+    d += `M${x.toFixed(2)} ${(16 - half).toFixed(2)}V${(16 + half).toFixed(2)}`;
+  }
+  covers.set(slug, d);
+  return d;
+}
+
+/** A take's waveform alone, in the current colour: a cover's artwork, or a backdrop. */
+export function TakeWave({ slug, className }: { slug: string; className?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 32 32" className={className}>
+      <path d={coverPath(slug)} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** A study's cover: its waveform lit on a tile of the LCD's glass. */
+export function TakeArt({ slug, className }: { slug: string; className?: string }) {
+  return (
+    <span aria-hidden className={cn("relative block aspect-square shrink-0 overflow-hidden rounded-[6px] [background:var(--device-lcd)] shadow-(--device-lcd-edge)", className)}>
+      <TakeWave slug={slug} className="absolute inset-0 size-full text-(--device-lcd-ink)" />
+    </span>
+  );
+}
+
 /* --- Lists on the screen ---------------------------------------------------- */
 
-export type ListItem = { key: string; label: ReactNode; detail?: ReactNode; trailing?: ReactNode };
+export type ListItem = {
+  key: string;
+  label: ReactNode;
+  /** A second line under the label, quieter. */
+  sub?: ReactNode;
+  /** A cover at the start of the row. */
+  art?: ReactNode;
+  detail?: ReactNode;
+  trailing?: ReactNode;
+};
 
-const rowClass = "flex h-[40px] items-center gap-3 px-4 @[640px]/display:h-[44px] @[640px]/display:px-5 @[640px]/display:text-[15px]";
+/**
+ * Two ways to mark the selection. The bar, in accent, for lists you read
+ * along: Find and Options. The menu, for Home: tracked capitals in grey, the
+ * chosen one in ink with a blue dot hung in the margin beside it, as a
+ * player's firmware draws its top menu.
+ */
+type ListVariant = "bar" | "menu";
+
+function rowClass(variant: ListVariant, twoLine: boolean) {
+  if (variant === "menu")
+    return "flex h-[42px] items-center gap-3 pl-6 pr-4 text-[15px] uppercase tracking-[0.16em] text-muted transition-colors duration-(--duration-exit) aria-selected:text-ink aria-selected:duration-0 @[720px]/display:h-[50px] @[720px]/display:text-[19px] @[720px]/display:tracking-[0.18em]";
+  return cn(
+    "flex items-center gap-3 px-4 @[640px]/display:px-5 @[640px]/display:text-[15px]",
+    twoLine ? "h-[54px] @[640px]/display:h-[60px]" : "h-[40px] @[640px]/display:h-[44px]",
+  );
+}
 
 /**
  * A list on the screen with the player's highlight bar. The bar is a second
  * copy of the rows in accent and white, clipped to the selection by a spring,
  * so it glides between rows and the text inside it changes colour exactly
- * where the bar is.
+ * where the bar is. As a menu, the same spring carries the dot instead.
  */
 export function ScreenList({
   items,
@@ -142,6 +218,7 @@ export function ScreenList({
   reduced,
   listRef,
   onPick,
+  variant = "bar",
   className,
 }: {
   items: ListItem[];
@@ -151,6 +228,7 @@ export function ScreenList({
   reduced: boolean;
   listRef: RefObject<HTMLDivElement | null>;
   onPick: (index: number) => void;
+  variant?: ListVariant;
   className?: string;
 }) {
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -196,10 +274,19 @@ export function ScreenList({
     return () => observer.disconnect();
   }, [listRef]);
 
+  const row = rowClass(variant, items.some((item) => item.sub));
   const content = (item: ListItem) => (
     <>
-      <span className="min-w-0 flex-1 truncate">{item.label}</span>
-      {item.detail && <span className="hidden min-w-0 max-w-[45%] truncate text-[13px] opacity-60 @[520px]/display:block">{item.detail}</span>}
+      {item.art}
+      <span className="min-w-0 flex-1">
+        <span className="block truncate">{item.label}</span>
+        {item.sub && <span className="mt-0.5 block truncate text-[12px] opacity-60 @[640px]/display:text-[13px]">{item.sub}</span>}
+      </span>
+      {item.detail && (
+        <span className={cn("hidden min-w-0 max-w-[45%] truncate @[520px]/display:block", variant === "menu" ? "text-[10px] tracking-[0.14em] @[720px]/display:text-[11px]" : "text-[13px] opacity-60")}>
+          {item.detail}
+        </span>
+      )}
       {item.trailing}
     </>
   );
@@ -217,10 +304,20 @@ export function ScreenList({
       >
         <div className="relative">
           {items.map((item, i) => (
-            <div key={item.key} id={`${idPrefix}-${i}`} role="option" aria-selected={i === index} data-row={i} onClick={() => onPick(i)} className={cn(rowClass, "cursor-default")}>
+            <div key={item.key} id={`${idPrefix}-${i}`} role="option" aria-selected={i === index} data-row={i} onClick={() => onPick(i)} className={cn(row, "cursor-default")}>
               {content(item)}
             </div>
           ))}
+          {variant === "menu" ? (
+            // The dot rides the selection's spring, hung in the margin the rows leave for it.
+            <div
+              ref={overlayRef}
+              aria-hidden
+              className={cn("pointer-events-none absolute left-0 top-0 grid h-(--h) w-6 place-items-center [transform:translateY(var(--y,0px))]", !items.length && "hidden")}
+            >
+              <span className="size-[6px] rounded-full bg-accent-strong" />
+            </div>
+          ) : (
           <div
             ref={overlayRef}
             aria-hidden
@@ -230,11 +327,12 @@ export function ScreenList({
             )}
           >
             {items.map((item) => (
-              <div key={item.key} className={rowClass}>
+              <div key={item.key} className={row}>
                 {content(item)}
               </div>
             ))}
           </div>
+          )}
         </div>
       </div>
     </div>
@@ -362,12 +460,16 @@ export function InfoSheet({ study, at, n, open, onClose }: { study: Study; at: n
       data-open={open || undefined}
       className="invisible absolute inset-x-2 bottom-2 z-10 translate-y-[calc(100%+40px)] rounded-[14px] bg-surface/88 p-4 shadow-lg backdrop-blur-xl transition-[translate,visibility] duration-(--duration-move) ease-drawer data-open:visible data-open:translate-y-0 data-open:transition-[translate] @[640px]/display:inset-x-auto @[640px]/display:left-1/2 @[640px]/display:w-[min(640px,calc(100%-32px))] @[640px]/display:-translate-x-1/2 @[640px]/display:p-5 @[640px]/display:bottom-4"
     >
-      <div className="flex items-baseline gap-3">
-        <span className="text-meta tabular-nums text-muted">
-          {String(at + 1).padStart(2, "0")} / {String(n).padStart(2, "0")}
-        </span>
-        <h2 className="min-w-0 flex-1 truncate text-[15px] font-medium tracking-[-0.01em] text-ink">{study.title}</h2>
-        <button type="button" onClick={onClose} className={cn(quietLink, "text-meta")}>
+      <div className="flex items-center gap-3">
+        <TakeArt slug={study.slug} className="size-11 @[640px]/display:size-12" />
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-medium uppercase tracking-[0.14em] tabular-nums text-muted">
+            {String(at + 1).padStart(2, "0")} / {String(n).padStart(2, "0")}
+            {study.tags[0] && <> · {study.tags[0]}</>}
+          </p>
+          <h2 className="mt-1 truncate text-[15px] font-medium tracking-[-0.01em] text-ink @[640px]/display:text-[17px]">{study.title}</h2>
+        </div>
+        <button type="button" onClick={onClose} className={cn(quietLink, "self-start text-meta")}>
           Close
         </button>
       </div>

@@ -21,7 +21,7 @@ type TapeProps = {
 const BAR_PITCH = 8; // px between bars: sparse enough to read as a line, not a texture
 
 /** A small, seedable PRNG (mulberry32), so every take draws the same waveform on every visit. */
-function random(seed: number) {
+export function random(seed: number) {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
@@ -32,7 +32,7 @@ function random(seed: number) {
   };
 }
 
-function hash(text: string) {
+export function hash(text: string) {
   let h = 2166136261;
   for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
   return h >>> 0;
@@ -43,7 +43,7 @@ function hash(text: string) {
  * per-bar jitter, as speech or music looks on a recorder. Resolution
  * independent: `t` runs 0 to 1 across the take.
  */
-function envelope(slug: string) {
+export function envelope(slug: string) {
   const rand = random(hash(slug));
   const bursts = Array.from({ length: 2 + Math.floor(rand() * 3) }, () => ({ at: 0.08 + rand() * 0.84, width: 0.04 + rand() * 0.1, gain: 0.6 + rand() * 0.4 }));
   const floor = 0.1 + rand() * 0.08;
