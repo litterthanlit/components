@@ -88,7 +88,7 @@ Every study starts here:
 
 ### Frame and bezel
 
-The frame is machined: a band a shade darker than the body in light (lighter in dark, so it still catches the light), lit along its top edge. It holds the player (`rounded-[34px] p-[5px]`, 46px and 8px on wide decks). It replaced a black bumper, whose stark outline round a white body was the most recognisable thing about the recorder it came from.
+The frame is machined: a band a shade darker than the body in light (lighter in dark, so it still catches the light), lit along its top edge. It holds the player (`rounded-[34px] p-[5px]`, 46px and 8px on wide decks). The player is as tall as the window and 80% of its width, between 864px and 1344px (`max-w-[min(1344px,max(864px,80vw))]`), so narrower windows give it their whole width and a wide monitor leaves it an object on the desk, not a wall. It replaced a black bumper, whose stark outline round a white body was the most recognisable thing about the recorder it came from.
 
 | Token | Light | Dark |
 | --- | --- | --- |

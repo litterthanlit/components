@@ -578,8 +578,10 @@ export function Device({ studies }: { studies: Study[] }) {
       onPointerDownCapture={wake}
       className="flex h-dvh w-full justify-center [--m:8px] sm:[--m:14px] wide:[--m:18px] pt-[max(var(--m),env(safe-area-inset-top))] pr-[max(var(--m),env(safe-area-inset-right))] pb-[max(var(--m),env(safe-area-inset-bottom))] pl-[max(var(--m),env(safe-area-inset-left))]"
     >
-      {/* The frame: machined, a shade darker than the body, lit along its top. */}
-      <div className="relative flex size-full max-w-[1680px] rounded-[34px] p-[5px] [background:var(--device-frame)] [box-shadow:var(--device-frame-edge),var(--device-body-shadow)] wide:rounded-[46px] wide:p-[8px]">
+      {/* The frame: machined, a shade darker than the body, lit along its top. It
+          takes 80% of the window's width, never less than 864px (so phones and
+          tablets keep the whole width) and never more than 1344px. */}
+      <div className="relative flex size-full max-w-[min(1344px,max(864px,80vw))] rounded-[34px] p-[5px] [background:var(--device-frame)] [box-shadow:var(--device-frame-edge),var(--device-body-shadow)] wide:rounded-[46px] wide:p-[8px]">
         {/* The body: near white, softly lit. */}
         <div className="relative isolate flex size-full flex-col overflow-hidden rounded-[29px] [background:var(--device-body)] shadow-(--device-body-edge) wide:rounded-[38px] short:flex-row">
           <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
