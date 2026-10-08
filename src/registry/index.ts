@@ -26,7 +26,7 @@ export const registry: RegistryEntry[] = [
     slug: "gradient-keys",
     title: "Gradient Keys",
     description:
-      "A launcher's preview window over three keys, each screen a long exposure in a traditional Japanese palette: wakatake's young-bamboo greens, ai indigo fading to asagi, sakura fading to gofun white. The streaks are noise that sweeps across the screen as it flows along it. The selection steps from key to key every 2 s, the window sweeping into each palette along its streaks; a hand on the plate holds it. The keys are radios; the window opens the project.",
+      "A launcher's preview window over three keys, each screen a long exposure in a traditional Japanese palette: wakatake's young-bamboo greens, ai indigo fading to asagi, sakura fading to gofun white. The streaks are noise that sweeps across the screen as it flows along it. The selection steps from key to key every 2 s, the window sweeping into each palette along its streaks; a hand on the plate holds it. The keys are radios, and a press on the window sends a ring through its streaks.",
     tagline: "Long exposures in Japanese palettes: a window and three keys.",
     tags: ["surface", "pointer", "sound", "webgl"],
     date: "2026-10-08",

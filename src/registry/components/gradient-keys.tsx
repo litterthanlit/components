@@ -24,7 +24,8 @@ import { hostTransport, play } from "@/lib/sound";
  * new palette over 600ms, the change running out along the streaks, and the
  * key's screen rings as its light comes on. A hand on the plate holds the
  * selection, and it carries on 2.5 s after the hand leaves, as the player's
- * tape does. The keys are radios; the window is the project's link.
+ * tape does. The keys are radios. Given a link, the window opens the
+ * project; without one, a press on it only sends a ring through the streaks.
  */
 
 /* --- Shader --------------------------------------------------------------- */
@@ -389,11 +390,12 @@ export function StreakField({ palette, seed = 0, active = false, paused = false,
 /* --- GradientPreview: the window ------------------------------------------ */
 
 type GradientPreviewProps = {
-  /** The link's accessible name; nothing is printed on the glass. */
+  /** The screen's accessible name; nothing is printed on the glass. */
   title: string;
-  /** Said to screen readers as the link's description. */
+  /** Said to screen readers after the name. */
   description: string;
-  href: string;
+  /** Makes the screen the project's link. Without one it only shows the project. */
+  href?: string;
   palette: Palette;
   seed?: number;
   /** Hold the motion. */
@@ -402,34 +404,48 @@ type GradientPreviewProps = {
 
 /**
  * A screen behind a black bezel showing a project's long exposure large,
- * with nothing printed over it. The screen is the project's link.
+ * with nothing printed over it. Given an `href` the screen is the project's
+ * link; without one it is a picture of the project, and a press on it sends
+ * a ring through the streaks with a soft click.
  */
 export function GradientPreview({ title, description, href, palette, seed = 0, paused = false }: GradientPreviewProps) {
   const descriptionId = useId();
+  const screen = "relative block aspect-[2/1] rounded-[0.45em] [-webkit-touch-callout:none]";
+  const glass = (
+    <>
+      <span className="absolute inset-0 overflow-hidden rounded-[inherit]">
+        <StreakField palette={palette} seed={seed} paused={paused} />
+      </span>
+      {/* The glass: a sheen where the light catches it, and its edge. */}
+      <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
+    </>
+  );
 
   return (
     <div className="rounded-[0.7em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
-      <a
-        href={href}
-        target="_blank"
-        rel="noreferrer"
-        draggable={false}
-        aria-label={`${title} (opens in a new tab)`}
-        aria-describedby={descriptionId}
-        onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
-        onClick={() => play("open", { gain: 0.6 })}
-        className="relative block aspect-[2/1] rounded-[0.45em] outline-offset-2 [-webkit-touch-callout:none]"
-        style={{ background: fallback(palette) }}
-      >
-        <span className="absolute inset-0 overflow-hidden rounded-[inherit]">
-          <StreakField palette={palette} seed={seed} paused={paused} />
-        </span>
-        {/* The glass: a sheen where the light catches it, and its edge. */}
-        <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
-        <span id={descriptionId} hidden>
-          {description}
-        </span>
-      </a>
+      {href ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noreferrer"
+          draggable={false}
+          aria-label={`${title} (opens in a new tab)`}
+          aria-describedby={descriptionId}
+          onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
+          onClick={() => play("open", { gain: 0.6 })}
+          className={cx(screen, "outline-offset-2")}
+          style={{ background: fallback(palette) }}
+        >
+          {glass}
+          <span id={descriptionId} hidden>
+            {description}
+          </span>
+        </a>
+      ) : (
+        <div role="img" aria-label={`${title}: ${description}`} data-sound="soft" className={screen} style={{ background: fallback(palette) }}>
+          {glass}
+        </div>
+      )}
     </div>
   );
 }
@@ -488,25 +504,22 @@ export function GradientKey({ title, palette, seed = 0, selected = false, paused
 
 /* --- Demo: a launcher, its window and three keys -------------------------- */
 
-const PROJECTS: { title: string; description: string; href: string; palette: Palette; seed: number }[] = [
+const PROJECTS: { title: string; description: string; palette: Palette; seed: number }[] = [
   {
     title: "Wavr",
     description: "Shader code in, motion graphics out.",
-    href: "https://litt.design",
     palette: ["#264d35", "#3b6e4e", "#6da47a", "#a9cba3", "#e1ecdc"], // 若竹 wakatake: young bamboo
     seed: 3,
   },
   {
     title: "Carson",
     description: "Learn a layout by wrecking one.",
-    href: "https://litt.design",
     palette: ["#16213d", "#1f2f54", "#3f5f8f", "#7fa6c2", "#c9dde6"], // 藍 ai, indigo, to 浅葱 asagi
     seed: 1,
   },
   {
     title: "litt.works",
     description: "Prints and long-form pieces.",
-    href: "https://litt.design",
     palette: ["#b06e7c", "#d796a6", "#e9b5c1", "#f5d8de", "#fbf2ee"], // 桜 sakura to 胡粉 gofun, shell white
     seed: 5,
   },
@@ -628,14 +641,13 @@ export default function Demo() {
         <GradientPreview
           title={project.title}
           description={project.description}
-          href={project.href}
           palette={project.palette}
           seed={WINDOW_SEED}
           paused={paused}
         />
 
-        {/* The keys: each puts its project in the window. */}
-        <div role="radiogroup" aria-label="Projects" className="mt-[0.7em] grid grid-cols-3 gap-[0.55em]">
+        {/* The keys: each puts its project in the window. A small row, centred, so the window leads. */}
+        <div role="radiogroup" aria-label="Projects" className="mx-auto mt-[0.7em] grid w-[60%] grid-cols-3 gap-[0.45em]">
           {PROJECTS.map((p, i) => (
             <GradientKey
               key={p.title}
