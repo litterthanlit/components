@@ -1,30 +1,30 @@
 "use client";
 
-import { useEffect, useEffectEvent, useId, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useEffectEvent, useId, useRef, useState, type ComponentProps, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { focusQuietly } from "@/design-system";
 import { hostTransport, play } from "@/lib/sound";
 
 /*
- * Project links as keys with a screen in each face, each screen showing a
- * long exposure: a camera swung through foliage, the shutter open. The
- * streaks fan out from a point below and left of the screen, so they run
- * steep on the left and flatten to the right, as a swing through an arc
- * would draw them.
+ * A launcher's preview window over three keys. Each screen shows a long
+ * exposure, a camera swung through foliage with the shutter open, in a
+ * traditional Japanese palette: wakatake, the young-bamboo greens; ai,
+ * indigo fading to asagi; sakura fading to gofun, the shell white.
  *
- * It is noise, not a picture. Across the streaks the noise is fine (8 cells
- * a radian); along them it is long (0.32 a unit), with a slow warp so they
- * waver. A second, much larger noise lays down the out-of-focus masses of
- * light and dark, and a third picks out a few thin glints. The sum runs
- * through the project's palette of five stops, blended in linear light so
- * the midtones stay luminous, then takes a little animated grain.
+ * It is noise, not a picture. The streaks fan from a point below and left
+ * of the screen, steep on the left and flatter to the right. Across them the
+ * noise is fine (8 cells a radian); along them it is long (0.32 a unit),
+ * warped so they waver. A second, larger noise lays down out-of-focus masses
+ * of light and dark, and a third picks out thin glints. The fan keeps
+ * turning (0.05 rad a unit of time) while the streaks flow along it, so the
+ * screen moves across as well as along: a long streak sliding only along
+ * itself reads as standing still. The sum runs through five stops in linear
+ * light under a little animated grain.
  *
- * The camera keeps panning, so it moves from the first frame. A hand
- * quickens the pan about fourfold and lifts the exposure under it; a press
- * sends a ring that pushes the streaks aside. The palettes are artwork, the
- * same in both themes, and keep clear of red, orange and the accent, so a
- * cover never reads as a signal. Raw WebGL drawn at the screen's size (up to
- * 1.5× for dense displays) and scaled smoothly; the loop writes uniforms,
- * never React state, and runs only while a screen is on the page.
+ * The selection steps from key to key every 2 s. The window sweeps into the
+ * new palette over 600ms, the change running out along the streaks, and the
+ * key's screen rings as its light comes on. A hand on the plate holds the
+ * selection, and it carries on 2.5 s after the hand leaves, as the player's
+ * tape does. The keys are radios; the window is the project's link.
  */
 
 /* --- Shader --------------------------------------------------------------- */
@@ -47,11 +47,18 @@ uniform vec2 uMouse;
 uniform float uHover;
 uniform vec3 uRipple;   // xy = origin (px), z = age in seconds (<0: none)
 uniform float uSeed;
-uniform vec3 uPalette[5]; // dark to light, sRGB
+uniform vec3 uFrom[5];  // the palette it is leaving, dark to light, sRGB
+uniform vec3 uTo[5];    // the palette it is going to
+uniform float uMix;     // 0 → 1 across a change
 
 const float ZOOM = 1.35; // field units across the screen's shorter side
 
-float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+// A hash without sine, so it stays fine-grained however long the page is open.
+float hash(vec2 p) {
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
 float noise(vec2 p) {
   vec2 i = floor(p), f = fract(p);
   vec2 u = f * f * (3.0 - 2.0 * f);
@@ -65,18 +72,23 @@ float fbm(vec2 p) {
 }
 vec3 toLinear(vec3 c) { return pow(c, vec3(2.2)); }
 vec3 toSrgb(vec3 c) { return pow(max(c, 0.0), vec3(1.0 / 2.2)); }
-vec3 ramp(float v) {
+// Uniform arrays only take constant indices here, hence one function a stop.
+vec3 stop0(float m) { return mix(toLinear(uFrom[0]), toLinear(uTo[0]), m); }
+vec3 stop1(float m) { return mix(toLinear(uFrom[1]), toLinear(uTo[1]), m); }
+vec3 stop2(float m) { return mix(toLinear(uFrom[2]), toLinear(uTo[2]), m); }
+vec3 stop3(float m) { return mix(toLinear(uFrom[3]), toLinear(uTo[3]), m); }
+vec3 stop4(float m) { return mix(toLinear(uFrom[4]), toLinear(uTo[4]), m); }
+vec3 ramp(float v, float m) {
   float x = clamp(v, 0.0, 0.999) * 4.0;
   float f = smoothstep(0.0, 1.0, fract(x));
-  if (x < 1.0) return mix(toLinear(uPalette[0]), toLinear(uPalette[1]), f);
-  if (x < 2.0) return mix(toLinear(uPalette[1]), toLinear(uPalette[2]), f);
-  if (x < 3.0) return mix(toLinear(uPalette[2]), toLinear(uPalette[3]), f);
-  return mix(toLinear(uPalette[3]), toLinear(uPalette[4]), f);
+  if (x < 1.0) return mix(stop0(m), stop1(m), f);
+  if (x < 2.0) return mix(stop1(m), stop2(m), f);
+  if (x < 3.0) return mix(stop2(m), stop3(m), f);
+  return mix(stop3(m), stop4(m), f);
 }
 
 void main() {
   vec2 px = gl_FragCoord.xy;
-  float aspect = uRes.x / uRes.y;
   float unit = ZOOM / min(uRes.x, uRes.y); // field units per pixel
   vec2 p = (px - 0.5 * uRes) * unit;
   float t = uTime;
@@ -90,27 +102,31 @@ void main() {
     p += normalize(dir + 1e-4) * band * 0.09 * ZOOM;
   }
 
-  // The fan: polar coordinates about a point below and left of the screen.
+  // The fan: polar coordinates about a point below and left of the screen. It keeps turning,
+  // so the streaks sweep across the screen as well as flowing along it.
   vec2 d = p - vec2(-2.6, -1.4);
   float r = length(d);
-  float a = atan(d.y, d.x);
-  vec2 q = vec2(a * 8.0, r * 0.32 - t * 0.12);
-  q.x += (fbm(vec2(a * 2.0, r * 0.35 - t * 0.04) + uSeed) - 0.5) * 1.4;
+  float a = atan(d.y, d.x) + t * 0.05;
+  vec2 q = vec2(a * 8.0, r * 0.32 - t * 0.18);
+  q.x += (fbm(vec2(a * 2.0, r * 0.35 - t * 0.1) + uSeed) - 0.5) * 1.4;
   float streak = fbm(q + uSeed * 3.1);
-  float fine = fbm(vec2(a * 34.0, r * 0.5 - t * 0.2) + uSeed * 5.3);
-  // Out-of-focus masses of light and dark, drifting slowly.
-  float mass = fbm(p * 0.55 + vec2(t * 0.03, -t * 0.02) + uSeed * 7.0);
+  float fine = fbm(vec2(a * 34.0, r * 0.5 - t * 0.29) + uSeed * 5.3);
+  // Out-of-focus masses of light and dark, drifting.
+  float mass = fbm(p * 0.55 + vec2(t * 0.08, -t * 0.05) + uSeed * 7.0);
   // A few thin glints where the light caught a blade.
-  float glint = smoothstep(0.68, 0.86, fbm(vec2(a * 70.0, r * 0.4 - t * 0.18) + uSeed * 9.7));
+  float glint = smoothstep(0.68, 0.86, fbm(vec2(a * 70.0, r * 0.4 - t * 0.25) + uSeed * 9.7));
   float v = streak * 0.85 + fine * 0.25 + (mass - 0.5) * 0.85 - 0.04;
   v = smoothstep(0.08, 0.92, v) + glint * 0.18;
+
+  // A new palette runs out along the streaks, from the fan's root to its tips.
+  float m = smoothstep(0.0, 1.0, clamp(uMix * 1.6 - clamp((r - 2.2) / 1.6, 0.0, 1.0) * 0.6, 0.0, 1.0));
 
   // The hand lifts the exposure under it, toward the palette's lightest stop.
   float reach = 0.5 * min(uRes.x, uRes.y);
   float dm = distance(px, uMouse);
   float light = exp(-(dm * dm) / (reach * reach)) * uHover;
   v += light * 0.22 + band * 0.12;
-  vec3 color = mix(ramp(v), toLinear(uPalette[4]), light * 0.18);
+  vec3 color = mix(ramp(v, m), stop4(m), light * 0.18);
 
   color = toSrgb(color) + (hash(px + fract(uTime * 7.0) * 113.0) - 0.5) * 0.04;
   gl_FragColor = vec4(color, 1.0);
@@ -122,7 +138,23 @@ void main() {
 /** Five sRGB hex stops, dark to light. Artwork, not tokens: the same in both themes. */
 export type Palette = readonly [string, string, string, string, string];
 
-const hexToRgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+const FADE = 0.6; // s for the window to sweep into a new palette
+
+const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(" ");
+const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+/** A detent's pitch, varied a little so repeated ticks never sound identical. */
+const detent = () => 0.97 + Math.random() * 0.06;
+
+/** Fifteen floats, the five stops as 0–1 RGB. */
+const toStops = (key: string) => key.split(",").flatMap((hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255));
+
+/** Where a fade stands, as one palette: mixed in linear light, as the shader mixes. */
+function blend(from: number[], to: number[], m: number) {
+  return from.map((c, i) => Math.pow(Math.pow(c, 2.2) * (1 - m) + Math.pow(to[i], 2.2) * m, 1 / 2.2));
+}
+
+/** The screen's own background: a still gradient of the palette, for when WebGL isn't there. */
+const fallback = (palette: Palette) => `linear-gradient(60deg, ${palette.join(", ")})`;
 
 function compile(gl: WebGLRenderingContext, type: number, source: string) {
   const shader = gl.createShader(type)!;
@@ -134,12 +166,13 @@ function compile(gl: WebGLRenderingContext, type: number, source: string) {
 /* --- StreakField ---------------------------------------------------------- */
 
 type StreakFieldProps = {
+  /** A new palette sweeps in over 600ms rather than restarting the field. */
   palette: Palette;
   /** Picks the exposure: the same seed always opens on the same frame. */
   seed?: number;
-  /** Light the field from its centre without a hand on it: keyboard focus, a selection, a demo's ghost. Turning it on sends a ring. */
+  /** Light the field from its centre without a hand on it: keyboard focus, a selection. Turning it on sends a ring. */
   active?: boolean;
-  /** Hold the pan. The light and a ring still play out. */
+  /** Hold the motion. The light, a ring and a palette change still play out. */
   paused?: boolean;
   className?: string;
 };
@@ -155,9 +188,11 @@ export function StreakField({ palette, seed = 0, active = false, paused = false,
   // Bridges from React props into the render loop, so a change never restarts it.
   const activeRef = useRef(active);
   const pausedRef = useRef(paused);
-  const wakeRef = useRef<(ring: boolean) => void>(() => {});
-  // The stops as one string, so a new array with the same colours doesn't restart the field.
+  // The stops as one string, so a new array with the same colours is no change.
   const stops = palette.join(",");
+  const stopsRef = useRef(stops);
+  const wakeRef = useRef<(ring: boolean) => void>(() => {});
+  const recolourRef = useRef<(stops: string) => void>(() => {});
 
   useEffect(() => {
     pausedRef.current = paused;
@@ -169,6 +204,12 @@ export function StreakField({ palette, seed = 0, active = false, paused = false,
     activeRef.current = active;
     wakeRef.current(rising);
   }, [active]);
+
+  useEffect(() => {
+    if (stops === stopsRef.current) return;
+    stopsRef.current = stops;
+    recolourRef.current(stops);
+  }, [stops]);
 
   useEffect(() => {
     const host = hostRef.current!;
@@ -196,20 +237,25 @@ export function StreakField({ palette, seed = 0, active = false, paused = false,
 
     const u = (name: string) => gl.getUniformLocation(program, name);
     const uRes = u("uRes"), uTime = u("uTime"), uMouse = u("uMouse"), uHover = u("uHover");
-    const uRipple = u("uRipple"), uSeed = u("uSeed"), uPalette = u("uPalette");
+    const uRipple = u("uRipple"), uSeed = u("uSeed"), uFrom = u("uFrom"), uTo = u("uTo"), uMix = u("uMix");
 
-    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced = reducedMotion();
+    const first = toStops(stopsRef.current);
     const state = {
       time: 0,
       hover: 0,
       hoverTarget: 0,
       mouse: [0, 0] as [number, number],
       ripple: [0, 0, -1] as [number, number, number],
+      from: first,
+      to: first,
+      mix: 1,
       visible: false,
       raf: 0,
       last: 0,
     };
     const centre = (): [number, number] => [canvas.width / 2, canvas.height / 2];
+    const eased = () => state.mix * state.mix * (3 - 2 * state.mix);
 
     function resize() {
       const rect = canvas.getBoundingClientRect();
@@ -226,6 +272,9 @@ export function StreakField({ palette, seed = 0, active = false, paused = false,
       gl.uniform2fv(uMouse, state.mouse);
       gl.uniform1f(uHover, state.hover);
       gl.uniform3fv(uRipple, state.ripple);
+      gl.uniform3fv(uFrom, state.from);
+      gl.uniform3fv(uTo, state.to);
+      gl.uniform1f(uMix, state.mix);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
 
@@ -242,8 +291,9 @@ export function StreakField({ palette, seed = 0, active = false, paused = false,
         state.ripple[2] += dt;
         if (state.ripple[2] > 1.6) state.ripple[2] = -1;
       }
-      // Held, the loop runs only until the light has settled and the ring has gone.
-      const settled = pausedRef.current && Math.abs(target - state.hover) < 0.002 && state.ripple[2] < 0;
+      if (state.mix < 1) state.mix = Math.min(1, state.mix + dt / FADE);
+      // Held, the loop runs only until the light has settled, the ring has gone and the colours have landed.
+      const settled = pausedRef.current && Math.abs(target - state.hover) < 0.002 && state.ripple[2] < 0 && state.mix === 1;
       if (settled) state.hover = target;
       draw();
       state.raf = state.visible && !settled ? requestAnimationFrame(frame) : 0;
@@ -306,9 +356,15 @@ export function StreakField({ palette, seed = 0, active = false, paused = false,
       if (ring && !reduced) state.ripple = [...centre(), 0];
       start();
     };
+    // A new palette sweeps in from wherever the last change had got to.
+    recolourRef.current = (next) => {
+      state.from = blend(state.from, state.to, eased());
+      state.to = toStops(next);
+      state.mix = reduced ? 1 : 0;
+      start();
+    };
 
     gl.uniform1f(uSeed, seed);
-    gl.uniform3fv(uPalette, new Float32Array(stops.split(",").flatMap(hexToRgb)));
     resize();
     draw();
 
@@ -321,80 +377,136 @@ export function StreakField({ palette, seed = 0, active = false, paused = false,
       host.removeEventListener("pointerleave", onLeave);
       host.removeEventListener("pointerdown", onDown);
       wakeRef.current = () => {};
+      recolourRef.current = () => {};
       gl.getExtension("WEBGL_lose_context")?.loseContext();
       canvas.remove();
     };
-  }, [stops, seed]);
+  }, [seed]);
 
   return <span ref={hostRef} aria-hidden className={`block size-full ${className}`} />;
 }
 
-/* --- GradientKey: a project key ------------------------------------------- */
+/* --- GradientPreview: the window ------------------------------------------ */
 
-type GradientKeyProps = {
+type GradientPreviewProps = {
   title: string;
-  /** Said to screen readers as the link's description. */
   description: string;
   meta?: string;
   href: string;
   palette: Palette;
   seed?: number;
-  /** Light the screen from its centre without a hand on it: a selection, or a demo's ghost. */
-  active?: boolean;
-  /** Hold the pan. */
+  /** Hold the motion. */
+  paused?: boolean;
+  /** The selection is stepping by itself: the chip's light pulses red. */
+  cycling?: boolean;
+};
+
+/**
+ * A screen behind a black bezel showing a project large: its long exposure,
+ * its title and line over a scrim at the foot, its year on a chip. The
+ * screen is the project's link.
+ */
+export function GradientPreview({ title, description, meta, href, palette, seed = 0, paused = false, cycling = false }: GradientPreviewProps) {
+  const descriptionId = useId();
+
+  return (
+    <div className="rounded-[0.7em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        draggable={false}
+        aria-label={`${title} (opens in a new tab)`}
+        aria-describedby={descriptionId}
+        onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
+        onClick={() => play("open", { gain: 0.6 })}
+        className="relative block aspect-[2/1] rounded-[0.45em] outline-offset-2 [-webkit-touch-callout:none]"
+        style={{ background: fallback(palette) }}
+      >
+        <span className="absolute inset-0 overflow-hidden rounded-[inherit]">
+          <StreakField palette={palette} seed={seed} paused={paused} />
+        </span>
+        {/* A scrim at the foot, so the words hold 4.5:1 on the lightest stop of any palette (0.68 is the least the
+            dimmer line needs, 0.54 the title); the top of the window stays clear. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[linear-gradient(to_top,rgb(0_0_0/0.75),rgb(0_0_0/0.62)_34%,rgb(0_0_0/0.28)_52%,transparent_70%)]"
+        />
+        {/* The glass: a sheen where the light catches it, and its edge. */}
+        <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
+
+        {meta && (
+          <span aria-hidden className="pointer-events-none absolute left-[0.75em] top-[0.75em] inline-flex items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
+            <span className={cycling ? "size-[0.55em] animate-pulse rounded-full bg-(--device-rec) motion-reduce:animate-none" : "size-[0.55em] rounded-full bg-black"} />
+            <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em] tabular-nums">{meta}</span>
+          </span>
+        )}
+        <span key={title} className="pointer-events-none absolute inset-x-[0.85em] bottom-[0.8em] flex animate-enter flex-col gap-[0.4em]">
+          <span aria-hidden className="truncate text-[1.6em] font-medium leading-none tracking-[-0.02em] text-(--device-lcd-ink)">
+            {title}
+          </span>
+          <span id={descriptionId} className="truncate text-[0.85em] leading-none text-(--device-lcd-dim)">
+            {description}
+          </span>
+        </span>
+      </a>
+    </div>
+  );
+}
+
+/* --- GradientKey: a selector key ------------------------------------------ */
+
+type GradientKeyProps = Omit<ComponentProps<"button">, "children" | "title"> & {
+  /** The key's accessible name. */
+  title: string;
+  palette: Palette;
+  seed?: number;
+  /** Its light is on, its screen is lit, and it rings as it comes on. */
+  selected?: boolean;
+  /** Hold the motion. */
   paused?: boolean;
 };
 
 /**
- * A project link as a key with a screen in its face. The face sinks 2px onto
- * its base under the finger and clicks; the screen shows the project's long
- * exposure under glass. Keyboard focus lights it from the centre; focus that
- * followed a press doesn't.
+ * A key with a screen in its face and a light across its foot. The face
+ * sinks 2px onto its base under the finger and clicks. When it's selected
+ * the light comes on and the screen lights; otherwise the screen dims. It
+ * is a button: give it a radio's role and `aria-checked` in a radio group.
  */
-export function GradientKey({ title, description, meta, href, palette, seed = 0, active = false, paused = false }: GradientKeyProps) {
-  const [focused, setFocused] = useState(false);
-  const descriptionId = useId();
-  // Checked again on key up: the first key after a quiet press brings the ring back.
-  const checkFocus = (el: HTMLElement) => setFocused(el.matches(":focus-visible") && !el.hasAttribute("data-quiet"));
-
+export function GradientKey({ title, palette, seed = 0, selected = false, paused = false, className, ...rest }: GradientKeyProps) {
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      draggable={false}
-      data-sound="key"
-      aria-describedby={descriptionId}
-      onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
-      onFocus={(e) => checkFocus(e.currentTarget)}
-      onKeyUp={(e) => checkFocus(e.currentTarget)}
-      onBlur={() => setFocused(false)}
-      className="group/key flex min-w-0 flex-col items-center gap-[0.6em] rounded-[0.7em] outline-offset-2 [-webkit-touch-callout:none]"
-    >
-      {/* The key. Only its face sinks, so the hit area never moves under the finger. */}
-      <span className="block w-full rounded-[0.7em] p-[0.32em] [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
-        {/* The screen set into the face. Without WebGL its own gradient stands in for the exposure. */}
-        <span className="relative block aspect-square rounded-[0.4em]" style={{ background: `linear-gradient(60deg, ${palette.join(", ")})` }}>
+    <button type="button" data-sound="key" aria-label={title} className={cx("group/key block w-full min-w-0 rounded-[0.7em] outline-offset-2", className)} {...rest}>
+      {/* Only the face sinks, so the hit area never moves under the finger. */}
+      <span className="flex flex-col items-center gap-[0.32em] rounded-[0.7em] p-[0.32em] pb-[0.4em] [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
+        <span className="relative block aspect-[2/1] w-full rounded-[0.4em]" style={{ background: fallback(palette) }}>
           <span className="absolute inset-0 overflow-hidden rounded-[inherit]">
-            <StreakField palette={palette} seed={seed} active={focused || active} paused={paused} />
+            <StreakField palette={palette} seed={seed} active={selected} paused={paused} />
+            {/* Off the selection, the backlight dims. */}
+            <span
+              aria-hidden
+              className={cx(
+                "pointer-events-none absolute inset-0 bg-black/40 transition-opacity ease-out",
+                selected ? "opacity-0 duration-(--duration-enter)" : "opacity-100 duration-(--duration-exit)",
+              )}
+            />
           </span>
           {/* The glass: a sheen where the light catches it, and its edge. */}
           <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
         </span>
+        {/* The selection light: on at once, off at the exit duration. */}
+        <span
+          aria-hidden
+          className={cx(
+            "h-[0.24em] w-[30%] rounded-full transition-[background-color]",
+            selected ? "bg-(--device-meter-on) duration-0" : "bg-(--device-meter-off) duration-(--duration-exit)",
+          )}
+        />
       </span>
-      <span className="flex max-w-full items-baseline gap-[0.6em] text-[0.6em] font-semibold uppercase leading-none tracking-[0.16em] [text-shadow:var(--device-engrave)]">
-        <span className="min-w-0 truncate text-(--device-label)">{title}</span>
-        {meta && <span className="shrink-0 tabular-nums text-(--device-label-quiet)">{meta}</span>}
-      </span>
-      <span id={descriptionId} hidden>
-        {description}
-      </span>
-      <span className="sr-only">(opens in a new tab)</span>
-    </a>
+    </button>
   );
 }
 
-/* --- Demo: a launcher's keys, one project on each ------------------------- */
+/* --- Demo: a launcher, its window and three keys -------------------------- */
 
 const PROJECTS: { title: string; description: string; year: string; href: string; palette: Palette; seed: number }[] = [
   {
@@ -402,61 +514,62 @@ const PROJECTS: { title: string; description: string; year: string; href: string
     description: "Shader code in, motion graphics out.",
     year: "2026",
     href: "https://litt.design",
-    palette: ["#36621f", "#55843a", "#86a95a", "#a6bf9f", "#c6d9dc"], // leaves against a pale sky
-    seed: 2,
+    palette: ["#264d35", "#3b6e4e", "#6da47a", "#a9cba3", "#e1ecdc"], // 若竹 wakatake: young bamboo
+    seed: 3,
   },
   {
     title: "Carson",
     description: "Learn a layout by wrecking one.",
     year: "2026",
     href: "https://litt.design",
-    palette: ["#2b3346", "#525d78", "#8a8db0", "#bfc0d8", "#e3e5ee"], // dusk: slate, lilac, mist
-    seed: 0,
+    palette: ["#16213d", "#1f2f54", "#3f5f8f", "#7fa6c2", "#c9dde6"], // 藍 ai, indigo, to 浅葱 asagi
+    seed: 1,
   },
   {
     title: "litt.works",
     description: "Prints and long-form pieces.",
     year: "2024–26",
     href: "https://litt.design",
-    palette: ["#5a4a2e", "#8f7746", "#c2ab78", "#ddd0b0", "#f1ebdf"], // paper: ochre, sand, bone
-    seed: 7,
+    palette: ["#b06e7c", "#d796a6", "#e9b5c1", "#f5d8de", "#fbf2ee"], // 桜 sakura to 胡粉 gofun, shell white
+    seed: 5,
   },
 ];
-const FIRST = 350; // ms from power-up to the ghost's first key
-const STEP = 1400; // ms on each key after that, so all three are lit inside 4 s
-
-const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const STEP = 2000; // ms on each key before the selection steps on
+const RESUME = 2500; // ms after the hand leaves before it steps on again, as the player's tape waits
+const WINDOW_SEED = 2;
 
 export default function Demo() {
-  const [at, setAt] = useState(0); // the project on the readout
-  const [lit, setLit] = useState(-1); // the key the ghost is on
-  const [ghost, setGhost] = useState(false);
+  const [at, setAt] = useState(0); // the selected project
+  const [cycling, setCycling] = useState(false);
   const [paused, setPaused] = useState(true); // the screens hold their first frame until power-up
   const rootRef = useRef<HTMLDivElement>(null);
-  const touched = useRef(false); // a hand has been here: the ghost doesn't come back
+  // A hand on the plate holds the selection: a pointer over it, or keyboard focus in it.
+  const pointerHold = useRef(false);
+  const focusHold = useRef(false);
+  const resume = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  /** Real input takes over from the ghost, for good, and wakes the screens. */
-  function takeOver() {
-    if (touched.current) return;
-    touched.current = true;
-    setGhost(false);
-    setLit(-1);
+  /** A hand arrives: hold the selection where it is, and wake the screens. */
+  function hold() {
+    clearTimeout(resume.current);
+    setCycling(false);
     setPaused(false);
   }
 
-  /** A hand on a key. Chrome also sends moves as the study slides in under a resting cursor; those don't count. */
-  function onKeyMove(e: ReactPointerEvent<HTMLLIElement>, i: number) {
-    if (e.pointerType === "mouse" && !e.movementX && !e.movementY) return;
-    takeOver();
-    setAt(i);
+  /** A hand leaves: once nothing holds it, step on again after the tape's wait, unless the tape is stopped. */
+  function release() {
+    if (pointerHold.current || focusHold.current) return;
+    clearTimeout(resume.current);
+    resume.current = setTimeout(() => {
+      if (hostTransport(rootRef.current) !== "stop" && !reducedMotion()) setCycling(true);
+    }, RESUME);
   }
 
-  // Power up: the screens run and the ghost walks the keys, unless the host's tape is stopped; then follow its PLAY.
-  // Under reduced motion each screen holds its first frame and there is no ghost.
+  // Power up: the screens run and the selection steps by itself, unless the host's tape is stopped;
+  // then follow its PLAY. Under reduced motion each screen holds its first frame and nothing steps.
   const powerUp = useEffectEvent(() => {
-    if (touched.current || hostTransport(rootRef.current) === "stop") return;
+    if (hostTransport(rootRef.current) === "stop" || pointerHold.current || focusHold.current) return;
     setPaused(false);
-    if (!reducedMotion()) setGhost(true);
+    if (!reducedMotion()) setCycling(true);
   });
   useEffect(() => {
     const root = rootRef.current;
@@ -464,58 +577,109 @@ export default function Demo() {
     const host = root?.closest("[data-transport]");
     const observer = new MutationObserver(() => hostTransport(root) === "play" && powerUp());
     if (host) observer.observe(host, { attributes: true, attributeFilter: ["data-transport"] });
+    const pending = resume;
     return () => {
       cancelAnimationFrame(start);
       observer.disconnect();
+      clearTimeout(pending.current);
     };
   }, []);
 
-  // The ghost: a beat after power-up it lights the first key, then each next one in turn, and each
-  // screen rings as it lands. A quiet tick for each, while the host's tape plays.
+  // The cycle: the next key every 2 s, a quiet detent for each while the host's tape plays.
   useEffect(() => {
-    if (!ghost) return;
+    if (!cycling) return;
     const root = rootRef.current;
-    const id = setTimeout(
-      () => {
-        const next = (lit + 1) % PROJECTS.length;
-        setLit(next);
-        setAt(next);
-        if (hostTransport(root) === "play") play("tick", { gain: 0.4, pitch: 0.94 + next * 0.06 });
-      },
-      lit === -1 ? FIRST : STEP,
-    );
+    const id = setTimeout(() => {
+      setAt((i) => (i + 1) % PROJECTS.length);
+      if (hostTransport(root) === "play") play("tick", { gain: 0.4, pitch: detent() });
+    }, STEP);
     return () => clearTimeout(id);
-  }, [ghost, lit]);
+  }, [cycling, at]);
+
+  /** A real move of the hand. Chrome also sends moves as the study slides in under a resting cursor; those don't count. */
+  const moved = (e: ReactPointerEvent) => e.pointerType !== "mouse" || e.movementX !== 0 || e.movementY !== 0;
+
+  /** The keys are one radio group: the arrows move along it. */
+  function onKeyKeyDown(e: KeyboardEvent<HTMLButtonElement>, i: number) {
+    const next = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: PROJECTS.length - 1 }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    if (next < 0 || next >= PROJECTS.length || next === i) return play("bump", { gain: 0.6 });
+    play("tick", { pitch: detent() });
+    setAt(next);
+    rootRef.current?.querySelector<HTMLElement>(`[data-key="${next}"]`)?.focus();
+  }
 
   const project = PROJECTS[at];
 
   return (
-    <div ref={rootRef} onPointerDownCapture={takeOver} onKeyDownCapture={takeOver} onFocusCapture={takeOver} className="@container w-full max-w-[480px] select-none">
+    <div
+      ref={rootRef}
+      onPointerMove={(e) => {
+        if (pointerHold.current || !moved(e)) return;
+        pointerHold.current = true;
+        hold();
+      }}
+      onPointerDownCapture={() => {
+        pointerHold.current = true;
+        hold();
+      }}
+      onPointerLeave={() => {
+        pointerHold.current = false;
+        release();
+      }}
+      onKeyDownCapture={() => {
+        focusHold.current = true;
+        hold();
+      }}
+      // Focus that followed a press is the pointer's; only keyboard focus holds by itself.
+      onFocusCapture={(e) => {
+        if (e.target.hasAttribute("data-quiet")) return;
+        focusHold.current = true;
+        hold();
+      }}
+      onBlurCapture={(e) => {
+        if (e.currentTarget.contains(e.relatedTarget)) return;
+        focusHold.current = false;
+        release();
+      }}
+      className="@container w-full max-w-[480px] select-none"
+    >
       <div className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[26rem]:p-[1.1em]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
-        {/* The readout: the year and the project in a line, for the key under the hand or the ghost. */}
-        <div
-          aria-hidden
-          className="flex h-[3.3em] flex-col justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.5em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
-        >
-          <span className="inline-flex items-center gap-[0.35em] self-start rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
-            <span className={ghost ? "size-[0.55em] animate-pulse rounded-full bg-(--device-rec) motion-reduce:animate-none" : "size-[0.55em] rounded-full bg-black"} />
-            <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em] tabular-nums">{project.year}</span>
-          </span>
-          <span key={at} className="animate-enter truncate text-[1.05em] font-light leading-none tracking-[-0.01em]">
-            {project.description}
-          </span>
-        </div>
+        <GradientPreview
+          title={project.title}
+          description={project.description}
+          meta={project.year}
+          href={project.href}
+          palette={project.palette}
+          seed={WINDOW_SEED}
+          paused={paused}
+          cycling={cycling}
+        />
 
-        {/* The keys, one project on each. */}
-        <ul aria-label="Projects" className="mt-[0.8em] grid grid-cols-3 gap-[0.55em]">
+        {/* The keys: each puts its project in the window. */}
+        <div role="radiogroup" aria-label="Projects" className="mt-[0.7em] grid grid-cols-3 gap-[0.55em]">
           {PROJECTS.map((p, i) => (
-            <li key={p.title} className="min-w-0" onPointerMove={(e) => onKeyMove(e, i)} onFocus={() => setAt(i)}>
-              <GradientKey title={p.title} description={p.description} href={p.href} palette={p.palette} seed={p.seed} active={lit === i} paused={paused} />
-            </li>
+            <GradientKey
+              key={p.title}
+              role="radio"
+              aria-checked={i === at}
+              tabIndex={i === at ? 0 : -1}
+              data-key={i}
+              title={p.title}
+              palette={p.palette}
+              seed={p.seed}
+              selected={i === at}
+              paused={paused}
+              onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
+              onPointerMove={(e) => moved(e) && setAt(i)}
+              onClick={() => setAt(i)}
+              onKeyDown={(e) => onKeyKeyDown(e, i)}
+            />
           ))}
-        </ul>
+        </div>
       </div>
     </div>
   );
