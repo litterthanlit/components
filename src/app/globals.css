@@ -172,6 +172,14 @@ h3 {
 [data-preview][data-dragging] {
   cursor: grabbing;
 }
+/* Taken apart, the scene no longer fills the layers' own box, so the stage wears their focus ring. */
+[data-preview-content] > [role="listbox"]:focus-visible {
+  outline: none;
+}
+[data-preview]:has(> [data-preview-content] > [role="listbox"]:focus-visible:not([data-quiet])) {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
 /* A range on the page: a hairline track and a small round key on it. */
 .range {
   appearance: none;
