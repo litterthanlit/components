@@ -284,7 +284,7 @@ export function StepSequencer({ className = "" }: { className?: string }) {
       className={cx("@container w-full max-w-[560px] select-none", className)}
     >
       {/* A plate cut from the player's body: the same bead-blasted finish and lit top edge. */}
-      <div className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4.1cqw,13px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[33rem]:p-[1.1em] @[33rem]:text-[clamp(12px,2.5cqw,14px)]">
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4.1cqw,13px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[33rem]:p-[1.1em] @[33rem]:text-[clamp(12px,2.5cqw,14px)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
         {/* The tempo screen and the transport key. */}
@@ -304,10 +304,11 @@ export function StepSequencer({ className = "" }: { className?: string }) {
             onPointerMove={onTempoMove}
             onPointerUp={onTempoEnd}
             onPointerCancel={onTempoEnd}
+            data-part="lcd"
             className="relative flex h-[3.7em] min-w-0 flex-1 cursor-ew-resize touch-none flex-col justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.55em] pt-[0.6em] text-(--device-lcd-ink) outline-offset-2 [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
           >
             <div className="flex items-center gap-[0.5em]">
-              <span className="inline-flex items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
+              <span data-part="chip" className="inline-flex items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
                 {running ? (
                   <span className="size-[0.55em] animate-pulse rounded-full bg-(--device-rec)" />
                 ) : (
@@ -330,13 +331,14 @@ export function StepSequencer({ className = "" }: { className?: string }) {
             aria-pressed={running}
             onPointerDown={focusOnPress}
             onClick={toggleRun}
+            data-part="collar"
             className="group/key grid size-[3.7em] shrink-0 place-items-center rounded-full bg-black/[0.035] p-[0.26em] shadow-(--device-recess) outline-offset-2 dark:bg-black/30"
           >
-            <span className="grid size-full place-items-center rounded-full [background:var(--device-wheel-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
+            <span data-part="cap" className="grid size-full place-items-center rounded-full [background:var(--device-wheel-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
               {running ? (
-                <span aria-hidden className="size-[0.9em] rounded-[0.14em] bg-(--device-key-ink)" />
+                <span aria-hidden data-part="lettering" className="size-[0.9em] rounded-[0.14em] bg-(--device-key-ink)" />
               ) : (
-                <svg aria-hidden viewBox="0 0 16 16" className="ml-[0.12em] size-[1.25em] fill-(--device-rec)">
+                <svg aria-hidden data-part="lettering" viewBox="0 0 16 16" className="ml-[0.12em] size-[1.25em] fill-(--device-rec)">
                   <path d="M4.5 2.4 13.2 8l-8.7 5.6z" />
                 </svg>
               )}
@@ -350,6 +352,7 @@ export function StepSequencer({ className = "" }: { className?: string }) {
           {cols.map((col) => (
             <span key={col} className="flex justify-center">
               <span
+                data-part="light"
                 className={cx(
                   "h-[0.26em] rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)",
                   col % 4 === 0 ? "w-[0.9em]" : "w-[0.5em]",
@@ -370,12 +373,13 @@ export function StepSequencer({ className = "" }: { className?: string }) {
                   {/* The channel's light: it fires with the track. */}
                   <span
                     aria-hidden
+                    data-part="light"
                     className={cx(
                       "size-[0.36em] shrink-0 rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)",
                       firing ? "bg-(--device-rec) shadow-[0_0_0.4em_var(--device-rec)]" : "bg-(--device-meter-off)",
                     )}
                   />
-                  <span id={`${ids}-${track.sound}`} className={cx(engraved, "truncate text-[0.6em] text-(--device-label)")}>
+                  <span id={`${ids}-${track.sound}`} data-part="lettering" className={cx(engraved, "truncate text-[0.6em] text-(--device-label)")}>
                     {track.name}
                   </span>
                 </span>
@@ -393,10 +397,12 @@ export function StepSequencer({ className = "" }: { className?: string }) {
                       onPointerDown={focusOnPress}
                       onClick={() => toggle(row, col)}
                       onKeyDown={(e) => onStepKey(e, row, col)}
+                      data-part="key"
                       className="group/key relative h-[2.15em] rounded-[0.45em] outline-offset-1"
                     >
                       <span className="absolute inset-x-[0.12em] inset-y-[0.1em] rounded-[0.4em] [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
                         <span
+                          data-part="light"
                           className={cx(
                             "absolute inset-x-[28%] top-[0.42em] h-[0.26em] rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)",
                             fire ? "bg-(--device-rec) shadow-[0_0_0.45em_var(--device-rec)]" : on ? "bg-(--device-meter-on)" : "bg-(--device-meter-off)",
@@ -414,7 +420,7 @@ export function StepSequencer({ className = "" }: { className?: string }) {
         {/* Narrow stages: two pages of eight. Each key lights red while the playhead is on its page. */}
         {!wide && (
           <div className="mt-[0.75em] flex items-center gap-[0.45em]">
-            <span className={cx(engraved, "mr-auto text-[0.58em] text-(--device-label-quiet)")}>Steps</span>
+            <span data-part="lettering" className={cx(engraved, "mr-auto text-[0.58em] text-(--device-label-quiet)")}>Steps</span>
             {[0, 1].map((p) => (
               <button
                 key={p}
@@ -427,12 +433,13 @@ export function StepSequencer({ className = "" }: { className?: string }) {
               >
                 <span
                   aria-hidden
+                  data-part="light"
                   className={cx(
                     "size-[0.36em] rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)",
                     lit >= 0 && Math.floor(lit / PAGE) === p ? "bg-(--device-rec) shadow-[0_0_0.4em_var(--device-rec)]" : "bg-(--device-meter-off)",
                   )}
                 />
-                <span className={cx(engraved, "text-[0.62em] tabular-nums tracking-[0.06em]")}>
+                <span data-part="lettering" className={cx(engraved, "text-[0.62em] tabular-nums tracking-[0.06em]")}>
                   {p * PAGE + 1}–{p * PAGE + PAGE}
                 </span>
               </button>

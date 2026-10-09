@@ -397,13 +397,14 @@ export function AgentStatus({ state, step, tokens, elapsed, onStop, onRun, onAll
       )}
     >
       {/* The readout: an LCD in a well. It mirrors what the live region says, so it stays out of the reading order. */}
-      <div className={cx("rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess)", allow ? "col-span-2 @[24rem]/agent:col-span-3" : "col-span-2")}>
+      <div data-part="well" className={cx("rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess)", allow ? "col-span-2 @[24rem]/agent:col-span-3" : "col-span-2")}>
         <div
           aria-hidden
+          data-part="lcd"
           className="relative flex flex-col gap-[0.5em] overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.65em] pt-[0.6em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
         >
           <div className="flex items-center gap-[0.55em]">
-            <span className="inline-flex shrink-0 items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
+            <span data-part="chip" className="inline-flex shrink-0 items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
               <ChipGlyph state={state} />
               <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em] tabular-nums">{word}</span>
             </span>
@@ -450,13 +451,13 @@ export function AgentStatus({ state, step, tokens, elapsed, onStop, onRun, onAll
       >
         {PHASES.map(({ key, name }) => (
           <span key={key} data-light={lightOf(key)} className="group/light flex items-center gap-[0.5em]">
-            <span className="grid size-[0.78em] shrink-0 place-items-center rounded-full bg-black/[0.05] shadow-(--device-recess) dark:bg-black/40">
-              <span className="relative size-[0.44em] rounded-full bg-(--device-meter-off) transition-[background-color] duration-(--duration-exit) group-data-[light=fault]/light:bg-(--device-rec) group-data-[light=fault]/light:duration-0 group-data-[light=fire]/light:bg-(--device-rec) group-data-[light=fire]/light:duration-0 group-data-[light=hold]/light:bg-(--device-hold) group-data-[light=hold]/light:duration-0 group-data-[light=set]/light:bg-(--device-meter-on)">
+            <span data-part="well" className="grid size-[0.78em] shrink-0 place-items-center rounded-full bg-black/[0.05] shadow-(--device-recess) dark:bg-black/40">
+              <span data-part="light" className="relative size-[0.44em] rounded-full bg-(--device-meter-off) transition-[background-color] duration-(--duration-exit) group-data-[light=fault]/light:bg-(--device-rec) group-data-[light=fault]/light:duration-0 group-data-[light=fire]/light:bg-(--device-rec) group-data-[light=fire]/light:duration-0 group-data-[light=hold]/light:bg-(--device-hold) group-data-[light=hold]/light:duration-0 group-data-[light=set]/light:bg-(--device-meter-on)">
                 {/* The glow on its own layer, so the flicker is never smoothed by the light's fade. */}
                 <span className="absolute inset-0 rounded-full opacity-0 shadow-[0_0_0.45em_var(--device-rec)] transition-opacity duration-(--duration-exit) group-data-[light=fault]/light:opacity-100 group-data-[light=fire]/light:opacity-(--act) group-data-[light=fire]/light:transition-none group-data-[light=hold]/light:opacity-100 group-data-[light=hold]/light:shadow-[0_0_0.5em_var(--device-hold)]" />
               </span>
             </span>
-            <span className={cx(engraved, "text-[0.6em] text-(--device-label-quiet) group-data-[light=fault]/light:text-(--device-label) group-data-[light=fire]/light:text-(--device-label) group-data-[light=hold]/light:text-(--device-label)")}>
+            <span data-part="lettering" className={cx(engraved, "text-[0.6em] text-(--device-label-quiet) group-data-[light=fault]/light:text-(--device-label) group-data-[light=fire]/light:text-(--device-label) group-data-[light=hold]/light:text-(--device-label)")}>
               {name}
             </span>
           </span>
@@ -474,6 +475,7 @@ export function AgentStatus({ state, step, tokens, elapsed, onStop, onRun, onAll
           tabIndex={waiting ? 0 : -1}
           onPointerDown={(e) => waiting && focusOnPress(e)}
           onClick={() => act("allow")}
+          data-part="key"
           className={cx("group/key min-w-0 rounded-[0.7em] outline-offset-2 @[24rem]/agent:w-[7.5em]", !waiting && "cursor-default")}
         >
           <span
@@ -484,12 +486,13 @@ export function AgentStatus({ state, step, tokens, elapsed, onStop, onRun, onAll
           >
             <span
               aria-hidden
+              data-part="light"
               className={cx(
                 "absolute left-1/2 top-[0.42em] h-[0.24em] w-[2.3em] -translate-x-1/2 rounded-full",
                 waiting ? "bg-(--device-hold) shadow-[0_0_0.45em_var(--device-hold)]" : "bg-(--device-meter-off) transition-[background-color] duration-(--duration-exit)",
               )}
             />
-            <span className="mt-[0.45em] text-[0.8em] font-medium uppercase leading-none tracking-[0.03em] [text-shadow:var(--device-engrave)]">Allow</span>
+            <span data-part="lettering" className="mt-[0.45em] text-[0.8em] font-medium uppercase leading-none tracking-[0.03em] [text-shadow:var(--device-engrave)]">Allow</span>
           </span>
         </button>
       )}
@@ -504,13 +507,14 @@ export function AgentStatus({ state, step, tokens, elapsed, onStop, onRun, onAll
         tabIndex={canStop || canRun ? 0 : -1}
         onPointerDown={focusOnPress}
         onClick={() => act(canStop ? "stop" : "run")}
+        data-part="collar"
         className={cx("group/key grid size-[3.3em] shrink-0 place-items-center rounded-full bg-black/[0.035] p-[0.26em] shadow-(--device-recess) outline-offset-2 dark:bg-black/30", allow ? "col-start-2 @[24rem]/agent:col-start-3" : "col-start-2")}
       >
-        <span className={cx("grid size-full place-items-center rounded-full [background:var(--device-wheel-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out", (canStop || canRun) && sink)}>
+        <span data-part="cap" className={cx("grid size-full place-items-center rounded-full [background:var(--device-wheel-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out", (canStop || canRun) && sink)}>
           {canStop ? (
-            <span aria-hidden className="size-[0.85em] rounded-[0.14em] bg-(--device-key-ink)" />
+            <span aria-hidden data-part="lettering" className="size-[0.85em] rounded-[0.14em] bg-(--device-key-ink)" />
           ) : (
-            <svg aria-hidden viewBox="0 0 16 16" className="ml-[0.12em] size-[1.2em] fill-(--device-rec)">
+            <svg aria-hidden data-part="lettering" viewBox="0 0 16 16" className="ml-[0.12em] size-[1.2em] fill-(--device-rec)">
               <path d="M4.5 2.4 13.2 8l-8.7 5.6z" />
             </svg>
           )}
@@ -712,7 +716,7 @@ export default function Demo() {
 
   return (
     <div ref={rootRef} onPointerDownCapture={takeOver} onKeyDownCapture={takeOver} onFocusCapture={takeOver} className="@container w-full max-w-[440px] select-none">
-      <div className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[26rem]:p-[1.1em]">
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[26rem]:p-[1.1em]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
         <AgentStatus
           ref={status}

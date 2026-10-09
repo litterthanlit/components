@@ -45,6 +45,31 @@ export const parts: Record<string, PartInfo> = {
     tokens: ["--device-lcd", "--device-lcd-edge", "--device-lcd-ink"],
     note: "Black glass whose sheen breaks hard at 47%, where the light catches it, with light figures on it.",
   },
+  drum: {
+    name: "Drums",
+    tokens: [],
+    note: "White figures on black drums, each turning on its own spring and clicking for every figure that passes the window.",
+  },
+  reel: {
+    name: "Reels",
+    tokens: ["--device-wheel-face", "--device-rim"],
+    note: "A pack whose radius grows with the square root of the tape on it, round a hub that turns by its gradients, not a transform.",
+  },
+  tape: {
+    name: "Tape",
+    tokens: [],
+    note: "Redrawn every frame as tangents to the two packs, over the guides and the head.",
+  },
+  face: {
+    name: "Face",
+    tokens: [],
+    note: "A backlit face behind the glass, with its scale printed on it; artwork, so it keeps its own warm white in both themes.",
+  },
+  glass: {
+    name: "Glass",
+    tokens: ["--screen-glass"],
+    note: "A sheen where the light catches it, breaking hard along one line, over whatever is behind it.",
+  },
   window: {
     name: "Window",
     tokens: ["--device-window", "--device-window-edge"],
@@ -78,4 +103,4 @@ export const parts: Record<string, PartInfo> = {
 };
 
 /** Top to bottom, for kinds that sit at the same height. */
-export const stackOrder = ["lettering", "chip", "light", "cap", "key", "lcd", "window", "bezel", "slot", "collar", "well", "plate"];
+export const stackOrder = ["lettering", "chip", "light", "glass", "tape", "cap", "key", "reel", "drum", "face", "lcd", "window", "bezel", "slot", "collar", "well", "plate"];

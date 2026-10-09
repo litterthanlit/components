@@ -138,9 +138,15 @@ h3 {
   outline: 1px solid var(--device-hold);
   outline-offset: 2px;
 }
-/* An SVG part is picked by what it draws, not by the square it is drawn in. */
+/* An SVG part is picked by what it draws, not by the square it is drawn in,
+   and lit along its strokes rather than outlined round that square. A filter
+   is safe here: an SVG is a leaf, one plane already. */
 [data-anatomy] svg[data-part] {
   pointer-events: none;
+}
+[data-anatomy] svg[data-part][data-picked] {
+  outline: none;
+  filter: drop-shadow(0 0 0.6px var(--device-hold)) drop-shadow(0 0 0.6px var(--device-hold));
 }
 [data-anatomy] svg[data-part] * {
   pointer-events: visiblePainted;

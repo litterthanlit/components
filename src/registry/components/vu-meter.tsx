@@ -75,8 +75,8 @@ function arcPath(from: number, to: number, r: number) {
 /** One meter's face: scale, red zone, VU mark and the needle the meter drives. */
 function Face({ channel }: { channel: "L" | "R" }) {
   return (
-    <div className="relative overflow-hidden rounded-[0.55em] bg-(--device-rim) p-[0.28em] shadow-[0_1px_0_rgb(255_255_255/0.6),inset_0_0_0_1px_rgb(255_255_255/0.06)] dark:shadow-[0_1px_0_rgb(255_255_255/0.05),inset_0_0_0_1px_rgb(255_255_255/0.06)]">
-      <div className="relative overflow-hidden rounded-[0.38em] [background:radial-gradient(90%_110%_at_50%_100%,#fffaf0_0%,#f4eedf_55%,#e2dac6_100%)] shadow-[inset_0_2px_6px_rgb(0_0_0/0.35)]">
+    <div data-part="bezel" className="relative overflow-hidden rounded-[0.55em] bg-(--device-rim) p-[0.28em] shadow-[0_1px_0_rgb(255_255_255/0.6),inset_0_0_0_1px_rgb(255_255_255/0.06)] dark:shadow-[0_1px_0_rgb(255_255_255/0.05),inset_0_0_0_1px_rgb(255_255_255/0.06)]">
+      <div data-part="face" className="relative overflow-hidden rounded-[0.38em] [background:radial-gradient(90%_110%_at_50%_100%,#fffaf0_0%,#f4eedf_55%,#e2dac6_100%)] shadow-[inset_0_2px_6px_rgb(0_0_0/0.35)]">
         <svg viewBox={`0 0 ${FW} ${FH}`} className="block w-full font-sans">
           {/* Scale */}
           <path d={arcPath(-20, 0, ARC - 6)} fill="none" stroke="#1d1b17" strokeWidth="0.7" />
@@ -117,7 +117,7 @@ function Face({ channel }: { channel: "L" | "R" }) {
           <path d={`M${PIVOT.x - 13.5} ${FH} A13.5 13.5 0 0 1 ${PIVOT.x + 13.5} ${FH}`} fill="none" stroke="rgb(255 255 255 / 0.12)" strokeWidth="0.5" />
         </svg>
         {/* Glass over the face, and the lamp's falloff toward the corners. */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 [background:linear-gradient(160deg,rgb(255_255_255/0.45)_0%,rgb(255_255_255/0.08)_36%,transparent_36.4%)]" />
+        <div aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 [background:linear-gradient(160deg,rgb(255_255_255/0.45)_0%,rgb(255_255_255/0.08)_36%,transparent_36.4%)]" />
         <div aria-hidden className="pointer-events-none absolute inset-0 shadow-[inset_0_0_14px_rgb(60_40_10/0.18)]" />
       </div>
     </div>
@@ -184,9 +184,10 @@ export function VuMeter({ className = "" }: { className?: string }) {
           <div className="flex items-center justify-center gap-[0.4em]">
             <span
               data-peak
+              data-part="light"
               className="size-[0.42em] rounded-full bg-(--device-meter-off) transition-[background-color,box-shadow] duration-(--duration-exit) data-on:bg-(--device-rec) data-on:shadow-[0_0_0.45em_var(--device-rec)] data-on:duration-0"
             />
-            <span className="text-[0.56em] font-semibold uppercase leading-none tracking-[0.16em] text-(--device-label-quiet) [text-shadow:var(--device-engrave)]">
+            <span data-part="lettering" className="text-[0.56em] font-semibold uppercase leading-none tracking-[0.16em] text-(--device-label-quiet) [text-shadow:var(--device-engrave)]">
               Peak
             </span>
           </div>
@@ -208,10 +209,10 @@ export default function Demo() {
 
   return (
     <div className="@container w-full max-w-[500px] select-none">
-      <div className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[26rem]:p-[1.1em]">
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[26rem]:p-[1.1em]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
-        <div className="rounded-[1.05em] bg-(--device-well) p-[0.45em] shadow-(--device-recess)">
+        <div data-part="well" className="rounded-[1.05em] bg-(--device-well) p-[0.45em] shadow-(--device-recess)">
           <VuMeter />
         </div>
         <p id={`${ids}-about`} className="sr-only">
@@ -232,17 +233,19 @@ export default function Demo() {
               play("slate");
               setSent(true);
             }}
+            data-part="key"
             className="group/key shrink-0 rounded-[0.7em] outline-offset-2"
           >
             <span className="flex h-[2.5em] items-center gap-[0.5em] rounded-[0.7em] px-[0.95em] text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
               <span
                 aria-hidden
+                data-part="light"
                 className={`size-[0.42em] rounded-full transition-[background-color,box-shadow] duration-(--duration-exit) ${sent ? "bg-(--device-rec) shadow-[0_0_0.45em_var(--device-rec)]" : "bg-(--device-meter-off)"}`}
               />
-              <span className="text-[0.8em] font-medium uppercase leading-none tracking-[0.03em] [text-shadow:var(--device-engrave)]">Slate</span>
+              <span data-part="lettering" className="text-[0.8em] font-medium uppercase leading-none tracking-[0.03em] [text-shadow:var(--device-engrave)]">Slate</span>
             </span>
           </button>
-          <span className="min-w-0 text-[0.62em] font-semibold uppercase leading-[1.35] tracking-[0.14em] text-(--device-label-quiet) [text-shadow:var(--device-engrave)]">
+          <span data-part="lettering" className="min-w-0 text-[0.62em] font-semibold uppercase leading-[1.35] tracking-[0.14em] text-(--device-label-quiet) [text-shadow:var(--device-engrave)]">
             1 kHz · reads 0 VU
           </span>
         </div>
