@@ -34,6 +34,17 @@ export const registry: RegistryEntry[] = [
     background: "plain",
   },
   {
+    slug: "chrono",
+    title: "Chrono",
+    description:
+      "A stopwatch and lap timer on a black dial: sixty ticks, a seconds hand with a counterweight and a thirty-minute sub-dial. An LCD reads the time to the hundredth and the last lap against the one before. The hands follow the clock continuously from one frame loop that writes straight to the DOM and stops when the clock does. Reset is a flyback: the hands spring home, clicking past each 5 s mark. A ghost starts it and takes a lap.",
+    tagline: "A stopwatch whose hands fly back to twelve.",
+    tags: ["input", "motion", "sound", "svg"],
+    date: "2026-10-09",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "throttle",
     title: "Throttle",
     description:

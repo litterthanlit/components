@@ -26,6 +26,14 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     light: { name: "Rev bar", tokens: ["--device-lcd-ink", "--device-rec"], note: "Blips up on a downshift, as a rev-match does, drops on an upshift, then settles. The last 22% is the red zone." },
     well: { note: "The wheel's hub, pressed into the plate." },
   },
+  chrono: {
+    collar: { note: "Pressed into the plate round the bezel, as the knob's collar is." },
+    bezel: { note: "A black rim round the dial with a lit top edge, so the glass sits in a polished ring." },
+    face: { tokens: ["--device-window", "--device-lcd-ink", "--device-lcd-dim", "--device-rec"], note: "Black in both themes: sixty ticks, figures every 5 s, a thirty-minute sub-dial, and hands drawn by their x and y attributes. The red seconds hand has a counterweight on its tail." },
+    glass: { tokens: ["--screen-glass"], note: "A sheen over the dial, breaking at 38%, where the light catches it." },
+    lcd: { note: "Time to the hundredth, with the units dim, and the last lap against the one before it, with a true minus." },
+    light: { tokens: ["--device-meter-off", "--device-rec"], note: "Lit red on Start while the clock runs; Lap's flashes for 160 ms with each lap." },
+  },
   knob: {
     cap: { note: "Knurled round its skirt by a conic gradient from var(--a), so it turns without a transform." },
     light: { tokens: ["--device-meter-off", "--device-meter-on"], note: "Fifteen strokes round the collar, lit by the same spring that turns the cap and clicks the detents." },
