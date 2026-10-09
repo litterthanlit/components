@@ -512,10 +512,10 @@ export function Chrono({
       aria-label={label}
       onPointerDownCapture={() => (touched.current = true)}
       onKeyDownCapture={() => (touched.current = true)}
-      className={cx("flex flex-col gap-[0.75em]", className)}
+      className={cx("flex flex-col gap-[0.75em] @[34rem]:grid @[34rem]:grid-cols-[16.2em_minmax(0,1fr)] @[34rem]:items-center @[34rem]:gap-x-[1em]", className)}
     >
       {/* The collar, the bezel in it and the black face in that. The hands are drawn by the frame loop. */}
-      <div aria-hidden data-part="collar" className="mx-auto size-[16.2em] rounded-full bg-black/[0.035] p-[0.4em] shadow-(--device-recess) dark:bg-black/30">
+      <div aria-hidden data-part="collar" className="mx-auto size-[16.2em] @[34rem]:row-span-2 rounded-full bg-black/[0.035] p-[0.4em] shadow-(--device-recess) dark:bg-black/30">
         <div data-part="bezel" className="size-full rounded-full bg-(--device-rim) p-[0.35em] shadow-[var(--device-rim-edge),0_2px_5px_rgb(0_0_0/0.3)]">
           <div data-part="face" className="relative size-full rounded-full [background:var(--device-window)] shadow-(--device-window-edge)">
             <svg viewBox="0 0 200 200" className="block size-full font-sans">
@@ -551,7 +551,7 @@ export function Chrono({
       </div>
 
       {/* The readout: time to the hundredth, the state, and the last lap against the one before. */}
-      <div data-part="well" className="rounded-[1.05em] bg-(--device-well) p-[0.35em] shadow-(--device-recess)">
+      <div data-part="well" className="@[34rem]:col-start-2 rounded-[1.05em] bg-(--device-well) p-[0.35em] shadow-(--device-recess)">
         <div aria-hidden data-part="lcd" className="flex flex-col gap-[0.45em] rounded-[0.7em] px-[0.8em] py-[0.6em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)">
           <div className="flex items-start justify-between gap-[0.6em]">
             <p ref={clockRef} className="flex items-baseline whitespace-nowrap text-[2.1em] font-light leading-none tracking-[-0.03em] tabular-nums">
@@ -588,7 +588,7 @@ export function Chrono({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-[0.55em]">
+      <div className="grid grid-cols-2 gap-[0.55em] @[34rem]:col-start-2">
         <Key id="start" label={running ? "Stop" : "Start"} lit={running} onAct={() => act("start")} onTouch={touch} />
         <Key id="lap" label={running ? "Lap" : "Reset"} disabled={clean} onAct={() => act("lap")} onTouch={touch} />
       </div>
@@ -647,7 +647,7 @@ export default function Demo() {
   }, []);
 
   return (
-    <div ref={rootRef} onPointerDownCapture={takeOver} onKeyDownCapture={takeOver} className="@container w-full max-w-[360px] select-none">
+    <div ref={rootRef} onPointerDownCapture={takeOver} onKeyDownCapture={takeOver} className="@container w-full max-w-[640px] select-none">
       <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
         <Chrono
