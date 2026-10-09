@@ -16,6 +16,8 @@
  *   - a part moves by its own transform (the anatomy owns transform; use
  *     translate, rotate or scale), or is display: inline (transforms skip it),
  *   - a part names a kind components/anatomy/parts.ts doesn't know,
+ *   - anything positioned inside the study changes its layout when taken apart
+ *     (a wrapper on the path becomes its containing block),
  *   - the parts, fully apart, spill out of the stage.
  *
  * Needs the app running (npm run build && npm start). BASE_URL and
@@ -102,6 +104,25 @@ function inspect({ known, tolerance }) {
       if (blend !== "normal") problems.push(`${name(child)}: blends (${blend}) under ${name(el)}, which isolates it`);
     }
   }
+
+  // Taken apart, nothing moves in its layout. A wrapper on the path to a part keeps its 3D, which
+  // makes it the containing block of whatever is absolutely positioned inside it: a slot stretched
+  // top to bottom inside a wrapper with no height of its own collapses. Compare every positioned
+  // box with the scene's anatomy taken off for one synchronous look.
+  const positioned = [...scene.querySelectorAll("*")].filter((el) => el instanceof HTMLElement && ["absolute", "fixed"].includes(getComputedStyle(el).position));
+  const box = (el) => {
+    let x = 0, y = 0;
+    for (let e = el; e && e !== scene && scene.contains(e); e = e.offsetParent) { x += e.offsetLeft; y += e.offsetTop; }
+    return [el.offsetWidth, el.offsetHeight, x, y];
+  };
+  const apart = positioned.map(box);
+  delete scene.dataset.anatomy;
+  const flat = positioned.map(box);
+  scene.dataset.anatomy = "";
+  positioned.forEach((el, i) => {
+    const moved = apart[i].some((v, k) => Math.abs(v - flat[i][k]) > tolerance);
+    if (moved) problems.push(`${name(el)}: its layout changes when taken apart (${flat[i].map(Math.round).join(",")} → ${apart[i].map(Math.round).join(",")}): give the wrapper it is placed in the box it means (absolute inset-0, or relative)`);
+  });
 
   // Fully apart, every part stays on the stage.
   const stage = scene.closest("[data-preview]").getBoundingClientRect();

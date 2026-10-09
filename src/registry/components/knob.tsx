@@ -201,7 +201,7 @@ export function Knob({ label, value, onChange, min, max, detents = 24, taper = "
               d={d}
               strokeWidth="3.4"
               strokeLinecap="round"
-              className="stroke-(--device-meter-off) transition-[stroke] duration-75 data-on:stroke-(--device-meter-on)"
+              className="stroke-(--device-meter-off) transition-[stroke] duration-75 data-on:stroke-(--device-meter-on) drawn:stroke-(--device-draw-line)! drawn:data-on:stroke-(--device-draw-ink)!"
             />
           ))}
         </svg>
@@ -209,18 +209,19 @@ export function Knob({ label, value, onChange, min, max, detents = 24, taper = "
         {/* The collar, pressed into the plate, and the cap seated in it. */}
         <div aria-hidden data-part="collar" className="absolute inset-[15%] rounded-full bg-black/[0.035] p-[5%] shadow-(--device-recess) dark:bg-black/30">
           <div data-part="cap" className="relative size-full rounded-full [background:var(--device-wheel-face)] shadow-(--device-wheel-shadow)">
-            {/* Knurling round the skirt: it turns with the cap. */}
+            {/* Knurling round the skirt: it turns with the cap. Drawn, fine ink ticks on the same pitch. */}
             <div
-              className="absolute inset-0 rounded-full"
+              className="absolute inset-0 rounded-full drawn:[background:repeating-conic-gradient(from_var(--a),var(--device-draw-ink)_0_2.2deg,transparent_2.2deg_7.5deg)]!"
               style={{
                 background: "repeating-conic-gradient(from var(--a), var(--device-meter-off) 0 1.6deg, transparent 1.6deg 7.5deg)",
                 mask: "radial-gradient(circle closest-side, transparent 72%, #000 74%, #000 97%, transparent 100%)",
               }}
             />
             {/* The turned top, and its pointer. */}
-            <div className="absolute inset-[15%] rounded-full [background:var(--device-wheel-face)] shadow-[0_0_0_1px_rgb(0_0_0/0.06),inset_0_1px_0_rgb(255_255_255/0.9)] dark:shadow-[0_0_0_1px_rgb(0_0_0/0.5),inset_0_1px_0_rgb(255_255_255/0.08)]" />
+            {/* Drawn, the turned top is a hairline ring inside the skirt, and the pointer a line of ink across it. */}
+            <div className="absolute inset-[15%] rounded-full [background:var(--device-wheel-face)] shadow-[0_0_0_1px_rgb(0_0_0/0.06),inset_0_1px_0_rgb(255_255_255/0.9)] dark:shadow-[0_0_0_1px_rgb(0_0_0/0.5),inset_0_1px_0_rgb(255_255_255/0.08)] drawn:outline drawn:outline-1 drawn:outline-(--device-draw-line)" />
             <div
-              className="absolute inset-0 rounded-full"
+              className="absolute inset-0 rounded-full drawn:[background:conic-gradient(from_calc(var(--a)-3deg),var(--device-draw-ink)_0_6deg,transparent_6deg)]!"
               style={{
                 background: "conic-gradient(from calc(var(--a) - 3.5deg), var(--device-key-ink) 0 7deg, transparent 7deg)",
                 mask: "radial-gradient(circle closest-side, transparent 30%, #000 31.5%, #000 64%, transparent 65.5%)",
@@ -340,7 +341,8 @@ export default function Demo() {
               <span
                 className={cx(
                   "size-[0.55em] rounded-full",
-                  status === "recall" ? "animate-pulse bg-(--device-rec)" : status === "edited" ? "bg-(--device-hold)" : "bg-black",
+                  // Drawn, the dot keeps red while the motors run (it fires); loaded and edited are ink, as orange is the drawing's own.
+                  status === "recall" ? "animate-pulse bg-(--device-rec) drawn:bg-(--device-rec)!" : status === "edited" ? "bg-(--device-hold) drawn:bg-(--device-draw-ink)!" : "bg-black drawn:bg-(--device-draw-ink)!",
                 )}
               />
               <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em]">{chip[status]}</span>
@@ -370,7 +372,7 @@ export default function Demo() {
                   data-part="light"
                   className={cx(
                     "absolute inset-x-[30%] top-[0.45em] h-[0.24em] rounded-full transition-[background-color] duration-(--duration-exit)",
-                    scene === s ? "bg-(--device-meter-on)" : "bg-(--device-meter-off)",
+                    scene === s ? "bg-(--device-meter-on) drawn:bg-(--device-draw-ink)!" : "bg-(--device-meter-off)",
                   )}
                 />
                 <span data-part="lettering" className="mt-[0.5em] text-[0.95em] font-medium leading-none [text-shadow:var(--device-engrave)]">{s}</span>

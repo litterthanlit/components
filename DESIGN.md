@@ -418,10 +418,11 @@ The drawing is a drafter's view of the same object, and the same markup, so it s
 
 - Mark the element that draws the material: the key's button (its face sinks inside it), the collar, the cap seated in it, the LCD, the chip on the LCD, the light, the lettering.
 - A part is never `display: inline` (transforms skip it) and never moves by its own `transform`.
+- Taken apart, a wrapper on the path to a part keeps its 3D, and that makes it the containing block of whatever is absolutely positioned inside it. Give such a wrapper the box its children are placed in (`absolute inset-0`, or `relative`), or a slot stretched top to bottom inside a wrapper with no height of its own collapses, as the Fader's did.
 - Keep filters, opacity, clips and blends off the path from the plate to a part. A part with nothing marked inside it may use them: it is one plane already.
 - An SVG part is picked by what it draws and lit along its strokes, so a ring of lights can be one part.
 - Draw it back in the drawing with `drawn:` classes in the study's own file: the mechanism as line work, lit lights in ink, unlit ones as hairlines. Look at it in both finishes, both themes.
-- `npm run check:anatomy` takes every listed study apart at 375 and 1280 px, spread all the way, drawn and in its materials, and fails on anything that would flatten it, a part with its own transform or an unknown kind, or a part that spills off the stage.
+- `npm run check:anatomy` takes every listed study apart at 375 and 1280 px, spread all the way, drawn and in its materials, and fails on anything that would flatten it, a part with its own transform or an unknown kind, anything whose layout moves when it comes apart, or a part that spills off the stage.
 
 ## Writing
 

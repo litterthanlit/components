@@ -178,16 +178,16 @@ export function HoldToConfirm({ onConfirm, children, duration = 1200, rehearse =
               d={d}
               strokeWidth="4.2"
               strokeLinecap="round"
-              className="stroke-(--device-meter-off) transition-[stroke] duration-(--duration-exit) data-on:stroke-(--device-rec) data-on:duration-0"
+              className="stroke-(--device-meter-off) transition-[stroke] duration-(--duration-exit) data-on:stroke-(--device-rec) data-on:duration-0 drawn:stroke-(--device-draw-line)! drawn:data-on:stroke-(--device-rec)!"
             />
           ))}
         </svg>
-        {/* The collar, and the cap that sinks into it. Its mark glows as the hold builds. */}
+        {/* The collar, and the cap that sinks into it. Its mark glows as the hold builds; drawn, a red disc grows in its ring instead. */}
         <span aria-hidden data-part="collar" className="grid size-[68%] place-items-center rounded-full bg-black/[0.035] p-[7%] shadow-(--device-recess) dark:bg-black/30">
           <span data-part="cap" className="grid size-full place-items-center rounded-full [background:var(--device-wheel-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-data-pressed/key:translate-y-[2px] group-data-pressed/key:shadow-(--device-key-shadow-pressed) group-data-pressed/key:duration-75">
             <span
               data-part="light"
-              className="size-[26%] rounded-full bg-(--device-rec)"
+              className="size-[26%] rounded-full bg-(--device-rec) drawn:[background-image:radial-gradient(circle,var(--device-rec)_calc(18%+var(--p,0)*28%),transparent_calc(19%+var(--p,0)*28%))]!"
               style={{ boxShadow: "0 0 calc(var(--p, 0) * 1.1em) calc(var(--p, 0) * 0.15em) var(--device-rec)" }}
             />
           </span>
@@ -230,7 +230,8 @@ export default function Demo() {
           className="flex h-[3.3em] w-full flex-col justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.5em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
         >
           <span data-part="chip" className="inline-flex items-center gap-[0.35em] self-start rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
-            <span className={erased ? "size-[0.5em] rounded-[1px] bg-current" : "size-[0.55em] rounded-full bg-(--device-rec)"} />
+            {/* Drawn, the recording dot stays red (it records); the erased square is ink. */}
+            <span className={erased ? "size-[0.5em] rounded-[1px] bg-current drawn:bg-(--device-draw-ink)!" : "size-[0.55em] rounded-full bg-(--device-rec) drawn:bg-(--device-rec)!"} />
             <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em]">{erased ? "Erased" : "Take"}</span>
           </span>
           <span key={file + erased} className="animate-enter truncate text-[1.05em] font-light leading-none tracking-[-0.01em]">
