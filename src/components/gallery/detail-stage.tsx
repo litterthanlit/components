@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { Button, buttonClass, cn } from "@/design-system";
 import { site } from "@/site.config";
 import type { StageBackground } from "@/registry";
+import { anatomy, partInfo } from "@/registry/anatomy";
 import { SegmentedControl } from "@/registry/components/segmented-control";
 import { Preview } from "./preview";
 import { useTheme } from "./theme-toggle";
@@ -18,23 +19,110 @@ const backgrounds = [
 // Background picker and frame capture are authoring tools, so they only show in dev.
 const authoring = process.env.NODE_ENV === "development";
 
-/** The large interactive stage on a component page, with a replay button. */
-export function DetailStage({ slug, initial = "grid" }: { slug: string; initial?: StageBackground }) {
+const SPREAD = 0.6; // how far apart the layers open
+const FIRST_PICK = 900; // ms after opening before the anatomy names its first layer, untouched
+const NEXT_PICK = 1600; // ms it rests on each layer as it walks down the stack
+
+const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/**
+ * The large interactive stage on a component page, with a replay button and,
+ * for studies that can be taken apart, an Anatomy key: it latches down, the
+ * study restarts and comes apart in its layers, and the layer the hand is on
+ * is named under the stage. Untouched, it walks down the stack once.
+ */
+export function DetailStage({ slug, title, initial = "grid" }: { slug: string; title: string; initial?: StageBackground }) {
   const [background, setBackground] = useState<StageBackground>(initial);
   const [replay, setReplay] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [spread, setSpread] = useState(SPREAD);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [kinds, setKinds] = useState<string[]>([]);
   const theme = useTheme();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const touched = useRef(false); // a hand has worked the anatomy: the walk down the stack is over
+  const walked = useRef(false); // the walk has run since it opened
+  const walk = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const canOpen = slug in anatomy;
+  const info = picked ? partInfo(slug, picked) : null;
 
   // A plain <a> (new tab), so basePath isn't added for us.
   const captureHref = `${site.basePath}/capture/${slug}?bg=${background}&theme=${theme}`;
 
+  function stopWalk() {
+    walk.current.forEach(clearTimeout);
+    walk.current = [];
+  }
+
+  function touch() {
+    touched.current = true;
+    stopWalk();
+  }
+
+  function toggle(e: MouseEvent<HTMLButtonElement>) {
+    if (open) return close();
+    touched.current = false;
+    walked.current = false;
+    setReplay((n) => n + 1); // the study restarts, so it runs its show while it comes apart
+    setSpread(SPREAD);
+    setPicked(null);
+    setOpen(true);
+    // Opened from the keyboard: the keys move on to the layers.
+    if (e.detail === 0) requestAnimationFrame(() => rootRef.current?.querySelector<HTMLElement>('[role="listbox"]')?.focus());
+  }
+
+  function close() {
+    stopWalk();
+    setOpen(false);
+    if (rootRef.current?.contains(document.activeElement)) rootRef.current.querySelector<HTMLElement>("[data-anatomy-key]")?.focus();
+  }
+
+  // Untouched, the anatomy walks down the stack once, naming each layer.
+  useEffect(() => {
+    if (!open || !kinds.length || walked.current || touched.current || reduced()) return;
+    walk.current = kinds.map((kind, i) =>
+      setTimeout(() => {
+        setPicked(kind);
+        if (i === kinds.length - 1) walked.current = true;
+      }, FIRST_PICK + i * NEXT_PICK),
+    );
+    return stopWalk;
+  }, [open, kinds]);
+
   return (
-    <div>
-      <Preview
-        key={replay}
-        slug={slug}
-        background={authoring ? background : undefined}
-        className={cn("min-h-[22rem] sm:h-[28rem]", authoring && "rounded-xl shadow-[inset_0_0_0_1px_var(--line)]")}
-      />
+    <div ref={rootRef}>
+      <div onPointerDownCapture={open ? touch : undefined} onKeyDownCapture={open ? touch : undefined}>
+        <Preview
+          key={replay}
+          slug={slug}
+          background={authoring ? background : undefined}
+          className={cn("min-h-[22rem] sm:h-[28rem]", authoring && "rounded-xl shadow-[inset_0_0_0_1px_var(--line)]")}
+          anatomy={
+            canOpen
+              ? {
+                  slug,
+                  open,
+                  spread,
+                  picked,
+                  label: `Layers of ${title}`,
+                  // The study remounts on opening and reports the same kinds again: keep the list that's there.
+                  onKinds: (next) => setKinds((prev) => (prev.join() === next.join() ? prev : next)),
+                  onPick: (kind) => {
+                    touch();
+                    setPicked(kind);
+                  },
+                  onSpread: (v) => {
+                    touch();
+                    setSpread(v);
+                  },
+                  onClose: close,
+                }
+              : undefined
+          }
+        />
+      </div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         {authoring && (
           <SegmentedControl
@@ -44,7 +132,43 @@ export function DetailStage({ slug, initial = "grid" }: { slug: string; initial?
             onChange={(v) => setBackground(v as StageBackground)}
           />
         )}
+        {open && (
+          <label className="flex animate-enter items-center gap-3 text-meta text-muted">
+            Spread
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={Math.round(spread * 100)}
+              aria-valuetext={`${Math.round(spread * 100)} %`}
+              onChange={(e) => {
+                touch();
+                setSpread(Number(e.target.value) / 100);
+              }}
+              className="range w-32 sm:w-40"
+            />
+            <span aria-hidden className="w-[4ch] text-right tabular-nums text-ink">
+              {Math.round(spread * 100)} %
+            </span>
+          </label>
+        )}
         <div className="ml-auto flex items-center gap-1.5">
+          {canOpen && (
+            // A latching key: it stays down while the study is apart.
+            <Button
+              size="sm"
+              data-anatomy-key
+              aria-pressed={open}
+              onClick={toggle}
+              className="aria-pressed:translate-y-[2px] aria-pressed:shadow-(--key-shadow-pressed)"
+            >
+              <svg aria-hidden viewBox="0 0 16 16" fill="none" className="size-3.5">
+                <path d="M8 2.5 13.5 5 8 7.5 2.5 5zM2.5 8 8 10.5 13.5 8M2.5 11 8 13.5 13.5 11" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+              </svg>
+              Anatomy
+            </Button>
+          )}
           <Button size="sm" onClick={() => setReplay((n) => n + 1)}>
             <svg aria-hidden viewBox="0 0 16 16" fill="none" className="size-3.5">
               <path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 2.5v2.75h2.75" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -58,6 +182,30 @@ export function DetailStage({ slug, initial = "grid" }: { slug: string; initial?
           )}
         </div>
       </div>
+
+      {canOpen && (
+        // The layer the hand is on: its name, the tokens that draw it and why. It opens with the anatomy.
+        <div
+          data-open={open || undefined}
+          className="grid grid-rows-[0fr] opacity-0 transition-[grid-template-rows,opacity] duration-(--duration-exit) ease-out data-open:grid-rows-[1fr] data-open:opacity-100 data-open:duration-(--duration-enter)"
+        >
+          <div className="min-h-0 overflow-hidden">
+            <div className="pt-5">
+              <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-meta">
+                <span className="tabular-nums text-muted">
+                  {info ? `${pad(kinds.indexOf(picked!) + 1)} / ${pad(kinds.length)}` : `${pad(kinds.length)} layers`}
+                </span>
+                {info && <span className="font-medium text-ink">{info.name}</span>}
+                {info && info.tokens.length > 0 && <span className="font-mono text-muted">{info.tokens.join(" · ")}</span>}
+              </p>
+              <p className="mt-1.5 min-h-[3.2em] max-w-[60ch] text-body text-muted">{info?.note}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      <p aria-live="polite" className="sr-only">
+        {open ? `${title}, taken apart in ${kinds.length} layers.` : ""}
+      </p>
     </div>
   );
 }

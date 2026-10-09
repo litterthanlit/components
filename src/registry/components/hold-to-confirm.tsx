@@ -170,7 +170,7 @@ export function HoldToConfirm({ onConfirm, children, duration = 1200, rehearse =
     >
       <span className="relative grid size-[7.2em] place-items-center">
         {/* The ring of lights. */}
-        <svg aria-hidden viewBox="0 0 100 100" className="absolute inset-0 size-full">
+        <svg aria-hidden data-part="light" viewBox="0 0 100 100" className="absolute inset-0 size-full">
           {ring.map((d, i) => (
             <path
               key={i}
@@ -183,16 +183,17 @@ export function HoldToConfirm({ onConfirm, children, duration = 1200, rehearse =
           ))}
         </svg>
         {/* The collar, and the cap that sinks into it. Its mark glows as the hold builds. */}
-        <span aria-hidden className="grid size-[68%] place-items-center rounded-full bg-black/[0.035] p-[7%] shadow-(--device-recess) dark:bg-black/30">
-          <span className="grid size-full place-items-center rounded-full [background:var(--device-wheel-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-data-pressed/key:translate-y-[2px] group-data-pressed/key:shadow-(--device-key-shadow-pressed) group-data-pressed/key:duration-75">
+        <span aria-hidden data-part="collar" className="grid size-[68%] place-items-center rounded-full bg-black/[0.035] p-[7%] shadow-(--device-recess) dark:bg-black/30">
+          <span data-part="cap" className="grid size-full place-items-center rounded-full [background:var(--device-wheel-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-data-pressed/key:translate-y-[2px] group-data-pressed/key:shadow-(--device-key-shadow-pressed) group-data-pressed/key:duration-75">
             <span
+              data-part="light"
               className="size-[26%] rounded-full bg-(--device-rec)"
               style={{ boxShadow: "0 0 calc(var(--p, 0) * 1.1em) calc(var(--p, 0) * 0.15em) var(--device-rec)" }}
             />
           </span>
         </span>
       </span>
-      <span className="text-[0.62em] font-semibold uppercase leading-none tracking-[0.16em] text-(--device-label) [text-shadow:var(--device-engrave)]">
+      <span data-part="lettering" className="text-[0.62em] font-semibold uppercase leading-none tracking-[0.16em] text-(--device-label) [text-shadow:var(--device-engrave)]">
         {children}
       </span>
       <span id={hintId} className="sr-only">
@@ -220,14 +221,15 @@ export default function Demo() {
 
   return (
     <div className="@container w-full max-w-[280px] select-none">
-      <div className="relative isolate flex animate-enter flex-col items-center gap-[1em] overflow-hidden rounded-[1.25em] p-[0.9em] pb-[1.1em] text-[clamp(11px,4.6cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
+      <div data-part="plate" className="relative isolate flex animate-enter flex-col items-center gap-[1em] overflow-hidden rounded-[1.25em] p-[0.9em] pb-[1.1em] text-[clamp(11px,4.6cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
         <div
           aria-hidden
+          data-part="lcd"
           className="flex h-[3.3em] w-full flex-col justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.5em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
         >
-          <span className="inline-flex items-center gap-[0.35em] self-start rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
+          <span data-part="chip" className="inline-flex items-center gap-[0.35em] self-start rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
             <span className={erased ? "size-[0.5em] rounded-[1px] bg-current" : "size-[0.55em] rounded-full bg-(--device-rec)"} />
             <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em]">{erased ? "Erased" : "Take"}</span>
           </span>
