@@ -6,6 +6,14 @@ import { parts, type PartInfo } from "@/components/anatomy/parts";
  * enough. A study is listed here once its parts carry `data-part`.
  */
 export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>> = {
+  "gauge-cluster": {
+    bezel: { name: "Bezels", note: "Black, with a polished lip, round each face. The large one stands proud of the two tucked behind it and throws a soft shadow on them." },
+    face: { tokens: ["--device-window", "--device-window-edge", "--device-lcd-ink", "--device-lcd-dim", "--device-rec"], note: "Black glass with figures in light type, ticks in two greys and the red block at the end of the scale. The needle is drawn through SVG attributes by a spring in degrees, never a transform." },
+    glass: { tokens: [], note: "A sheen over each face, breaking at 36%." },
+    chip: { name: "Chips", note: "The gear in the tach, and the automation's mode on the strip." },
+    light: { tokens: ["--device-meter-off", "--device-meter-on", "--device-hold"], note: "Orange while a hand has the throttle in Touch, grey while the lap plays in Read." },
+    lcd: { note: "The mode and the throttle, on the strip under the cluster." },
+  },
   throttle: {
     key: { name: "Pedal", tokens: ["--device-wheel-face", "--device-key-shadow"], note: "Brushed aluminium with a pad of rubber studs in rows. It tilts back from its hinge on the rotate property inside a clipping well, and its face darkens with travel." },
     slot: { name: "Hinge", tokens: ["--device-rim"], note: "A black groove across the foot of the plate, where it is hinged." },

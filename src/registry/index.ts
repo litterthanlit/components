@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "gauge-cluster",
+    title: "Gauge Cluster",
+    description:
+      "A radial gauge for a usage, a quota or a score, set three to a well: a large tach in the middle, with a speedo and an oil gauge tucked partly behind it. Each needle is a spring in degrees, stiff on the tach and gentler on the sides, and each face is a meter for screen readers. On power-up the needles swing to full scale and back, then a recorded lap plays in Read. Hold the cluster, or Space, to take the throttle in Touch.",
+    tagline: "Needles that run a recorded lap and give way to a hand.",
+    tags: ["motion", "svg", "sound", "a11y"],
+    date: "2026-10-09",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "start-key",
     title: "Start Key",
     description:
