@@ -13,6 +13,13 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     light: { tokens: ["--device-meter-off", "--device-meter-on", "--device-rec"], note: "Twelve shift lights, the last three red. Each that comes on clicks a little higher, and all flash together at the limiter." },
     lcd: { note: "Revs in light tabular figures with a dim unit, written by the engine loop, with a chip for Idle, Rev and Limiter." },
   },
+  "drive-mode": {
+    collar: { note: "The rotary's seat, and the centre key's: round recesses pressed into the plate and the cap." },
+    cap: { tokens: ["--device-wheel-face", "--device-wheel-shadow", "--device-key-shadow"], note: "A knurled cap turned by a conic gradient from var(--a), its pointer a wedge on the skirt. The centre cap is a key that sinks 2px." },
+    light: { tokens: ["--device-meter-off", "--device-meter-on", "--device-rec"], note: "A light beside the chosen mode follows the cap; the ring of twenty goes out one a second over the 20 s boost, drawn from a frame loop." },
+    lettering: { note: "The four modes and their detent marks, engraved round the collar." },
+    lcd: { note: "The mode chip, and three bars that travel on springs to each mode's preset, with the boost count." },
+  },
   knob: {
     cap: { note: "Knurled round its skirt by a conic gradient from var(--a), so it turns without a transform." },
     light: { tokens: ["--device-meter-off", "--device-meter-on"], note: "Fifteen strokes round the collar, lit by the same spring that turns the cap and clicks the detents." },

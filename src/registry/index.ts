@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "drive-mode",
+    title: "Drive Mode",
+    description:
+      "A mode picker after a steering wheel's drive-mode switch: a knurled cap in a collar with four detents across 120°, the modes engraved round it, and a key in the centre. Values set from outside travel on the motor and tick through each detent; a hand drags the cap round and it clicks onto the nearest. The key starts a 20 s response boost, a ring of twenty lights that goes out one a second. Arrow keys, Home and End step the modes.",
+    tagline: "Turn to a mode, press for a 20 s boost.",
+    tags: ["input", "pointer", "sound", "a11y"],
+    date: "2026-10-09",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "throttle",
     title: "Throttle",
     description:
