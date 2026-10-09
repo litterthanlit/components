@@ -217,7 +217,9 @@ export function StreakField({ palette, seed = 0, active = false, paused = false,
     // Made here rather than rendered: the cleanup loses its context for good, so every mount
     // (StrictMode's second one included) needs a canvas of its own.
     const canvas = document.createElement("canvas");
-    canvas.className = "block size-full";
+    // Drawn, the artwork stays a quiet grayscale of the streaks (the generic pass), a little firmer than half
+    // opacity so the palettes' pale ends still read on the canvas. Colour would be a second voice beside the orange pick.
+    canvas.className = "block size-full drawn:opacity-60!";
     host.append(canvas);
     const context = canvas.getContext("webgl", { antialias: false, alpha: false, preserveDrawingBuffer: true });
     if (!context) return () => canvas.remove();
@@ -482,7 +484,8 @@ export function GradientKey({ title, palette, seed = 0, selected = false, paused
             <span
               aria-hidden
               className={cx(
-                "pointer-events-none absolute inset-0 bg-black/40 transition-opacity ease-out",
+                // Drawn, the dim is a wash of the canvas over the streaks, so an unselected screen fades toward the ground.
+                "pointer-events-none absolute inset-0 bg-black/40 transition-opacity ease-out drawn:[background:color-mix(in_oklab,var(--canvas)_58%,transparent)]!",
                 selected ? "opacity-0 duration-(--duration-enter)" : "opacity-100 duration-(--duration-exit)",
               )}
             />
@@ -496,7 +499,8 @@ export function GradientKey({ title, palette, seed = 0, selected = false, paused
           data-part="light"
           className={cx(
             "h-[0.24em] w-[30%] rounded-full transition-[background-color]",
-            selected ? "bg-(--device-meter-on) duration-0" : "bg-(--device-meter-off) duration-(--duration-exit)",
+            // Drawn: lit is filled ink, unlit is the part's hairline alone.
+            selected ? "bg-(--device-meter-on) duration-0 drawn:bg-(--device-draw-ink)!" : "bg-(--device-meter-off) duration-(--duration-exit)",
           )}
         />
       </span>

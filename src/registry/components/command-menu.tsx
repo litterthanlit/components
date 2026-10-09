@@ -98,6 +98,9 @@ const detent = () => 0.97 + Math.random() * 0.06;
 /** 2400 → "2,400", the same on the server and in every locale. */
 const thousands = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
+/** Drawn, what the site quietens with a muted colour is a lower opacity of the ink instead. */
+const dim = "drawn:opacity-60!";
+
 /** Lettering on the body: tiny tracked capitals, cut in. */
 const engraved = "font-semibold uppercase leading-none tracking-[0.16em] [text-shadow:var(--device-engrave)]";
 
@@ -353,7 +356,7 @@ function Keycaps({ keys }: { keys: string[] }) {
       {keys.map((k, i) => (
         <kbd
           key={i}
-          className="grid h-[1.6em] min-w-[1.6em] place-items-center rounded-[0.38em] px-[0.38em] font-sans text-[0.72em] font-medium leading-none text-(--device-key-ink) [background:var(--device-key-face)] shadow-[inset_0_1px_0_rgb(255_255_255/0.9),0_0_0_0.5px_rgb(0_0_0/0.16),0_1px_0_0.5px_rgb(0_0_0/0.1)] [text-shadow:var(--device-engrave)] dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.1),0_0_0_0.5px_rgb(0_0_0/0.8),0_1px_0_0.5px_rgb(0_0_0/0.7)]"
+          className="grid h-[1.6em] min-w-[1.6em] place-items-center rounded-[0.38em] px-[0.38em] font-sans text-[0.72em] font-medium leading-none text-(--device-key-ink) [background:var(--device-key-face)] shadow-[inset_0_1px_0_rgb(255_255_255/0.9),0_0_0_0.5px_rgb(0_0_0/0.16),0_1px_0_0.5px_rgb(0_0_0/0.1)] [text-shadow:var(--device-engrave)] dark:shadow-[inset_0_1px_0_rgb(255_255_255/0.1),0_0_0_0.5px_rgb(0_0_0/0.8),0_1px_0_0.5px_rgb(0_0_0/0.7)] drawn:outline drawn:outline-1 drawn:outline-(--device-draw-line)"
         >
           {k}
         </kbd>
@@ -366,19 +369,19 @@ function Keycaps({ keys }: { keys: string[] }) {
 function RowContent({ item, matches, bar }: { item: CommandItem; matches: number[]; bar?: boolean }) {
   return (
     <>
-      <span className={cx("grid size-[1.15em] shrink-0 place-items-center [&>svg]:size-full", bar ? "text-accent-ink" : "text-muted")}>{item.icon}</span>
+      <span className={cx("grid size-[1.15em] shrink-0 place-items-center [&>svg]:size-full", bar ? "text-accent-ink" : cx("text-muted", dim))}>{item.icon}</span>
       <span className="min-w-0 flex-1 truncate text-[1.06em] tracking-[-0.01em]">
         <Highlighted
           text={item.label}
           matches={matches}
           hit={bar ? "text-accent-ink" : "text-ink"}
-          rest={bar ? "text-accent-ink/70" : "text-muted"}
+          rest={bar ? "text-accent-ink/70 drawn:opacity-70!" : cx("text-muted", dim)}
         />
       </span>
       {item.shortcut ? (
         <Keycaps keys={item.shortcut} />
       ) : item.meta ? (
-        <span className={cx("shrink-0 text-[0.8em] tabular-nums", bar ? "text-accent-ink/80" : "text-muted")}>{item.meta}</span>
+        <span className={cx("shrink-0 text-[0.8em] tabular-nums", bar ? "text-accent-ink/80" : cx("text-muted", dim))}>{item.meta}</span>
       ) : null}
     </>
   );
@@ -672,7 +675,7 @@ export function CommandMenu<T extends CommandItem>({
         <div data-part="screen" className="relative isolate flex animate-wake flex-col overflow-hidden rounded-[1.1em] bg-canvas text-ink" style={{ "--row": `${ROW}em` } as CSSProperties}>
           {/* The search field, as on the player's Find panel. The field draws the focus ring, so the input's own is off (`!`: the page's ring is unlayered and would win). */}
           <div className="px-[0.55em] pb-[0.35em] pt-[0.55em]">
-            <label className="group/field flex h-[2.8em] items-center gap-[0.6em] rounded-[0.75em] bg-panel px-[0.85em] text-muted shadow-[inset_0_0_0_1px_var(--line)] transition-shadow duration-(--duration-exit) focus-within:text-ink focus-within:shadow-[inset_0_0_0_1px_var(--line-strong)] has-[input:focus-visible:not([data-quiet])]:shadow-[inset_0_0_0_1.5px_var(--focus)]">
+            <label className="group/field flex h-[2.8em] items-center gap-[0.6em] rounded-[0.75em] bg-panel px-[0.85em] text-muted shadow-[inset_0_0_0_1px_var(--line)] transition-shadow duration-(--duration-exit) focus-within:text-ink focus-within:shadow-[inset_0_0_0_1px_var(--line-strong)] has-[input:focus-visible:not([data-quiet])]:shadow-[inset_0_0_0_1.5px_var(--focus)] drawn:outline drawn:outline-1 drawn:outline-(--device-draw-line)">
               <SearchGlyph />
               <span className="relative flex min-w-0 flex-1 items-center">
                 <input
@@ -694,13 +697,13 @@ export function CommandMenu<T extends CommandItem>({
                   autoCapitalize="off"
                   spellCheck={false}
                   enterKeyHint="go"
-                  className="peer w-full min-w-0 bg-transparent text-[1.08em] tracking-[-0.01em] text-ink outline-none! placeholder:text-muted"
+                  className="peer w-full min-w-0 bg-transparent text-[1.08em] tracking-[-0.01em] text-ink outline-none! placeholder:text-muted drawn:placeholder:text-(--device-draw-line)!"
                 />
                 {/* Someone else's caret, while they type into a field that isn't focused. */}
                 {ghost && (
                   <span aria-hidden className="pointer-events-none absolute inset-y-0 left-0 flex items-center text-[1.08em] tracking-[-0.01em] peer-focus:hidden">
                     <span className="invisible whitespace-pre">{query}</span>
-                    <span className="ml-px h-[1.1em] w-[2px] animate-caret rounded-full bg-accent" />
+                    <span className="ml-px h-[1.1em] w-[2px] animate-caret rounded-full bg-accent drawn:bg-(--device-draw-ink)!" />
                   </span>
                 )}
               </span>
@@ -734,8 +737,8 @@ export function CommandMenu<T extends CommandItem>({
                   return (
                     <div key={group.name} role="group" aria-labelledby={`${ids}-g${g}`}>
                       <div id={`${ids}-g${g}`} aria-hidden className={headingClass} style={place(group.first + g)}>
-                        <span className={cx(engraved, "text-[0.6em] text-(--device-label-quiet)")}>{group.name}</span>
-                        <span className="ml-auto text-[0.66em] tabular-nums leading-none text-(--device-label-quiet)">{thousands(group.size)}</span>
+                        <span className={cx(engraved, "text-[0.6em] text-(--device-label-quiet)", dim)}>{group.name}</span>
+                        <span className={cx("ml-auto text-[0.66em] tabular-nums leading-none text-(--device-label-quiet)", dim)}>{thousands(group.size)}</span>
                       </div>
                       {members.map(({ row, option: i, item, matches }) => (
                         <div
@@ -769,8 +772,9 @@ export function CommandMenu<T extends CommandItem>({
                   className={cx("group/bar pointer-events-none absolute inset-0 text-accent-ink", !total && "hidden")}
                   style={{ clipPath: barClip }}
                 >
+                  {/* Drawn, the bar is an ink outline a pixel inside the clip (so the clip never trims it), washed faintly as it runs. */}
                   <div
-                    className="absolute inset-x-0 h-(--row) bg-accent shadow-[inset_0_1px_0_rgb(255_255_255/0.2)] transition-[filter] duration-(--duration-move) ease-out group-data-flash/bar:brightness-125 group-data-flash/bar:duration-0"
+                    className="absolute inset-x-0 h-(--row) bg-accent shadow-[inset_0_1px_0_rgb(255_255_255/0.2)] transition-[filter] duration-(--duration-move) ease-out group-data-flash/bar:brightness-125 group-data-flash/bar:duration-0 drawn:inset-x-[calc(0.45em+1px)] drawn:mt-[calc(0.08em+1px)] drawn:h-[calc(var(--row)-0.16em-2px)] drawn:rounded-[calc(0.6em-1px)] drawn:border drawn:border-(--device-draw-ink)! drawn:group-data-flash/bar:[background:color-mix(in_oklab,var(--device-draw-ink)_14%,transparent)]!"
                     style={{ top: "calc(var(--bar, 0) * var(--row))" }}
                   />
                   {shown.map(({ row, item, matches }) => (
@@ -790,14 +794,14 @@ export function CommandMenu<T extends CommandItem>({
 
             {/* The scroll thumb, as on the player's lists: tiny when the list is long. */}
             <div aria-hidden className="pointer-events-none absolute inset-y-[0.5em] right-[0.2em] w-[0.16em] opacity-0 transition-opacity duration-(--duration-exit) [[data-scrolls]_&]:opacity-100">
-              <div className="absolute inset-x-0 rounded-full bg-(--device-meter-off)" style={{ height: thumb, top: `calc(var(--sp, 0) * (100% - ${thumb}))` }} />
+              <div className="absolute inset-x-0 rounded-full bg-(--device-meter-off) drawn:bg-(--device-draw-ink)!" style={{ height: thumb, top: `calc(var(--sp, 0) * (100% - ${thumb}))` }} />
             </div>
           </div>
 
           {/* Footer: the keys that drive it, and the LCD. */}
           <div
             onMouseDown={(e) => e.preventDefault()}
-            className="flex h-[2.75em] items-center gap-[0.3em] bg-panel px-[0.55em] shadow-[0_-1px_0_var(--line)]"
+            className="flex h-[2.75em] items-center gap-[0.3em] bg-panel px-[0.55em] shadow-[0_-1px_0_var(--line)] drawn:border-t"
           >
             <FooterKey cap="up" onPress={() => press("up")} />
             <FooterKey cap="down" onPress={() => press("down")} />
@@ -811,7 +815,7 @@ export function CommandMenu<T extends CommandItem>({
             >
               <span data-part="chip" className="grid h-[1.35em] w-[1.35em] shrink-0 place-items-center rounded-[0.3em] bg-white text-black">
                 {status ? (
-                  <span key={`${status.text}${status.detail}`} className="size-[0.5em] animate-enter rounded-full bg-(--device-rec)" />
+                  <span key={`${status.text}${status.detail}`} className="size-[0.5em] animate-enter rounded-full bg-(--device-rec) drawn:bg-(--device-rec)!" />
                 ) : (
                   <svg viewBox="0 0 16 16" className="size-[0.85em] fill-none stroke-current [stroke-linecap:round] [stroke-width:2]">
                     <circle cx="7" cy="7" r="4.25" />
@@ -821,7 +825,7 @@ export function CommandMenu<T extends CommandItem>({
               </span>
               <span key={`${lcd.text}|${lcd.detail ?? ""}`} className="min-w-0 animate-enter truncate text-[0.7em] leading-none tabular-nums">
                 <span className="font-semibold uppercase tracking-[0.06em]">{lcd.text}</span>
-                {lcd.detail && <span className="text-(--device-lcd-dim)"> {lcd.detail}</span>}
+                {lcd.detail && <span className={cx("text-(--device-lcd-dim)", dim)}> {lcd.detail}</span>}
               </span>
             </span>
           </div>
@@ -865,13 +869,13 @@ function FooterKey({ cap, onPress }: { cap: keyof typeof CAPS; onPress: () => vo
       onPointerLeave={up}
       onPointerCancel={up}
       data-part="key"
-      className="group/key relative grid h-[1.75em] min-w-[1.95em] cursor-default place-items-center before:absolute before:-inset-x-[0.15em] before:-inset-y-[0.5em] before:content-['']"
+      className="group/key relative grid h-[1.75em] min-w-[1.95em] cursor-default place-items-center before:absolute before:-inset-x-[0.15em] before:-inset-y-[0.5em] before:content-[''] drawn:rounded-[0.42em]"
     >
-      <span className="grid h-full w-full place-items-center rounded-[0.42em] px-[0.4em] text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-data-pressed/key:translate-y-[2px] group-data-pressed/key:shadow-(--device-key-shadow-pressed) group-data-pressed/key:duration-75">
+      <span className="grid h-full w-full place-items-center rounded-[0.42em] px-[0.4em] text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-data-pressed/key:translate-y-[2px] group-data-pressed/key:shadow-(--device-key-shadow-pressed) group-data-pressed/key:duration-75 drawn:outline drawn:outline-1 drawn:outline-(--device-draw-line)">
         {cap === "escape" ? (
           <span data-part="lettering" className="text-[0.66em] font-medium leading-none tracking-[0.02em] [text-shadow:var(--device-engrave)]">esc</span>
         ) : (
-          <svg viewBox="0 0 16 16" data-part="lettering" className="size-[0.95em] fill-none stroke-current [filter:var(--device-engrave-glyph)] [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.6]">
+          <svg viewBox="0 0 16 16" data-part="lettering" className="size-[0.95em] fill-none stroke-current [filter:var(--device-engrave-glyph)] [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.6] drawn:[filter:none]!">
             {CAPS[cap]}
           </svg>
         )}
@@ -886,7 +890,7 @@ type Glyph = keyof typeof GLYPHS;
 type DemoItem = CommandItem & { done: [string, string?] };
 
 const GLYPHS = {
-  record: <circle cx="8" cy="8" r="4.25" className="fill-(--device-rec) stroke-none [[data-bar]_&]:fill-current" />,
+  record: <circle cx="8" cy="8" r="4.25" className="fill-(--device-rec) stroke-none drawn:fill-current! [[data-bar]_&]:fill-current" />,
   export: <path d="M8 10V2.5M5 5.5l3-3 3 3M3 9.5v3.5h10V9.5" />,
   arm: (
     <>

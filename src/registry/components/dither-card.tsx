@@ -265,7 +265,10 @@ export function DitherField({ pattern = "butterfly", pixel = 2, active = false, 
     // Made here rather than rendered: the cleanup loses its context for good, so every mount
     // (StrictMode's second one included) needs a canvas of its own.
     const canvas = document.createElement("canvas");
-    canvas.className = "block size-full [image-rendering:pixelated]";
+    // Drawn, the dots keep the LCD's light ink whichever finish the study is in (so switching finish
+    // never leaves them the drawing's dark ink on dark glass), and the canvas flips them to dark ink on
+    // the light ground; in dark they stay light. A touch more than the generic half opacity, as they are the screen's content.
+    canvas.className = "block size-full [image-rendering:pixelated] drawn:text-(--device-lcd-ink)! drawn:opacity-70! drawn:invert! drawn:dark:invert-0!";
     host.append(canvas);
     const context = canvas.getContext("webgl", { antialias: false, alpha: true, premultipliedAlpha: true, preserveDrawingBuffer: true });
     if (!context) return () => canvas.remove(); // Whatever is behind shows through as a quiet fallback.
@@ -481,7 +484,7 @@ export function DitherCard({ title, description, meta, href, pattern = "butterfl
       </span>
       <span data-part="lettering" className="flex max-w-full items-baseline gap-[0.6em] text-[0.6em] font-semibold uppercase leading-none tracking-[0.16em] [text-shadow:var(--device-engrave)]">
         <span className="min-w-0 truncate text-(--device-label)">{title}</span>
-        {meta && <span className="shrink-0 tabular-nums text-(--device-label-quiet)">{meta}</span>}
+        {meta && <span className="shrink-0 tabular-nums text-(--device-label-quiet) drawn:opacity-70!">{meta}</span>}
       </span>
       <span id={descriptionId} hidden>
         {description}
@@ -577,7 +580,8 @@ export default function Demo() {
           className="flex h-[3.3em] flex-col justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.5em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
         >
           <span data-part="chip" className="inline-flex items-center gap-[0.35em] self-start rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
-            <span className={ghost ? "size-[0.55em] animate-pulse rounded-full bg-(--device-rec) motion-reduce:animate-none" : "size-[0.55em] rounded-full bg-black"} />
+            {/* Drawn, the ghost's pulse stays red, a signal; idle it is an unlit ring. */}
+            <span className={ghost ? "size-[0.55em] animate-pulse rounded-full bg-(--device-rec) motion-reduce:animate-none drawn:bg-(--device-rec)!" : "size-[0.55em] rounded-full bg-black drawn:border"} />
             <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em] tabular-nums">{project.year}</span>
           </span>
           <span key={at} className="animate-enter truncate text-[1.05em] font-light leading-none tracking-[-0.01em]">
