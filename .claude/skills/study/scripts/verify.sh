@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Checks the studies the way CI does: types, lint, a production build, then
-# the overflow check against a server this script starts and stops itself.
+# the overflow and anatomy checks against a server this script starts and
+# stops itself.
 #
 #   .claude/skills/study/scripts/verify.sh              # every study
 #   .claude/skills/study/scripts/verify.sh knob fader   # just these
 #
 # PORT (default 3100) moves the server, SKIP_BUILD=1 reuses .next, and
-# CHROMIUM_PATH is passed through to check:fit to pick the browser.
+# CHROMIUM_PATH is passed through to both checks to pick the browser.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
@@ -61,3 +62,6 @@ fi
 
 step "Overflow check${*:+: $*}"
 BASE_URL="$BASE_URL" npm run --silent check:fit -- "$@"
+
+step "Anatomy check${*:+: $*}"
+BASE_URL="$BASE_URL" npm run --silent check:anatomy -- "$@"
