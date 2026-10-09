@@ -55,6 +55,11 @@ export const parts: Record<string, PartInfo> = {
     tokens: ["--device-rim", "--device-rim-edge"],
     note: "Black, with a polished edge catching the light, round glass set into the plate.",
   },
+  slot: {
+    name: "Slot",
+    tokens: ["--device-rim"],
+    note: "Cut through the well, dark and shadowed inside, for a cap's stem to run in.",
+  },
   chip: {
     name: "Chip",
     tokens: [],
@@ -73,4 +78,4 @@ export const parts: Record<string, PartInfo> = {
 };
 
 /** Top to bottom, for kinds that sit at the same height. */
-export const stackOrder = ["lettering", "chip", "light", "cap", "key", "lcd", "window", "bezel", "collar", "well", "plate"];
+export const stackOrder = ["lettering", "chip", "light", "cap", "key", "lcd", "window", "bezel", "slot", "collar", "well", "plate"];

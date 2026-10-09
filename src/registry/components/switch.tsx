@@ -288,19 +288,20 @@ export function Switch({ label, checked, onCheckedChange, name, disabled = false
         className="group/switch flex min-h-[2.9em] w-full touch-pan-y select-none items-center gap-[0.75em] rounded-[0.7em] px-[0.15em] text-left outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
         style={{ "--x": initial ? 1 : 0 } as CSSProperties}
       >
-        <span className="min-w-0 flex-1 truncate text-[0.66em] font-semibold uppercase leading-none tracking-[0.14em] text-(--device-label) [text-shadow:var(--device-engrave)]">
+        <span data-part="lettering" className="min-w-0 flex-1 truncate text-[0.66em] font-semibold uppercase leading-none tracking-[0.14em] text-(--device-label) [text-shadow:var(--device-engrave)]">
           {label}
         </span>
 
         {/* The light: it comes on at the snap, not when React hears about it. */}
-        <span aria-hidden className="grid size-[0.78em] shrink-0 place-items-center rounded-full bg-black/[0.05] shadow-(--device-recess) dark:bg-black/40">
-          <span className="size-[0.44em] rounded-full bg-(--device-meter-off) transition-[background-color,box-shadow] duration-(--duration-exit) group-data-on/switch:bg-(--device-hold) group-data-on/switch:shadow-[0_0_0.5em_var(--device-hold)] group-data-on/switch:duration-0" />
+        <span aria-hidden data-part="well" className="grid size-[0.78em] shrink-0 place-items-center rounded-full bg-black/[0.05] shadow-(--device-recess) dark:bg-black/40">
+          <span data-part="light" className="size-[0.44em] rounded-full bg-(--device-meter-off) transition-[background-color,box-shadow] duration-(--duration-exit) group-data-on/switch:bg-(--device-hold) group-data-on/switch:shadow-[0_0_0.5em_var(--device-hold)] group-data-on/switch:duration-0" />
         </span>
 
         {/* The track: recessed, its stripe uncovered by the cap as it slides on. */}
         <span
           aria-hidden
           data-track
+          data-part="well"
           className="relative shrink-0 rounded-[0.62em] bg-black/[0.09] shadow-(--device-recess) dark:bg-black/45"
           style={{ width: `${TRACK_W}em`, height: `${TRACK_H}em` }}
         >
@@ -310,13 +311,14 @@ export function Switch({ label, checked, onCheckedChange, name, disabled = false
           />
           {/* The cap: a knurled key with a raised grip in the middle. */}
           <span
+            data-part="key"
             className="absolute rounded-[0.42em] [background:var(--device-key-face)] shadow-(--device-key-shadow) [--grip-hi:rgb(255_255_255/0.95)] [--grip:rgb(0_0_0/0.15)] dark:[--grip-hi:rgb(255_255_255/0.08)] dark:[--grip:rgb(0_0_0/0.6)]"
             style={{
               left: `${INSET}em`,
               top: `${INSET}em`,
               bottom: `${INSET}em`,
               width: `${CAP_W}em`,
-              transform: `translateX(calc(var(--x) * ${TRAVEL}em))`,
+              translate: `calc(var(--x) * ${TRAVEL}em) 0`,
             }}
           >
             <span
@@ -391,16 +393,17 @@ export default function Demo() {
 
   return (
     <div ref={rootRef} onPointerDownCapture={stopTest} onKeyDownCapture={stopTest} className="@container w-full max-w-[360px] select-none">
-      <div className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] pb-[0.6em] text-[clamp(11px,4.2cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] pb-[0.6em] text-[clamp(11px,4.2cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
         {/* The input's screen: the self-test, then what is switched on. */}
         <div
           aria-hidden
+          data-part="lcd"
           className="flex h-[3.3em] flex-col justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.5em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
         >
           <div className="flex items-center gap-[0.5em]">
-            <span className="inline-flex shrink-0 items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
+            <span data-part="chip" className="inline-flex shrink-0 items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
               {phase === "test" ? (
                 <span className="size-[0.55em] animate-pulse rounded-full bg-(--device-rec)" />
               ) : phase === "ready" ? (
