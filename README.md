@@ -83,7 +83,7 @@ npm run capture                 # all components → captures/<slug>-<theme>.png
 npm run capture -- toast-stack --theme=dark --bg=glow
 ```
 
-Flags: `--theme=dark|light|both`, `--bg=grid|dots|glow|plain`, `--w=1200 --h=675`, `--wait=1600`, `--video`.
+Flags: `--theme=dark|light|both`, `--bg=grid|dots|glow|plain`, `--w=1200 --h=675`, `--wait=1600`, `--video`, and `--anatomy[=60]` to take the study apart (with `--layer=cap` to rest on one floor; otherwise it walks down the stack, which `--video` records).
 The script uses `playwright-core`; it tries Playwright's Chromium, then installed Chrome. Point it at any browser with `CHROMIUM_PATH=/path/to/chrome`.
 
 **Video (what usually performs best)**
@@ -96,7 +96,7 @@ Open a capture frame — the “Capture frame” button on any component page, o
 ffmpeg -i captures/spotlight-card-dark.webm -c:v libx264 -pix_fmt yuv420p -crf 18 captures/spotlight-card.mp4
 ```
 
-Capture params: `theme`, `bg`, `w`, `h`, `zoom` (default 1.6), `label=0` to hide the title/handle watermark.
+Capture params: `theme`, `bg`, `w`, `h`, `zoom` (default 1.6), `label=0` to hide the title/handle watermark, `anatomy=60` to take the study apart that far (the watermark names the floor on show) and `layer=cap` to rest on one floor.
 
 ## Deploying
 

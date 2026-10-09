@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useRef, useState, type MouseEvent } from "react";
+import { useWalk } from "@/components/anatomy/walk";
 import { Button, buttonClass, cn } from "@/design-system";
 import { site } from "@/site.config";
 import type { StageBackground } from "@/registry";
@@ -20,10 +21,7 @@ const backgrounds = [
 const authoring = process.env.NODE_ENV === "development";
 
 const SPREAD = 0.6; // how far apart the layers open
-const FIRST_PICK = 900; // ms after opening before the anatomy names its first layer, untouched
-const NEXT_PICK = 1600; // ms it rests on each layer as it walks down the stack
 
-const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const pad = (n: number) => String(n).padStart(2, "0");
 
 /**
@@ -41,30 +39,19 @@ export function DetailStage({ slug, title, initial = "grid" }: { slug: string; t
   const [kinds, setKinds] = useState<string[]>([]);
   const theme = useTheme();
   const rootRef = useRef<HTMLDivElement>(null);
-  const touched = useRef(false); // a hand has worked the anatomy: the walk down the stack is over
-  const walked = useRef(false); // the walk has run since it opened
-  const walk = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const walk = useWalk(open, kinds, setPicked);
 
   const canOpen = slug in anatomy;
   const info = picked ? partInfo(slug, picked) : null;
 
-  // A plain <a> (new tab), so basePath isn't added for us.
-  const captureHref = `${site.basePath}/capture/${slug}?bg=${background}&theme=${theme}`;
+  // A plain <a> (new tab), so basePath isn't added for us. Taken apart, the frame is too.
+  const captureHref = `${site.basePath}/capture/${slug}?bg=${background}&theme=${theme}${open ? `&anatomy=${Math.round(spread * 100)}` : ""}`;
 
-  function stopWalk() {
-    walk.current.forEach(clearTimeout);
-    walk.current = [];
-  }
-
-  function touch() {
-    touched.current = true;
-    stopWalk();
-  }
+  const touch = () => walk.touch();
 
   function toggle(e: MouseEvent<HTMLButtonElement>) {
     if (open) return close();
-    touched.current = false;
-    walked.current = false;
+    walk.reset();
     setReplay((n) => n + 1); // the study restarts, so it runs its show while it comes apart
     setSpread(SPREAD);
     setPicked(null);
@@ -74,22 +61,10 @@ export function DetailStage({ slug, title, initial = "grid" }: { slug: string; t
   }
 
   function close() {
-    stopWalk();
+    walk.touch();
     setOpen(false);
     if (rootRef.current?.contains(document.activeElement)) rootRef.current.querySelector<HTMLElement>("[data-anatomy-key]")?.focus();
   }
-
-  // Untouched, the anatomy walks down the stack once, naming each layer.
-  useEffect(() => {
-    if (!open || !kinds.length || walked.current || touched.current || reduced()) return;
-    walk.current = kinds.map((kind, i) =>
-      setTimeout(() => {
-        setPicked(kind);
-        if (i === kinds.length - 1) walked.current = true;
-      }, FIRST_PICK + i * NEXT_PICK),
-    );
-    return stopWalk;
-  }, [open, kinds]);
 
   return (
     <div ref={rootRef}>
