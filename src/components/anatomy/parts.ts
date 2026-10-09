@@ -60,6 +60,16 @@ export const parts: Record<string, PartInfo> = {
     tokens: [],
     note: "Redrawn every frame as tangents to the two packs, over the guides and the head.",
   },
+  matrix: {
+    name: "Dot matrix",
+    tokens: ["--device-lcd-ink"],
+    note: "Text set in the page's own typeface, rasterized offscreen at the matrix's height and thresholded into dots on a canvas.",
+  },
+  screen: {
+    name: "Screens",
+    tokens: [],
+    note: "A screen behind glass: the work itself, in its own palette, the one thing on the plate allowed to be loud.",
+  },
   face: {
     name: "Face",
     tokens: [],
@@ -103,4 +113,4 @@ export const parts: Record<string, PartInfo> = {
 };
 
 /** Top to bottom, for kinds that sit at the same height. */
-export const stackOrder = ["lettering", "chip", "light", "glass", "tape", "cap", "key", "reel", "drum", "face", "lcd", "window", "bezel", "slot", "collar", "well", "plate"];
+export const stackOrder = ["lettering", "chip", "light", "glass", "tape", "cap", "key", "reel", "drum", "matrix", "screen", "face", "lcd", "window", "bezel", "slot", "collar", "well", "plate"];

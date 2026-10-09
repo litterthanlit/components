@@ -665,10 +665,11 @@ export function CommandMenu<T extends CommandItem>({
         onPointerDownCapture={() => (touched.current = true)}
         onKeyDownCapture={() => (touched.current = true)}
         onPointerDown={onPointerDown}
+        data-part="bezel"
         className="relative rounded-[1.5em] bg-(--device-rim) p-[0.4em] text-[clamp(11px,4.1cqw,14px)] [box-shadow:var(--device-rim-edge),0_1px_2px_rgb(0_0_0/0.12),0_18px_36px_-18px_rgb(0_0_0/0.4)]"
       >
         {/* The screen: the player's own ground under glass. */}
-        <div className="relative isolate flex animate-wake flex-col overflow-hidden rounded-[1.1em] bg-canvas text-ink" style={{ "--row": `${ROW}em` } as CSSProperties}>
+        <div data-part="screen" className="relative isolate flex animate-wake flex-col overflow-hidden rounded-[1.1em] bg-canvas text-ink" style={{ "--row": `${ROW}em` } as CSSProperties}>
           {/* The search field, as on the player's Find panel. The field draws the focus ring, so the input's own is off (`!`: the page's ring is unlayered and would win). */}
           <div className="px-[0.55em] pb-[0.35em] pt-[0.55em]">
             <label className="group/field flex h-[2.8em] items-center gap-[0.6em] rounded-[0.75em] bg-panel px-[0.85em] text-muted shadow-[inset_0_0_0_1px_var(--line)] transition-shadow duration-(--duration-exit) focus-within:text-ink focus-within:shadow-[inset_0_0_0_1px_var(--line-strong)] has-[input:focus-visible:not([data-quiet])]:shadow-[inset_0_0_0_1.5px_var(--focus)]">
@@ -805,9 +806,10 @@ export function CommandMenu<T extends CommandItem>({
 
             <span
               aria-hidden
+              data-part="lcd"
               className="ml-auto flex h-[1.95em] min-w-0 items-center gap-[0.45em] rounded-[0.5em] pl-[0.3em] pr-[0.6em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
             >
-              <span className="grid h-[1.35em] w-[1.35em] shrink-0 place-items-center rounded-[0.3em] bg-white text-black">
+              <span data-part="chip" className="grid h-[1.35em] w-[1.35em] shrink-0 place-items-center rounded-[0.3em] bg-white text-black">
                 {status ? (
                   <span key={`${status.text}${status.detail}`} className="size-[0.5em] animate-enter rounded-full bg-(--device-rec)" />
                 ) : (
@@ -825,7 +827,7 @@ export function CommandMenu<T extends CommandItem>({
           </div>
 
           {/* Glass, and the backlight's bloom as the screen wakes. */}
-          <div aria-hidden className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] shadow-[inset_0_0_0_1px_var(--line)] [background:var(--screen-glass)]" />
+          <div aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] shadow-[inset_0_0_0_1px_var(--line)] [background:var(--screen-glass)]" />
           <div aria-hidden className="pointer-events-none absolute inset-0 z-10 animate-bloom [background:radial-gradient(50%_50%_at_50%_50%,var(--screen-glow),transparent)]" />
         </div>
       </div>
@@ -862,13 +864,14 @@ function FooterKey({ cap, onPress }: { cap: keyof typeof CAPS; onPress: () => vo
       onPointerUp={up}
       onPointerLeave={up}
       onPointerCancel={up}
+      data-part="key"
       className="group/key relative grid h-[1.75em] min-w-[1.95em] cursor-default place-items-center before:absolute before:-inset-x-[0.15em] before:-inset-y-[0.5em] before:content-['']"
     >
       <span className="grid h-full w-full place-items-center rounded-[0.42em] px-[0.4em] text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-data-pressed/key:translate-y-[2px] group-data-pressed/key:shadow-(--device-key-shadow-pressed) group-data-pressed/key:duration-75">
         {cap === "escape" ? (
-          <span className="text-[0.66em] font-medium leading-none tracking-[0.02em] [text-shadow:var(--device-engrave)]">esc</span>
+          <span data-part="lettering" className="text-[0.66em] font-medium leading-none tracking-[0.02em] [text-shadow:var(--device-engrave)]">esc</span>
         ) : (
-          <svg viewBox="0 0 16 16" className="size-[0.95em] fill-none stroke-current [filter:var(--device-engrave-glyph)] [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.6]">
+          <svg viewBox="0 0 16 16" data-part="lettering" className="size-[0.95em] fill-none stroke-current [filter:var(--device-engrave-glyph)] [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.6]">
             {CAPS[cap]}
           </svg>
         )}

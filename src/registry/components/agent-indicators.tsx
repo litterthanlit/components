@@ -123,10 +123,11 @@ const attr = (el: Element, name: string, value: string) => {
 };
 
 /** The module every indicator is built in: 5.6 × 2.6em, so any of them can stand in for another. */
-function Module({ label, className, children, ref }: { label: string | false; className?: string; children: ReactNode; ref: RefObject<HTMLSpanElement | null> }) {
+function Module({ label, part, className, children, ref }: { label: string | false; part?: string; className?: string; children: ReactNode; ref: RefObject<HTMLSpanElement | null> }) {
   return (
     <span
       ref={ref}
+      data-part={part}
       role={label === false ? undefined : "status"}
       aria-label={label === false ? undefined : label}
       aria-hidden={label === false || undefined}
@@ -203,7 +204,7 @@ export function Segments({ label = "Thinking", paused = false, className }: Indi
   const ref = useRef<HTMLSpanElement>(null);
   useFrame(ref, chaseSegments, paused);
   return (
-    <Module ref={ref} label={label} className={cx(lcd, "items-center justify-center gap-[0.2em]", className)}>
+    <Module ref={ref} label={label} part="lcd" className={cx(lcd, "items-center justify-center gap-[0.2em]", className)}>
       {[0, 1].map((figure) => (
         <svg key={figure} aria-hidden viewBox="0 0 43 66" className="h-[64%] w-auto [filter:drop-shadow(0_0_0.2em_rgb(255_255_255/0.3))]">
           {(Object.keys(SEGMENTS) as Segment[]).map((s) => (
@@ -265,7 +266,7 @@ export function Tuner({ label = "Searching", paused = false, className }: Indica
   const ref = useRef<HTMLSpanElement>(null);
   useFrame(ref, seekStations, paused);
   return (
-    <Module ref={ref} label={label} className={cx(smoked, className)}>
+    <Module ref={ref} label={label} part="window" className={cx(smoked, className)}>
       <svg aria-hidden viewBox="0 0 56 26" className="absolute inset-0 size-full">
         {TICKS.map(({ x, major }) => (
           <line key={x} x1={x} x2={x} y1={major ? 17.5 : 19.5} y2={22} strokeWidth={0.5} className="stroke-white/35" />
@@ -345,7 +346,7 @@ export function Meters({ label = "Reading", paused = false, className }: Indicat
   const ref = useRef<HTMLSpanElement>(null);
   useFrame(ref, meterTokens, paused);
   return (
-    <Module ref={ref} label={label} className={cx(lcd, "flex-col justify-center gap-[0.45em] px-[0.65em]", className)}>
+    <Module ref={ref} label={label} part="lcd" className={cx(lcd, "flex-col justify-center gap-[0.45em] px-[0.65em]", className)}>
       {[0, 1].map((c) => (
         <span key={c} data-meter aria-hidden className="relative h-[0.48em]">
           <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/15" />
@@ -391,12 +392,13 @@ export function Matrix({ label = "Reasoning", paused = false, className }: Indic
     <Module
       ref={ref}
       label={label}
+      part="bezel"
       className={cx(
         "rounded-[0.6em] bg-(--device-rim) p-[0.16em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]",
         className,
       )}
     >
-      <span className={cx(lcd, "grid size-full place-items-center rounded-[0.45em] px-[0.3em]")}>
+      <span data-part="lcd" className={cx(lcd, "grid size-full place-items-center rounded-[0.45em] px-[0.3em]")}>
         <svg aria-hidden viewBox={`0 0 ${COLS * 5} ${ROWS * 5}`} className="h-[82%] w-auto [filter:drop-shadow(0_0_0.15em_rgb(255_255_255/0.35))]">
           {DOTS.map(({ x, y }, i) => (
             <circle key={i} cx={x} cy={y} r={1.55} className="fill-white/[0.08]" />
@@ -455,9 +457,10 @@ export function Chase({ label = "Running", paused = false, className }: Indicato
   return (
     <Module ref={ref} label={label} className={cx("items-center justify-center gap-[0.12em]", className)}>
       {Array.from({ length: STEPS }, (_, i) => (
-        <span key={i} className="grid size-[0.56em] shrink-0 place-items-center rounded-full bg-black/[0.05] shadow-(--device-recess) dark:bg-black/40">
+        <span key={i} data-part="well" className="grid size-[0.56em] shrink-0 place-items-center rounded-full bg-black/[0.05] shadow-(--device-recess) dark:bg-black/40">
           <span
             data-step="off"
+            data-part="light"
             className="size-[0.3em] rounded-full bg-(--device-meter-off) transition-[background-color,box-shadow] duration-(--duration-exit) data-[step=fire]:bg-(--device-rec) data-[step=fire]:shadow-[0_0_0.4em_var(--device-rec)] data-[step=fire]:duration-0 data-[step=set]:bg-(--device-meter-on) data-[step=set]:duration-0"
           />
         </span>
@@ -517,7 +520,7 @@ export function Reels({ label = "Writing", paused = false, className }: Indicato
   const ref = useRef<HTMLSpanElement>(null);
   useFrame(ref, recordTape, paused);
   return (
-    <Module ref={ref} label={label} className={cx(smoked, className)}>
+    <Module ref={ref} label={label} part="window" className={cx(smoked, className)}>
       <svg aria-hidden viewBox="0 0 56 26" className="absolute inset-0 size-full">
         {[REEL.l, REEL.r].map((x) => (
           <g key={x}>
@@ -669,13 +672,13 @@ export default function Demo() {
 
   return (
     <div ref={rootRef} onPointerDownCapture={takeOver} onKeyDownCapture={takeOver} onFocusCapture={takeOver} className="@container w-full max-w-[440px] select-none">
-      <div className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[26rem]:p-[1.1em]">
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[26rem]:p-[1.1em]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
         {/* In use: the indicator beside the line it stands for, as an agent would show it. */}
-        <div className="flex items-stretch gap-[0.45em] rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess)">
+        <div data-part="well" className="flex items-stretch gap-[0.45em] rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess)">
           <AgentIndicator phase={phase} label={LINES[phase]} paused={paused} />
-          <div aria-hidden className={cx(lcd, "flex min-w-0 flex-1 flex-col justify-between overflow-hidden px-[0.7em] pb-[0.5em] pt-[0.45em]")}>
+          <div aria-hidden data-part="lcd" className={cx(lcd, "flex min-w-0 flex-1 flex-col justify-between overflow-hidden px-[0.7em] pb-[0.5em] pt-[0.45em]")}>
             <span className="flex items-center text-[0.62em] tabular-nums text-(--device-lcd-dim)">
               {indicators[phase].name}
               <span className="ml-auto">
@@ -708,12 +711,12 @@ export default function Demo() {
                 onKeyDown={(e) => onTileKey(e, i)}
                 className="group/tile flex min-w-0 flex-col items-center gap-[0.55em] rounded-[1.05em] outline-offset-2"
               >
-                <span className="grid w-full place-items-center rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess) transition-transform duration-(--duration-exit) ease-out group-active/tile:translate-y-px group-active/tile:duration-75">
+                <span data-part="well" className="grid w-full place-items-center rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess) transition-transform duration-(--duration-exit) ease-out group-active/tile:translate-y-px group-active/tile:duration-75">
                   <Indicator label={false} paused={paused} />
                 </span>
                 <span className="flex max-w-full items-center gap-[0.4em]">
-                  <span aria-hidden className={cx("size-[0.36em] shrink-0 rounded-full transition-[background-color] duration-(--duration-exit)", on ? "bg-(--device-meter-on) duration-0" : "bg-(--device-meter-off)")} />
-                  <span className={cx(engraved, "truncate text-[0.58em] transition-colors duration-(--duration-exit)", on ? "text-(--device-label)" : "text-(--device-label-quiet)")}>{label}</span>
+                  <span aria-hidden data-part="light" className={cx("size-[0.36em] shrink-0 rounded-full transition-[background-color] duration-(--duration-exit)", on ? "bg-(--device-meter-on) duration-0" : "bg-(--device-meter-off)")} />
+                  <span data-part="lettering" className={cx(engraved, "truncate text-[0.58em] transition-colors duration-(--duration-exit)", on ? "text-(--device-label)" : "text-(--device-label-quiet)")}>{label}</span>
                 </span>
               </button>
             );

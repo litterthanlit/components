@@ -469,9 +469,9 @@ export function DitherCard({ title, description, meta, href, pattern = "butterfl
       className="group/key flex min-w-0 flex-col items-center gap-[0.6em] rounded-[0.7em] outline-offset-2 [-webkit-touch-callout:none]"
     >
       {/* The key. Only its face sinks, so the hit area never moves under the finger. */}
-      <span className="block w-full rounded-[0.7em] p-[0.32em] [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
+      <span data-part="key" className="block w-full rounded-[0.7em] p-[0.32em] [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
         {/* The screen set into the face: the field draws on a clear ground, so this is its glass. */}
-        <span className="relative block aspect-square rounded-[0.4em] text-(--device-lcd-ink) [background:var(--device-lcd)]">
+        <span data-part="lcd" className="relative block aspect-square rounded-[0.4em] text-(--device-lcd-ink) [background:var(--device-lcd)]">
           <span className="absolute inset-0 overflow-hidden rounded-[inherit]">
             <DitherField pattern={pattern} active={focused || active} paused={paused} />
           </span>
@@ -479,7 +479,7 @@ export function DitherCard({ title, description, meta, href, pattern = "butterfl
           <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-(--device-lcd-edge)" />
         </span>
       </span>
-      <span className="flex max-w-full items-baseline gap-[0.6em] text-[0.6em] font-semibold uppercase leading-none tracking-[0.16em] [text-shadow:var(--device-engrave)]">
+      <span data-part="lettering" className="flex max-w-full items-baseline gap-[0.6em] text-[0.6em] font-semibold uppercase leading-none tracking-[0.16em] [text-shadow:var(--device-engrave)]">
         <span className="min-w-0 truncate text-(--device-label)">{title}</span>
         {meta && <span className="shrink-0 tabular-nums text-(--device-label-quiet)">{meta}</span>}
       </span>
@@ -567,15 +567,16 @@ export default function Demo() {
 
   return (
     <div ref={rootRef} onPointerDownCapture={takeOver} onKeyDownCapture={takeOver} onFocusCapture={takeOver} className="@container w-full max-w-[480px] select-none">
-      <div className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[26rem]:p-[1.1em]">
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[26rem]:p-[1.1em]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
         {/* The readout: the year and the project in a line, for the key under the hand or the ghost. */}
         <div
           aria-hidden
+          data-part="lcd"
           className="flex h-[3.3em] flex-col justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.5em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
         >
-          <span className="inline-flex items-center gap-[0.35em] self-start rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
+          <span data-part="chip" className="inline-flex items-center gap-[0.35em] self-start rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
             <span className={ghost ? "size-[0.55em] animate-pulse rounded-full bg-(--device-rec) motion-reduce:animate-none" : "size-[0.55em] rounded-full bg-black"} />
             <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em] tabular-nums">{project.year}</span>
           </span>

@@ -417,12 +417,12 @@ export function GradientPreview({ title, description, href, palette, seed = 0, p
         <StreakField palette={palette} seed={seed} paused={paused} />
       </span>
       {/* The glass: a sheen where the light catches it, and its edge. */}
-      <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
+      <span aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
     </>
   );
 
   return (
-    <div className="rounded-[0.7em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
+    <div data-part="bezel" className="rounded-[0.7em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
       {href ? (
         <a
           href={href}
@@ -433,6 +433,7 @@ export function GradientPreview({ title, description, href, palette, seed = 0, p
           aria-describedby={descriptionId}
           onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
           onClick={() => play("open", { gain: 0.6 })}
+          data-part="screen"
           className={cx(screen, "outline-offset-2")}
           style={{ background: fallback(palette) }}
         >
@@ -442,7 +443,7 @@ export function GradientPreview({ title, description, href, palette, seed = 0, p
           </span>
         </a>
       ) : (
-        <div role="img" aria-label={`${title}: ${description}`} data-sound="soft" className={screen} style={{ background: fallback(palette) }}>
+        <div role="img" aria-label={`${title}: ${description}`} data-sound="soft" data-part="screen" className={screen} style={{ background: fallback(palette) }}>
           {glass}
         </div>
       )}
@@ -471,10 +472,10 @@ type GradientKeyProps = Omit<ComponentProps<"button">, "children" | "title"> & {
  */
 export function GradientKey({ title, palette, seed = 0, selected = false, paused = false, className, ...rest }: GradientKeyProps) {
   return (
-    <button type="button" data-sound="key" aria-label={title} className={cx("group/key block w-full min-w-0 rounded-[0.7em] outline-offset-2", className)} {...rest}>
+    <button type="button" data-sound="key" data-part="key" aria-label={title} className={cx("group/key block w-full min-w-0 rounded-[0.7em] outline-offset-2", className)} {...rest}>
       {/* Only the face sinks, so the hit area never moves under the finger. */}
       <span className="flex flex-col items-center gap-[0.32em] rounded-[0.7em] p-[0.32em] pb-[0.4em] [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
-        <span className="relative block aspect-[2/1] w-full rounded-[0.4em]" style={{ background: fallback(palette) }}>
+        <span data-part="screen" className="relative block aspect-[2/1] w-full rounded-[0.4em]" style={{ background: fallback(palette) }}>
           <span className="absolute inset-0 overflow-hidden rounded-[inherit]">
             <StreakField palette={palette} seed={seed} active={selected} paused={paused} />
             {/* Off the selection, the backlight dims. */}
@@ -487,11 +488,12 @@ export function GradientKey({ title, palette, seed = 0, selected = false, paused
             />
           </span>
           {/* The glass: a sheen where the light catches it, and its edge. */}
-          <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
+          <span aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
         </span>
         {/* The selection light: on at once, off at the exit duration. */}
         <span
           aria-hidden
+          data-part="light"
           className={cx(
             "h-[0.24em] w-[30%] rounded-full transition-[background-color]",
             selected ? "bg-(--device-meter-on) duration-0" : "bg-(--device-meter-off) duration-(--duration-exit)",
@@ -635,7 +637,7 @@ export default function Demo() {
       }}
       className="@container w-full max-w-[480px] select-none"
     >
-      <div className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[26rem]:p-[1.1em]">
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[26rem]:p-[1.1em]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
         <GradientPreview

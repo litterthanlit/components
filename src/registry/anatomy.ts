@@ -52,6 +52,30 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     light: { tokens: ["--device-meter-off", "--device-meter-on", "--device-rec", "--device-hold"], note: "Each phase latches once the run has passed it; the one firing flickers with every chunk of tokens through a 90 ms detector." },
     well: { name: "Wells", note: "Pressed into the plate: the readout's, and the small recess each light sits in." },
   },
+  ticker: {
+    matrix: { note: "Any text, set in the page's own typeface, rasterized at the matrix's height and thresholded into dots; the canvas redraws only when a column changes." },
+    glass: { note: "The strip's sheen, over the dots." },
+    light: { tokens: ["--device-meter-off", "--device-rec", "--device-hold"], note: "The tone of the message showing, in a light beside its name." },
+  },
+  "agent-indicators": {
+    lcd: { note: "Seven segments chasing round, meters taking tokens in, a matrix working through interference: each a face of the same glass." },
+    window: { note: "Smoked glass for the tuner's needle and the reels that write to tape." },
+    well: { name: "Wells", note: "Pressed into the plate: one for the indicator in use, one under each of the six, and a recess for every step light." },
+  },
+  "dither-card": {
+    key: { note: "A key with a screen in its face: only the face sinks, so the hit area never moves under the finger." },
+    lcd: { name: "Screens", note: "Raw WebGL at half resolution in three-tone ordered dither, scaled up pixel for pixel; a hand lights the screen under it." },
+  },
+  "gradient-keys": {
+    screen: { note: "Long exposures in traditional Japanese palettes: noise sweeping across as it flows along. The work, so it keeps its own colours in both themes." },
+    glass: { note: "A sheen over each screen and its edge, where the light catches the glass." },
+    light: { tokens: ["--device-meter-off", "--device-meter-on"], note: "On at once under the selection, off at exit speed." },
+  },
+  "command-menu": {
+    bezel: { note: "Black, with a polished edge, round the player's own screen: the menu is a second screen, not a card." },
+    screen: { name: "Screen", note: "The site's own ground under glass: its canvas and type, and the accent bar gliding on a spring between rows." },
+    glass: { note: "The screen's sheen, and the backlight's bloom as it wakes." },
+  },
 };
 
 /** What the anatomy says about one of a study's parts. */
