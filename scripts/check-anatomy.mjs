@@ -59,7 +59,7 @@ async function launch() {
 }
 
 /** Runs in the page, with the study apart. Returns a list of problems. */
-function inspect(known) {
+function inspect({ known, tolerance }) {
   const scene = document.querySelector("[data-anatomy]");
   if (!scene) return ["the anatomy never opened"];
   const problems = [];
@@ -114,13 +114,13 @@ function inspect(known) {
     over.bottom = Math.max(over.bottom, r.bottom - stage.bottom);
     over.right = Math.max(over.right, r.right - stage.right);
   }
-  const spills = Object.entries(over).filter(([, px]) => px > 1);
+  const spills = Object.entries(over).filter(([, px]) => px > tolerance);
   if (spills.length) problems.push(`fully apart, spills ${spills.map(([side, px]) => `${side} ${Math.ceil(px)}px`).join(", ")} (stage ${Math.round(stage.width)}×${Math.round(stage.height)})`);
   return problems;
 }
 
 const browser = await launch();
-const failures = [];
+const failures = new Map(); // "slug: problem" → the widths it was seen at
 let checks = 0;
 
 for (const width of widths) {
@@ -134,19 +134,19 @@ for (const width of widths) {
     await page.locator('input[type="range"]').focus();
     await page.keyboard.press("End");
     await page.waitForTimeout(OPEN);
-    const problems = await page.evaluate(inspect, kinds);
+    const problems = await page.evaluate(inspect, { known: kinds, tolerance: TOLERANCE });
     checks++;
-    // The same problem at every width is said once.
-    for (const p of problems) failures.push(`${String(width).padStart(4)}px  ${slug}: ${p}`);
+    // The same problem at every width is said once, with the widths it was seen at.
+    for (const p of problems) failures.set(`${slug}: ${p}`, [...(failures.get(`${slug}: ${p}`) ?? []), width]);
   }
   await context.close();
 }
 await browser.close();
 
 console.log(`Took ${slugs.length} stud${slugs.length === 1 ? "y" : "ies"} apart at ${widths.length} width${widths.length === 1 ? "" : "s"} (${checks} checks).\n`);
-if (failures.length) {
-  console.error(`✗ ${failures.length} problem${failures.length === 1 ? "" : "s"}:\n`);
-  for (const f of failures) console.error(`  ${f}`);
+if (failures.size) {
+  console.error(`✗ ${failures.size} problem${failures.size === 1 ? "" : "s"}:\n`);
+  for (const [f, at] of failures) console.error(`  ${f} (at ${at.map((w) => `${w}px`).join(", ")})`);
   process.exit(1);
 }
 console.log("✓ Every study comes apart in 3D and stays on its stage.");
