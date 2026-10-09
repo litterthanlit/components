@@ -99,6 +99,8 @@ export const device = {
     "meter-on": "#25272b",
     rec: "#e5484d",
     hold: "#ff7a1a",
+    "draw-line": "rgb(10 10 10 / 0.38)",
+    "draw-ink": "rgb(10 10 10 / 0.64)",
     "screen-glow": "rgb(255 255 255 / 0.7)",
     "screen-glass": "linear-gradient(158deg, rgb(255 255 255 / 0.07) 0%, rgb(255 255 255 / 0.02) 38%, transparent 38.2%)",
   },
@@ -145,6 +147,8 @@ export const device = {
     "meter-on": "#e6e8ec",
     rec: "#ff5c62",
     hold: "#ff8a33",
+    "draw-line": "rgb(237 237 237 / 0.34)",
+    "draw-ink": "rgb(237 237 237 / 0.64)",
     "screen-glow": "rgb(138 154 242 / 0.35)",
     "screen-glass": "linear-gradient(158deg, rgb(255 255 255 / 0.06) 0%, rgb(255 255 255 / 0.015) 38%, transparent 38.2%)",
   },
@@ -168,6 +172,7 @@ export const materials: { name: string; tokens: DeviceToken[]; use: string }[] =
   { name: "Lights", tokens: ["meter-on", "meter-off", "rec", "hold"], use: "Monochrome when lit, red for REC and the playhead, orange for a hand on it. Signal colours glow; meter segments don't." },
   { name: "Lettering", tokens: ["label", "label-quiet", "engrave", "engrave-glyph"], use: "Tiny tracked capitals printed on the body, with a 1px highlight on the side away from the light." },
   { name: "Glass", tokens: ["screen-glass", "screen-glow"], use: "Over a screen: a sheen where the light catches it, and the backlight's bloom as it wakes." },
+  { name: "Drawing", tokens: ["draw-line", "draw-ink", "hold"], use: "A study taken apart, drawn: hairlines and lettering over the canvas, the picked layer in the hand's orange." },
 ];
 
 export const typeScale = [

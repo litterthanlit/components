@@ -25,6 +25,11 @@ import { stackOrder } from "./parts";
  * rest, takes the hand's colour, and stands on dashed risers that run down to
  * the part each of its pieces sits on.
  *
+ * It has two finishes. As a technical drawing (data-finish="drawing", the
+ * default on a study's page) every part is a plane of the canvas with a
+ * hairline round it; in its materials, it is the study as it is. Either
+ * way it is the same live markup, so the drawing still turns and clicks.
+ *
  * Springs draw it, writing CSS variables: the camera's tilt and the spread
  * (springs.gentle), and the lift of the picked layer (springs.snappy). The
  * spread clicks every 5%, as a detent does. While it is apart the study is
@@ -45,9 +50,13 @@ const camera = { "--tilt": 0, "--spread": 0, "--pitch": `${PITCH}deg`, "--yaw": 
 const rad = (deg: number) => (deg * Math.PI) / 180;
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+export type Finish = "drawing" | "materials";
+
 export type AnatomyProps = {
   slug: string;
   open: boolean;
+  /** Drawn as a technical drawing, or in the study's own materials. */
+  finish?: Finish;
   /** 0 to 1: how far apart the layers stand. */
   spread: number;
   /** The kind of part picked, as its `data-part` names it. */
@@ -132,7 +141,7 @@ function planCentre(part: Element, scene: HTMLElement) {
   return { x, y };
 }
 
-export function Anatomy({ slug, open, spread, picked, zoom = 1, onKinds, onPick, onSpread, onClose, label, children }: AnatomyProps) {
+export function Anatomy({ slug, open, finish = "materials", spread, picked, zoom = 1, onKinds, onPick, onSpread, onClose, label, children }: AnatomyProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<HTMLDivElement>(null);
   const guidesRef = useRef<HTMLDivElement>(null);
@@ -286,6 +295,13 @@ export function Anatomy({ slug, open, spread, picked, zoom = 1, onKinds, onPick,
     if (reduced()) tilt.jump(open ? 1 : 0);
     else tilt.set(open ? 1 : 0);
   }, [open]);
+
+  // The finish holds while it is apart; closing, it comes back together in its own materials.
+  useLayoutEffect(() => {
+    const scene = sceneRef.current!;
+    if (open) scene.dataset.finish = finish;
+    else delete scene.dataset.finish;
+  }, [open, finish]);
 
   useLayoutEffect(() => {
     const s = engine.current!.spread;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type MouseEvent } from "react";
+import type { Finish } from "@/components/anatomy/anatomy";
 import { useWalk } from "@/components/anatomy/walk";
 import { Button, buttonClass, cn } from "@/design-system";
 import { site } from "@/site.config";
@@ -22,19 +23,26 @@ const authoring = process.env.NODE_ENV === "development";
 
 const SPREAD = 0.6; // how far apart the layers open
 
+const finishes = [
+  { value: "drawing", label: "Drawing" },
+  { value: "materials", label: "Materials" },
+];
+
 const pad = (n: number) => String(n).padStart(2, "0");
 
 /**
  * The large interactive stage on a component page, with a replay button and,
  * for studies that can be taken apart, an Anatomy key: it latches down, the
- * study restarts and comes apart in its layers, and the layer the hand is on
- * is named under the stage. Untouched, it walks down the stack once.
+ * study restarts and comes apart in its layers, drawn as a technical drawing
+ * (or in its own materials, one switch away), and the layer the hand is on is
+ * named under the stage. Untouched, it walks down the stack once.
  */
 export function DetailStage({ slug, title, initial = "grid" }: { slug: string; title: string; initial?: StageBackground }) {
   const [background, setBackground] = useState<StageBackground>(initial);
   const [replay, setReplay] = useState(0);
   const [open, setOpen] = useState(false);
   const [spread, setSpread] = useState(SPREAD);
+  const [finish, setFinish] = useState<Finish>("drawing");
   const [picked, setPicked] = useState<string | null>(null);
   const [kinds, setKinds] = useState<string[]>([]);
   const theme = useTheme();
@@ -45,7 +53,7 @@ export function DetailStage({ slug, title, initial = "grid" }: { slug: string; t
   const info = picked ? partInfo(slug, picked) : null;
 
   // A plain <a> (new tab), so basePath isn't added for us. Taken apart, the frame is too.
-  const captureHref = `${site.basePath}/capture/${slug}?bg=${background}&theme=${theme}${open ? `&anatomy=${Math.round(spread * 100)}` : ""}`;
+  const captureHref = `${site.basePath}/capture/${slug}?bg=${background}&theme=${theme}${open ? `&anatomy=${Math.round(spread * 100)}&finish=${finish}` : ""}`;
 
   const touch = () => walk.touch();
 
@@ -79,6 +87,7 @@ export function DetailStage({ slug, title, initial = "grid" }: { slug: string; t
               ? {
                   slug,
                   open,
+                  finish,
                   spread,
                   picked,
                   label: `Layers of ${title}`,
@@ -106,6 +115,9 @@ export function DetailStage({ slug, title, initial = "grid" }: { slug: string; t
             value={background}
             onChange={(v) => setBackground(v as StageBackground)}
           />
+        )}
+        {open && (
+          <SegmentedControl label="Finish" options={finishes} value={finish} onChange={(v) => setFinish(v as Finish)} />
         )}
         {open && (
           <label className="flex animate-enter items-center gap-3 text-meta text-muted">

@@ -134,16 +134,23 @@ for (const width of widths) {
     await page.locator('input[type="range"]').focus();
     await page.keyboard.press("End");
     await page.waitForTimeout(OPEN);
-    const problems = await page.evaluate(inspect, { known: kinds, tolerance: TOLERANCE });
-    checks++;
-    // The same problem at every width is said once, with the widths it was seen at.
-    for (const p of problems) failures.set(`${slug}: ${p}`, [...(failures.get(`${slug}: ${p}`) ?? []), width]);
+    // Both finishes: it opens drawn, then switches to its materials.
+    for (const finish of ["drawing", "materials"]) {
+      if (finish === "materials") {
+        await page.getByRole("radio", { name: "Materials" }).click();
+        await page.waitForTimeout(300);
+      }
+      const problems = await page.evaluate(inspect, { known: kinds, tolerance: TOLERANCE });
+      checks++;
+      // The same problem at every width is said once, with the widths it was seen at.
+      for (const p of problems) failures.set(`${slug} (${finish}): ${p}`, [...(failures.get(`${slug} (${finish}): ${p}`) ?? []), width]);
+    }
   }
   await context.close();
 }
 await browser.close();
 
-console.log(`Took ${slugs.length} stud${slugs.length === 1 ? "y" : "ies"} apart at ${widths.length} width${widths.length === 1 ? "" : "s"} (${checks} checks).\n`);
+console.log(`Took ${slugs.length} stud${slugs.length === 1 ? "y" : "ies"} apart at ${widths.length} width${widths.length === 1 ? "" : "s"}, drawn and in materials (${checks} checks).\n`);
 if (failures.size) {
   console.error(`✗ ${failures.size} problem${failures.size === 1 ? "" : "s"}:\n`);
   for (const [f, at] of failures) console.error(`  ${f} (at ${at.map((w) => `${w}px`).join(", ")})`);

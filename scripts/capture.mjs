@@ -7,6 +7,7 @@
  *   npm run capture -- --theme=dark --bg=glow --video
  *   npm run capture -- knob --anatomy            # taken apart, at 60%
  *   npm run capture -- knob --anatomy=90 --layer=cap
+ *   npm run capture -- knob --anatomy --finish=materials
  *
  * Needs the app running (npm run dev / npm start). Set BASE_URL (the app root,
  * including /studies) to point
@@ -50,6 +51,7 @@ const wait = Number(flag("wait", 1600));
 // Taken apart: --anatomy alone opens it to 60%; --layer rests on one floor instead of walking the stack.
 const anatomy = flag("anatomy", false);
 const layer = flag("layer", "");
+const finish = flag("finish", "");
 const WALK = 9000; // ms a recording runs while the anatomy walks down the stack
 
 await mkdir(OUT, { recursive: true });
@@ -77,6 +79,7 @@ for (const slug of slugs) {
     if (bg) query.set("bg", bg);
     if (anatomy) query.set("anatomy", anatomy === true ? "60" : String(anatomy));
     if (anatomy && layer) query.set("layer", layer);
+    if (anatomy && finish) query.set("finish", finish);
     const url = `${BASE_URL}/capture/${slug}?${query}`;
 
     await page.goto(url, { waitUntil: "networkidle" });

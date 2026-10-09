@@ -8,6 +8,11 @@
 @custom-variant wide (@media (min-width: 720px) and (min-height: 521px));
 @custom-variant roomy (@media (min-width: 1100px) and (min-height: 521px));
 @custom-variant short (@media (orientation: landscape) and (max-height: 520px));
+/* A study taken apart in the drawing finish (src/components/anatomy). A study
+   tunes how its own parts are drawn with it, as it would with dark:. The
+   drawing's own rules below are !important, so a study's win with a `!`:
+   drawn:bg-(--device-draw-ink)! */
+@custom-variant drawn (&:where([data-finish="drawing"] *));
 
 html {
   background: var(--canvas);
@@ -168,6 +173,51 @@ h3 {
   from {
     opacity: 0;
   }
+}
+/* The drawing finish: the same live parts, drawn as a technical drawing.
+   Every part is an opaque plane of the canvas, so upper floors hide lower
+   ones, with a hairline round it and its lettering in the drawing's ink;
+   whatever a part paints inside is cleared, so each study draws back what
+   carries its mechanism (a pointer, a lit segment, a needle) with drawn:.
+   Glass stays clear, its edge dashed, as a drafter marks a transparent
+   surface. Screens and canvases keep their motion, quietened. */
+[data-finish="drawing"] .device-grain {
+  display: none;
+}
+[data-finish="drawing"] [data-part] {
+  background: var(--canvas) !important;
+  box-shadow: none !important;
+  outline: 1px solid var(--device-draw-line);
+  outline-offset: 0;
+  color: var(--device-draw-ink) !important;
+  text-shadow: none !important;
+}
+[data-finish="drawing"] [data-part] :not([data-part], svg, svg *, canvas) {
+  background: transparent !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  border-color: var(--device-draw-line) !important;
+  color: inherit !important;
+}
+[data-finish="drawing"] [data-part] canvas {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+[data-finish="drawing"] [data-part="glass"] {
+  background: transparent !important;
+  outline-style: dashed;
+}
+[data-finish="drawing"] svg[data-part] {
+  background: transparent !important;
+  outline: none;
+}
+[data-finish="drawing"] [data-part][data-picked] {
+  background: color-mix(in oklab, var(--device-hold) 16%, var(--canvas)) !important;
+  outline: 1.5px solid var(--device-hold);
+  outline-offset: 0;
+}
+[data-finish="drawing"] [data-part="glass"][data-picked] {
+  background: transparent !important;
 }
 [data-preview][data-dragging] {
   cursor: grabbing;

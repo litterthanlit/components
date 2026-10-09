@@ -26,6 +26,7 @@ function num(value: string | string[] | undefined, fallback: number) {
  *   anatomy=60        take the study apart, this far (0 to 100), for a study
  *                     in src/registry/anatomy.ts
  *   layer=cap         rest on one floor rather than walking down the stack
+ *   finish=materials  in the study's own materials, not drawn
  */
 export default async function CapturePage({ params, searchParams }: PageProps<"/capture/[slug]">) {
   const { slug } = await params;
@@ -43,6 +44,7 @@ export default async function CapturePage({ params, searchParams }: PageProps<"/
   const showLabel = query.label !== "0";
   const spread = slug in anatomy && query.anatomy !== undefined ? Math.min(100, Math.max(0, Number(query.anatomy) || 60)) / 100 : null;
   const layer = typeof query.layer === "string" ? query.layer : undefined;
+  const finish = query.finish === "materials" ? "materials" : "drawing";
 
   return (
     <main className="grid min-h-screen place-items-center bg-[color-mix(in_oklab,var(--canvas)_90%,var(--ink))]">
@@ -52,7 +54,7 @@ export default async function CapturePage({ params, searchParams }: PageProps<"/
         style={{ width, height }}
       >
         {spread !== null ? (
-          <CaptureStage slug={slug} title={entry.title} handle={site.handle} background={background} zoom={zoom} spread={spread} layer={layer} label={showLabel} />
+          <CaptureStage slug={slug} title={entry.title} handle={site.handle} background={background} zoom={zoom} spread={spread} finish={finish} layer={layer} label={showLabel} />
         ) : (
           <div className="absolute inset-0">
             <Preview slug={slug} background={background} zoom={zoom} className="h-full" />

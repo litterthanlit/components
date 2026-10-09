@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { Finish } from "@/components/anatomy/anatomy";
 import { useWalk } from "@/components/anatomy/walk";
 import { Dot } from "@/design-system";
 import type { StageBackground } from "@/registry";
@@ -20,6 +21,7 @@ export function CaptureStage({
   background,
   zoom,
   spread: initial,
+  finish,
   layer,
   label,
 }: {
@@ -30,6 +32,7 @@ export function CaptureStage({
   zoom: number;
   /** 0 to 1. */
   spread: number;
+  finish: Finish;
   layer?: string;
   label: boolean;
 }) {
@@ -50,6 +53,7 @@ export function CaptureStage({
           anatomy={{
             slug,
             open: true,
+            finish,
             spread,
             picked,
             label: `Layers of ${title}`,
