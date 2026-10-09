@@ -51,6 +51,14 @@ const polar = (deg: number, r: number) => {
   return { x: Math.round((PIVOT.x + r * Math.sin(a)) * 100) / 100, y: Math.round((PIVOT.y - r * Math.cos(a)) * 100) / 100 };
 };
 
+/*
+ * In the drawing finish the face is a drafter's scale: its printing and the
+ * needle go to the drawing's ink and hairline (the printed near-black would
+ * vanish on a dark canvas). The +VU zone stays red, it is the signal.
+ */
+const inked = "drawn:stroke-(--device-draw-ink)!";
+const lettered = "drawn:fill-(--device-draw-ink)!";
+
 const MARKS: { vu: number; label: string }[] = [
   { vu: -20, label: "20" },
   { vu: -10, label: "10" },
@@ -79,14 +87,14 @@ function Face({ channel }: { channel: "L" | "R" }) {
       <div data-part="face" className="relative overflow-hidden rounded-[0.38em] [background:radial-gradient(90%_110%_at_50%_100%,#fffaf0_0%,#f4eedf_55%,#e2dac6_100%)] shadow-[inset_0_2px_6px_rgb(0_0_0/0.35)]">
         <svg viewBox={`0 0 ${FW} ${FH}`} className="block w-full font-sans">
           {/* Scale */}
-          <path d={arcPath(-20, 0, ARC - 6)} fill="none" stroke="#1d1b17" strokeWidth="0.7" />
-          <path d={arcPath(0, 3, ARC - 4.4)} fill="none" stroke="var(--device-rec)" strokeWidth="3.6" />
-          <path d={arcPath(-20, 3, ARC - 13)} fill="none" stroke="rgb(29 27 23 / 0.35)" strokeWidth="0.5" />
+          <path d={arcPath(-20, 0, ARC - 6)} fill="none" stroke="#1d1b17" strokeWidth="0.7" className={inked} />
+          <path d={arcPath(0, 3, ARC - 4.4)} fill="none" stroke="var(--device-rec)" strokeWidth="3.6" className="drawn:[stroke-width:1.8px]!" />
+          <path d={arcPath(-20, 3, ARC - 13)} fill="none" stroke="rgb(29 27 23 / 0.35)" strokeWidth="0.5" className="drawn:stroke-(--device-draw-line)!" />
           {MINOR.map((vu) => {
             const deg = angleAt(deflectionAt(vu));
             const a = polar(deg, ARC - 6);
             const b = polar(deg, ARC - 3.4);
-            return <line key={vu} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={vu > 0 ? "var(--device-rec)" : "#1d1b17"} strokeWidth="0.5" />;
+            return <line key={vu} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={vu > 0 ? "var(--device-rec)" : "#1d1b17"} strokeWidth="0.5" className={vu > 0 ? undefined : inked} />;
           })}
           {MARKS.map(({ vu, label }) => {
             const deg = angleAt(deflectionAt(vu));
@@ -96,25 +104,25 @@ function Face({ channel }: { channel: "L" | "R" }) {
             const red = vu > 0;
             return (
               <g key={vu}>
-                <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={red ? "var(--device-rec)" : "#1d1b17"} strokeWidth={vu === 0 ? 1.1 : 0.8} />
-                <text x={t.x} y={t.y} textAnchor="middle" dominantBaseline="middle" fontSize="5.6" fontWeight="500" fill={red ? "var(--device-rec)" : "#1d1b17"}>
+                <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={red ? "var(--device-rec)" : "#1d1b17"} strokeWidth={vu === 0 ? 1.1 : 0.8} className={red ? undefined : inked} />
+                <text x={t.x} y={t.y} textAnchor="middle" dominantBaseline="middle" fontSize="5.6" fontWeight="500" fill={red ? "var(--device-rec)" : "#1d1b17"} className={red ? undefined : lettered}>
                   {label}
                 </text>
               </g>
             );
           })}
-          <text x={PIVOT.x} y={47} textAnchor="middle" fontSize="9" fontWeight="600" letterSpacing="0.6" fill="#1d1b17">
+          <text x={PIVOT.x} y={47} textAnchor="middle" fontSize="9" fontWeight="600" letterSpacing="0.6" fill="#1d1b17" className={lettered}>
             VU
           </text>
-          <text x={10} y={FH - 7} fontSize="5" fontWeight="600" letterSpacing="0.6" fill="rgb(29 27 23 / 0.55)">
+          <text x={10} y={FH - 7} fontSize="5" fontWeight="600" letterSpacing="0.6" fill="rgb(29 27 23 / 0.55)" className="drawn:fill-(--device-draw-ink)! drawn:opacity-60!">
             {channel}
           </text>
 
           {/* The needle, written by the meter every frame. */}
-          <line data-needle x1={PIVOT.x} y1={PIVOT.y} x2={PIVOT.x} y2={PIVOT.y - ARC + 2} stroke="#141311" strokeWidth="0.9" strokeLinecap="round" />
-          {/* The pivot's cover, rising into the window: the needle comes out of it. */}
-          <path d={`M${PIVOT.x - 16} ${FH} A16 16 0 0 1 ${PIVOT.x + 16} ${FH}Z`} fill="#141311" />
-          <path d={`M${PIVOT.x - 13.5} ${FH} A13.5 13.5 0 0 1 ${PIVOT.x + 13.5} ${FH}`} fill="none" stroke="rgb(255 255 255 / 0.12)" strokeWidth="0.5" />
+          <line data-needle x1={PIVOT.x} y1={PIVOT.y} x2={PIVOT.x} y2={PIVOT.y - ARC + 2} stroke="#141311" strokeWidth="0.9" strokeLinecap="round" className={inked} />
+          {/* The pivot's cover, rising into the window: the needle comes out of it. Drawn, an outline over the canvas. */}
+          <path d={`M${PIVOT.x - 16} ${FH} A16 16 0 0 1 ${PIVOT.x + 16} ${FH}Z`} fill="#141311" className="drawn:fill-(--canvas)! drawn:stroke-(--device-draw-ink)! drawn:[stroke-width:0.6px]!" />
+          <path d={`M${PIVOT.x - 13.5} ${FH} A13.5 13.5 0 0 1 ${PIVOT.x + 13.5} ${FH}`} fill="none" stroke="rgb(255 255 255 / 0.12)" strokeWidth="0.5" className="drawn:stroke-transparent!" />
         </svg>
         {/* Glass over the face, and the lamp's falloff toward the corners. */}
         <div aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 [background:linear-gradient(160deg,rgb(255_255_255/0.45)_0%,rgb(255_255_255/0.08)_36%,transparent_36.4%)]" />
@@ -185,7 +193,7 @@ export function VuMeter({ className = "" }: { className?: string }) {
             <span
               data-peak
               data-part="light"
-              className="size-[0.42em] rounded-full bg-(--device-meter-off) transition-[background-color,box-shadow] duration-(--duration-exit) data-on:bg-(--device-rec) data-on:shadow-[0_0_0.45em_var(--device-rec)] data-on:duration-0"
+              className="size-[0.42em] rounded-full bg-(--device-meter-off) transition-[background-color,box-shadow] duration-(--duration-exit) data-on:bg-(--device-rec) data-on:shadow-[0_0_0.45em_var(--device-rec)] data-on:duration-0 drawn:data-on:bg-(--device-rec)!"
             />
             <span data-part="lettering" className="text-[0.56em] font-semibold uppercase leading-none tracking-[0.16em] text-(--device-label-quiet) [text-shadow:var(--device-engrave)]">
               Peak
@@ -240,7 +248,7 @@ export default function Demo() {
               <span
                 aria-hidden
                 data-part="light"
-                className={`size-[0.42em] rounded-full transition-[background-color,box-shadow] duration-(--duration-exit) ${sent ? "bg-(--device-rec) shadow-[0_0_0.45em_var(--device-rec)]" : "bg-(--device-meter-off)"}`}
+                className={`size-[0.42em] rounded-full transition-[background-color,box-shadow] duration-(--duration-exit) ${sent ? "bg-(--device-rec) shadow-[0_0_0.45em_var(--device-rec)] drawn:bg-(--device-rec)!" : "bg-(--device-meter-off)"}`}
               />
               <span data-part="lettering" className="text-[0.8em] font-medium uppercase leading-none tracking-[0.03em] [text-shadow:var(--device-engrave)]">Slate</span>
             </span>

@@ -231,9 +231,10 @@ function paginate({ cols, words }: Bitmap, width: number): [number, number][] {
 const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(" ");
 const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const TONES: Record<Tone, { name: string; light: string; said: string }> = {
-  info: { name: "Info", light: "bg-(--device-lcd-ink) shadow-[0_0_0.5em_rgb(255_255_255/0.7)]", said: "" },
-  warn: { name: "Warn", light: "bg-(--device-hold) shadow-[0_0_0.5em_var(--device-hold)]", said: "Warning: " },
-  alert: { name: "Alert", light: "animate-pulse bg-(--device-rec) shadow-[0_0_0.5em_var(--device-rec)] motion-reduce:animate-none", said: "Alert: " },
+  // Drawn, a lit light is filled ink (orange is the picked layer's, so warn goes to ink too) and an alert stays red; idle is a hairline ring.
+  info: { name: "Info", light: "bg-(--device-lcd-ink) shadow-[0_0_0.5em_rgb(255_255_255/0.7)] drawn:bg-(--device-draw-ink)!", said: "" },
+  warn: { name: "Warn", light: "bg-(--device-hold) shadow-[0_0_0.5em_var(--device-hold)] drawn:bg-(--device-draw-ink)!", said: "Warning: " },
+  alert: { name: "Alert", light: "animate-pulse bg-(--device-rec) shadow-[0_0_0.5em_var(--device-rec)] motion-reduce:animate-none drawn:bg-(--device-rec)!", said: "Alert: " },
 };
 
 type TickerProps = {
@@ -621,11 +622,11 @@ export function Ticker({ controller, label = "Notifications", speed = 72, classN
       <div data-part="lcd" className="relative overflow-hidden rounded-[0.65em] px-[0.6em] pb-[0.6em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)">
         <div aria-hidden className="flex items-center gap-[0.45em]">
           <span data-part="light" className={cx("size-[0.5em] shrink-0 rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)", tone ? tone.light : "bg-white/15")} />
-          <span key={current?.id} className="animate-enter text-[0.58em] font-semibold uppercase leading-none tracking-[0.14em] text-(--device-lcd-dim)">
+          <span key={current?.id} className="animate-enter text-[0.58em] font-semibold uppercase leading-none tracking-[0.14em] text-(--device-lcd-dim) drawn:opacity-60">
             {tone ? tone.name : "Idle"}
           </span>
           {held && current && (
-            <svg viewBox="0 0 8 8" className="size-[0.5em] fill-(--device-lcd-dim)">
+            <svg viewBox="0 0 8 8" className="size-[0.5em] fill-(--device-lcd-dim) drawn:fill-(--device-draw-ink)! drawn:opacity-60">
               <path d="M1.2 1h1.9v6H1.2zM4.9 1h1.9v6H4.9z" />
             </svg>
           )}
@@ -653,7 +654,8 @@ export function Ticker({ controller, label = "Notifications", speed = 72, classN
           className="relative mt-[0.45em] h-(--fine) rounded-[0.2em] font-semibold outline-offset-4 @[19.5rem]/ticker:h-(--pitch)"
           style={{ "--pitch": `${ROWS * PITCH}em`, "--fine": `${ROWS * FINE_PITCH}em` } as CSSProperties}
         >
-          <canvas ref={canvasRef} aria-hidden className="absolute inset-0 size-full" />
+          {/* Drawn, the dots are the matrix's content: the LCD's light ink inverted to dark on the light canvas, as it is on the dark one. */}
+          <canvas ref={canvasRef} aria-hidden className="absolute inset-0 size-full drawn:[--draw-invert:1] drawn:dark:[--draw-invert:0] drawn:[filter:grayscale(1)_invert(var(--draw-invert))]! drawn:opacity-80!" />
         </div>
         {/* Glass. */}
         <div aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 [background:var(--screen-glass)]" />
@@ -799,7 +801,7 @@ export default function Demo() {
             >
               <span className="grid h-[2.75em] place-items-center rounded-[0.7em] text-(--device-key-ink) @[20rem]:h-[2.5em] [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
                 {k.glyph ? (
-                  <svg aria-hidden data-part="lettering" viewBox="0 0 16 16" className="size-[1.1em] fill-none stroke-current [filter:var(--device-engrave-glyph)]" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <svg aria-hidden data-part="lettering" viewBox="0 0 16 16" className="size-[1.1em] fill-none stroke-current [filter:var(--device-engrave-glyph)] drawn:[filter:none]!" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d={k.glyph} />
                   </svg>
                 ) : (

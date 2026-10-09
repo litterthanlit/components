@@ -206,11 +206,11 @@ export function Segments({ label = "Thinking", paused = false, className }: Indi
   return (
     <Module ref={ref} label={label} part="lcd" className={cx(lcd, "items-center justify-center gap-[0.2em]", className)}>
       {[0, 1].map((figure) => (
-        <svg key={figure} aria-hidden viewBox="0 0 43 66" className="h-[64%] w-auto [filter:drop-shadow(0_0_0.2em_rgb(255_255_255/0.3))]">
+        <svg key={figure} aria-hidden viewBox="0 0 43 66" className="h-[64%] w-auto [filter:drop-shadow(0_0_0.2em_rgb(255_255_255/0.3))] drawn:[filter:none]!">
           {(Object.keys(SEGMENTS) as Segment[]).map((s) => (
-            <polygon key={s} points={SEGMENTS[s]} className="fill-current opacity-[0.1]" />
+            <polygon key={s} points={SEGMENTS[s]} className="fill-current opacity-[0.1] drawn:fill-(--device-draw-line)! drawn:opacity-50!" />
           ))}
-          {LOOP.map(([f, s], i) => f === figure && <polygon key={s} data-loop={i} points={SEGMENTS[s]} opacity="0" className="fill-current" />)}
+          {LOOP.map(([f, s], i) => f === figure && <polygon key={s} data-loop={i} points={SEGMENTS[s]} opacity="0" className="fill-current drawn:fill-(--device-draw-ink)!" />)}
         </svg>
       ))}
     </Module>
@@ -269,12 +269,12 @@ export function Tuner({ label = "Searching", paused = false, className }: Indica
     <Module ref={ref} label={label} part="window" className={cx(smoked, className)}>
       <svg aria-hidden viewBox="0 0 56 26" className="absolute inset-0 size-full">
         {TICKS.map(({ x, major }) => (
-          <line key={x} x1={x} x2={x} y1={major ? 17.5 : 19.5} y2={22} strokeWidth={0.5} className="stroke-white/35" />
+          <line key={x} x1={x} x2={x} y1={major ? 17.5 : 19.5} y2={22} strokeWidth={0.5} className="stroke-white/35 drawn:stroke-(--device-draw-ink)!" />
         ))}
-        <line x1={6} x2={50} y1={22} y2={22} strokeWidth={0.4} className="stroke-white/20" />
-        <circle data-lamp cx={50.5} cy={5.5} r={1.4} opacity="0.12" className="fill-(--device-lcd-ink) [filter:drop-shadow(0_0_1.2px_rgb(255_255_255/0.8))]" />
+        <line x1={6} x2={50} y1={22} y2={22} strokeWidth={0.4} className="stroke-white/20 drawn:stroke-(--device-draw-line)!" />
+        <circle data-lamp cx={50.5} cy={5.5} r={1.4} opacity="0.12" className="fill-(--device-lcd-ink) [filter:drop-shadow(0_0_1.2px_rgb(255_255_255/0.8))] drawn:fill-(--device-draw-ink)! drawn:[filter:none]!" />
         <g data-needle>
-          <line x1={0} x2={0} y1={3.5} y2={23.5} strokeWidth={0.9} strokeLinecap="round" className="stroke-(--device-rec) [filter:drop-shadow(0_0_1px_var(--device-rec))]" />
+          <line x1={0} x2={0} y1={3.5} y2={23.5} strokeWidth={0.9} strokeLinecap="round" className="stroke-(--device-rec) [filter:drop-shadow(0_0_1px_var(--device-rec))] drawn:stroke-(--device-draw-ink)! drawn:[filter:none]!" />
         </g>
       </svg>
       <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)]" />
@@ -349,9 +349,10 @@ export function Meters({ label = "Reading", paused = false, className }: Indicat
     <Module ref={ref} label={label} part="lcd" className={cx(lcd, "flex-col justify-center gap-[0.45em] px-[0.65em]", className)}>
       {[0, 1].map((c) => (
         <span key={c} data-meter aria-hidden className="relative h-[0.48em]">
-          <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/15" />
-          <span className="meter-ticks absolute inset-0 [clip-path:inset(0_calc(100%_-_var(--l,0)_*_100%)_0_0)]" />
-          <span className="absolute -inset-y-[12%] left-[calc(var(--pk,0)_*_100%_-_1px)] w-[2px] rounded-[1px] bg-current" />
+          {/* Drawn: the track a hairline, the lit bar its ticks in ink, the peak mark a line of ink. */}
+          <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/15 drawn:bg-(--device-draw-line)!" />
+          <span className="meter-ticks absolute inset-0 [clip-path:inset(0_calc(100%_-_var(--l,0)_*_100%)_0_0)] drawn:[background:repeating-linear-gradient(90deg,var(--device-draw-ink)_0_1px,transparent_1px_3px)]!" />
+          <span className="absolute -inset-y-[12%] left-[calc(var(--pk,0)_*_100%_-_1px)] w-[2px] rounded-[1px] bg-current drawn:bg-(--device-draw-ink)!" />
         </span>
       ))}
     </Module>
@@ -399,12 +400,12 @@ export function Matrix({ label = "Reasoning", paused = false, className }: Indic
       )}
     >
       <span data-part="lcd" className={cx(lcd, "grid size-full place-items-center rounded-[0.45em] px-[0.3em]")}>
-        <svg aria-hidden viewBox={`0 0 ${COLS * 5} ${ROWS * 5}`} className="h-[82%] w-auto [filter:drop-shadow(0_0_0.15em_rgb(255_255_255/0.35))]">
+        <svg aria-hidden viewBox={`0 0 ${COLS * 5} ${ROWS * 5}`} className="h-[82%] w-auto [filter:drop-shadow(0_0_0.15em_rgb(255_255_255/0.35))] drawn:[filter:none]!">
           {DOTS.map(({ x, y }, i) => (
-            <circle key={i} cx={x} cy={y} r={1.55} className="fill-white/[0.08]" />
+            <circle key={i} cx={x} cy={y} r={1.55} className="fill-white/[0.08] drawn:fill-transparent! drawn:stroke-(--device-draw-line)! drawn:[stroke-width:0.4px]!" />
           ))}
           {DOTS.map(({ x, y }, i) => (
-            <circle key={i} data-dot cx={x} cy={y} r={1.55} opacity="0" className="fill-current" />
+            <circle key={i} data-dot cx={x} cy={y} r={1.55} opacity="0" className="fill-current drawn:fill-(--device-draw-ink)!" />
           ))}
         </svg>
       </span>
@@ -461,7 +462,7 @@ export function Chase({ label = "Running", paused = false, className }: Indicato
           <span
             data-step="off"
             data-part="light"
-            className="size-[0.3em] rounded-full bg-(--device-meter-off) transition-[background-color,box-shadow] duration-(--duration-exit) data-[step=fire]:bg-(--device-rec) data-[step=fire]:shadow-[0_0_0.4em_var(--device-rec)] data-[step=fire]:duration-0 data-[step=set]:bg-(--device-meter-on) data-[step=set]:duration-0"
+            className="size-[0.3em] rounded-full bg-(--device-meter-off) transition-[background-color,box-shadow] duration-(--duration-exit) data-[step=fire]:bg-(--device-rec) data-[step=fire]:shadow-[0_0_0.4em_var(--device-rec)] data-[step=fire]:duration-0 data-[step=set]:bg-(--device-meter-on) data-[step=set]:duration-0 drawn:data-[step=set]:bg-(--device-draw-ink)! drawn:data-[step=fire]:bg-(--device-rec)!"
           />
         </span>
       ))}
@@ -524,19 +525,20 @@ export function Reels({ label = "Writing", paused = false, className }: Indicato
       <svg aria-hidden viewBox="0 0 56 26" className="absolute inset-0 size-full">
         {[REEL.l, REEL.r].map((x) => (
           <g key={x}>
-            <circle cx={x} cy={REEL.y} r={9.4} strokeWidth={0.5} className="fill-white/[0.03] stroke-white/15" />
-            <circle data-pack cx={x} cy={REEL.y} r={REEL.hub} strokeWidth={0.4} className="fill-white/[0.13] stroke-white/10" />
-            <circle cx={x} cy={REEL.y} r={2.9} strokeWidth={0.5} className="fill-[#141415] stroke-white/30" />
+            {/* Drawn: the flange a hairline, the pack's edge in ink (its radius is the tape on the reel), the hub over it. */}
+            <circle cx={x} cy={REEL.y} r={9.4} strokeWidth={0.5} className="fill-white/[0.03] stroke-white/15 drawn:fill-transparent! drawn:stroke-(--device-draw-line)!" />
+            <circle data-pack cx={x} cy={REEL.y} r={REEL.hub} strokeWidth={0.4} className="fill-white/[0.13] stroke-white/10 drawn:fill-transparent! drawn:stroke-(--device-draw-ink)!" />
+            <circle cx={x} cy={REEL.y} r={2.9} strokeWidth={0.5} className="fill-[#141415] stroke-white/30 drawn:fill-(--canvas)! drawn:stroke-(--device-draw-ink)!" />
             <g data-hub>
               {SPOKES.map((s) => (
-                <line key={`${s.x},${s.y}`} x1={x} y1={REEL.y} x2={x + s.x} y2={REEL.y + s.y} strokeWidth={0.7} strokeLinecap="round" className="stroke-white/55" />
+                <line key={`${s.x},${s.y}`} x1={x} y1={REEL.y} x2={x + s.x} y2={REEL.y + s.y} strokeWidth={0.7} strokeLinecap="round" className="stroke-white/55 drawn:stroke-(--device-draw-ink)!" />
               ))}
             </g>
           </g>
         ))}
-        <path data-tape fill="none" strokeWidth={0.5} className="stroke-white/30" />
-        <rect x={26.5} y={22.4} width={3} height={2} rx={0.4} className="fill-white/25" />
-        <circle data-rec cx={51.8} cy={4.2} r={1.1} className="fill-(--device-rec) [filter:drop-shadow(0_0_1px_var(--device-rec))]" />
+        <path data-tape fill="none" strokeWidth={0.5} className="stroke-white/30 drawn:stroke-(--device-draw-ink)!" />
+        <rect x={26.5} y={22.4} width={3} height={2} rx={0.4} className="fill-white/25 drawn:fill-(--device-draw-ink)!" />
+        <circle data-rec cx={51.8} cy={4.2} r={1.1} className="fill-(--device-rec) [filter:drop-shadow(0_0_1px_var(--device-rec))] drawn:[filter:none]!" />
       </svg>
       <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)]" />
     </Module>
@@ -679,7 +681,7 @@ export default function Demo() {
         <div data-part="well" className="flex items-stretch gap-[0.45em] rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess)">
           <AgentIndicator phase={phase} label={LINES[phase]} paused={paused} />
           <div aria-hidden data-part="lcd" className={cx(lcd, "flex min-w-0 flex-1 flex-col justify-between overflow-hidden px-[0.7em] pb-[0.5em] pt-[0.45em]")}>
-            <span className="flex items-center text-[0.62em] tabular-nums text-(--device-lcd-dim)">
+            <span className="flex items-center text-[0.62em] tabular-nums text-(--device-lcd-dim) drawn:opacity-60">
               {indicators[phase].name}
               <span className="ml-auto">
                 {at + 1}/{ORDER.length}
@@ -715,7 +717,7 @@ export default function Demo() {
                   <Indicator label={false} paused={paused} />
                 </span>
                 <span className="flex max-w-full items-center gap-[0.4em]">
-                  <span aria-hidden data-part="light" className={cx("size-[0.36em] shrink-0 rounded-full transition-[background-color] duration-(--duration-exit)", on ? "bg-(--device-meter-on) duration-0" : "bg-(--device-meter-off)")} />
+                  <span aria-hidden data-part="light" className={cx("size-[0.36em] shrink-0 rounded-full transition-[background-color] duration-(--duration-exit)", on ? "bg-(--device-meter-on) duration-0 drawn:bg-(--device-draw-ink)!" : "bg-(--device-meter-off)")} />
                   <span data-part="lettering" className={cx(engraved, "truncate text-[0.58em] transition-colors duration-(--duration-exit)", on ? "text-(--device-label)" : "text-(--device-label-quiet)")}>{label}</span>
                 </span>
               </button>

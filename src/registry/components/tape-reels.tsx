@@ -216,9 +216,9 @@ export function TapeReels({ progress, label, recording = false, onSeek, onSeekEn
             } as CSSProperties
           }
         >
-          {/* The pack: oxide wound in fine layers, lit from above. */}
+          {/* The pack: oxide wound in fine layers, lit from above. Drawn, its edge in ink at --r and the layers as hairline rings: the mask still stops them where the tape does. */}
           <div
-            className="absolute inset-0 rounded-full"
+            className="absolute inset-0 rounded-full drawn:[background:radial-gradient(circle_closest-side,transparent_calc(var(--r)_-_2%),var(--device-draw-ink)_calc(var(--r)_-_1.6%),var(--device-draw-ink)_calc(var(--r)_-_0.4%),transparent_var(--r)),repeating-radial-gradient(circle_closest-side,transparent_0_9.4%,var(--device-draw-line)_10.2%,transparent_11%)]! drawn:[mask-image:radial-gradient(circle_closest-side,#000_calc(var(--r)_-_0.3%),transparent_calc(var(--r)_+_0.3%))]!"
             style={{
               background:
                 "radial-gradient(circle closest-side, transparent calc(var(--r) - 0.6%), rgb(255 255 255 / 0.22) calc(var(--r) - 0.6%), rgb(255 255 255 / 0.22) var(--r), transparent var(--r)), repeating-radial-gradient(circle closest-side, rgb(255 255 255 / 0.035) 0 0.7%, transparent 0.7% 1.6%), radial-gradient(circle closest-side, #4b3426 0, #3a281d calc(var(--r) - 1%), #2c1e16 var(--r), transparent var(--r))",
@@ -233,40 +233,40 @@ export function TapeReels({ progress, label, recording = false, onSeek, onSeekEn
               mask: "radial-gradient(circle closest-side, #000 var(--r), transparent var(--r))",
             }}
           />
-          {/* The hub: three windows cut through it, and the spindle. */}
+          {/* The hub: three windows cut through it, and the spindle. Drawn, an outlined wheel over the rings, its windows hatched. */}
           <div
-            className="absolute rounded-full [background:var(--device-wheel-face)] shadow-[0_0_0_0.5px_rgb(0_0_0/0.4),0_1px_3px_rgb(0_0_0/0.5)]"
+            className="absolute rounded-full [background:var(--device-wheel-face)] shadow-[0_0_0_0.5px_rgb(0_0_0/0.4),0_1px_3px_rgb(0_0_0/0.5)] drawn:bg-(--canvas)! drawn:outline drawn:outline-(--device-draw-ink)"
             style={{ inset: `${50 - (HUB / R) * 50}%` }}
           >
             <div
-              className="absolute inset-0 rounded-full bg-(--device-rim)"
+              className="absolute inset-0 rounded-full bg-(--device-rim) drawn:[background:repeating-linear-gradient(45deg,var(--device-draw-ink)_0_1px,transparent_1px_0.28em)]!"
               style={{
                 mask: "conic-gradient(from var(--a), #000 0 46deg, transparent 46deg 120deg, #000 120deg 166deg, transparent 166deg 240deg, #000 240deg 286deg, transparent 286deg), radial-gradient(circle closest-side, transparent 42%, #000 43%, #000 84%, transparent 85%)",
                 maskComposite: "intersect",
               }}
             />
-            <div className="absolute inset-[38%] rounded-full bg-(--device-rim) shadow-[inset_0_0_0_1.5px_rgb(255_255_255/0.25)]" />
+            <div className="absolute inset-[38%] rounded-full bg-(--device-rim) shadow-[inset_0_0_0_1.5px_rgb(255_255_255/0.25)] drawn:bg-(--canvas)! drawn:outline drawn:outline-(--device-draw-ink)" />
           </div>
         </div>
       ))}
 
       {/* Guides, the head and the tape between them. */}
       <svg aria-hidden data-part="tape" viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 size-full">
-        <polyline ref={tapeRef} fill="none" stroke="#3a281d" strokeWidth="1.6" strokeLinejoin="round" />
+        <polyline ref={tapeRef} fill="none" stroke="#3a281d" strokeWidth="1.6" strokeLinejoin="round" className="drawn:stroke-(--device-draw-ink)! drawn:[stroke-width:0.9px]!" />
         {GUIDES.map((g, i) => (
           <g key={i}>
-            <circle cx={g.x} cy={g.y} r={GUIDE_R} fill="#d9d9d7" stroke="rgb(0 0 0 / 0.5)" strokeWidth="0.6" />
-            <circle cx={g.x} cy={g.y} r={GUIDE_R * 0.62} fill="none" stroke="rgb(0 0 0 / 0.18)" strokeWidth="0.5" />
-            <circle cx={g.x} cy={g.y} r={GUIDE_R * 0.26} fill="#7a7a78" />
+            <circle cx={g.x} cy={g.y} r={GUIDE_R} fill="#d9d9d7" stroke="rgb(0 0 0 / 0.5)" strokeWidth="0.6" className="drawn:fill-(--canvas)! drawn:stroke-(--device-draw-ink)!" />
+            <circle cx={g.x} cy={g.y} r={GUIDE_R * 0.62} fill="none" stroke="rgb(0 0 0 / 0.18)" strokeWidth="0.5" className="drawn:stroke-(--device-draw-line)!" />
+            <circle cx={g.x} cy={g.y} r={GUIDE_R * 0.26} fill="#7a7a78" className="drawn:fill-(--device-draw-ink)!" />
           </g>
         ))}
-        <rect x={W / 2 - 9} y={TAPE_Y + 0.8} width="18" height="9" rx="1.6" fill="#cfcfcd" stroke="rgb(0 0 0 / 0.5)" strokeWidth="0.6" />
-        <rect x={W / 2 - 5} y={TAPE_Y + 0.8} width="10" height="1.4" fill="#8e8e8c" />
+        <rect x={W / 2 - 9} y={TAPE_Y + 0.8} width="18" height="9" rx="1.6" fill="#cfcfcd" stroke="rgb(0 0 0 / 0.5)" strokeWidth="0.6" className="drawn:fill-(--canvas)! drawn:stroke-(--device-draw-ink)!" />
+        <rect x={W / 2 - 5} y={TAPE_Y + 0.8} width="10" height="1.4" fill="#8e8e8c" className="drawn:fill-(--device-draw-line)!" />
         <circle
           cx={W / 2 + 14}
           cy={TAPE_Y + 5}
           r="1.6"
-          className={recording ? "fill-(--device-rec) [filter:drop-shadow(0_0_2px_var(--device-rec))]" : "fill-white/15"}
+          className={recording ? "fill-(--device-rec) [filter:drop-shadow(0_0_2px_var(--device-rec))] drawn:[filter:none]!" : "fill-white/15 drawn:fill-transparent! drawn:stroke-(--device-draw-line)! drawn:[stroke-width:0.5px]!"}
         />
       </svg>
 
@@ -391,17 +391,17 @@ export default function Demo() {
           >
             <div className="flex min-w-0 items-center gap-[0.5em]">
               <span data-part="chip" className="inline-flex shrink-0 items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
-                <span className={phase === "export" ? "size-[0.55em] animate-pulse rounded-full bg-(--device-rec)" : "size-[0.5em] rounded-[1px] bg-current"} />
+                <span className={phase === "export" ? "size-[0.55em] animate-pulse rounded-full bg-(--device-rec) drawn:bg-(--device-rec)!" : "size-[0.5em] rounded-[1px] bg-current drawn:bg-(--device-draw-ink)!"} />
                 <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em]">{chips[phase]}</span>
               </span>
-              <span className="truncate text-[0.7em] text-(--device-lcd-dim)">take_04.wav</span>
+              <span className="truncate text-[0.7em] text-(--device-lcd-dim) drawn:opacity-60">take_04.wav</span>
             </div>
             <p className="flex items-baseline justify-between gap-[0.6em] leading-none tabular-nums">
               <span className="text-[1.15em] font-light tracking-[-0.02em]">
                 {clock(progress * TAKE)}
-                <span className="text-(--device-lcd-dim)"> / {clock(TAKE)}</span>
+                <span className="text-(--device-lcd-dim) drawn:opacity-60"> / {clock(TAKE)}</span>
               </span>
-              <span className="text-[0.7em] text-(--device-lcd-dim)">{Math.round(progress * 100)} %</span>
+              <span className="text-[0.7em] text-(--device-lcd-dim) drawn:opacity-60">{Math.round(progress * 100)} %</span>
             </p>
           </div>
 
