@@ -20,6 +20,12 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     lettering: { note: "The four modes and their detent marks, engraved round the collar." },
     lcd: { note: "The mode chip, and three bars that travel on springs to each mode's preset, with the boost count." },
   },
+  "paddle-shifters": {
+    key: { name: "Paddles", note: "Levers hung from a pivot: the face sinks 2px and leans about it on the rotate property, inside the key's own frame, so it never spills." },
+    drum: { name: "Gear drum", note: "A column of figures on a spring (170, 21) that clicks for each figure it passes, higher for higher gears; a looser spring shakes it at either end." },
+    light: { name: "Rev bar", tokens: ["--device-lcd-ink", "--device-rec"], note: "Blips up on a downshift, as a rev-match does, drops on an upshift, then settles. The last 22% is the red zone." },
+    well: { note: "The wheel's hub, pressed into the plate." },
+  },
   knob: {
     cap: { note: "Knurled round its skirt by a conic gradient from var(--a), so it turns without a transform." },
     light: { tokens: ["--device-meter-off", "--device-meter-on"], note: "Fifteen strokes round the collar, lit by the same spring that turns the cap and clicks the detents." },

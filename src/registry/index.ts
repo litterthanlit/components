@@ -45,6 +45,17 @@ export const registry: RegistryEntry[] = [
     background: "plain",
   },
   {
+    slug: "paddle-shifters",
+    title: "Paddle Shifters",
+    description:
+      "A bounded number stepper built as a wheel's pair of shift paddles. Minus and plus levers hang from pivots either side of a small readout; pulled, each sinks 2px and leans a few degrees. The gear turns on a drum that clicks for every figure it passes, and a rev bar blips up on a downshift and drops on an upshift before settling. At either end the drum bumps and shakes and nothing changes. One spinbutton: arrows, Home and End.",
+    tagline: "Two shift paddles around a gear drum and a rev bar.",
+    tags: ["input", "pointer", "sound", "a11y"],
+    date: "2026-10-09",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "gradient-keys",
     title: "Gradient Keys",
     description:

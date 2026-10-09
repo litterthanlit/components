@@ -12,6 +12,7 @@ const loading = () => <div className="size-6 animate-pulse rounded-full bg-line"
 export const previews: Record<string, ComponentType> = {
   "drive-mode": dynamic(() => import("./components/drive-mode"), { loading }),
   throttle: dynamic(() => import("./components/throttle"), { loading }),
+  "paddle-shifters": dynamic(() => import("./components/paddle-shifters"), { loading }),
   "gradient-keys": dynamic(() => import("./components/gradient-keys"), { loading }),
   "agent-indicators": dynamic(() => import("./components/agent-indicators"), { loading }),
   "agent-status": dynamic(() => import("./components/agent-status"), { loading }),
