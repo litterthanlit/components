@@ -34,6 +34,14 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     lcd: { note: "Time to the hundredth, with the units dim, and the last lap against the one before it, with a true minus." },
     light: { tokens: ["--device-meter-off", "--device-rec"], note: "Lit red on Start while the clock runs; Lap's flashes for 160 ms with each lap." },
   },
+  "start-key": {
+    collar: { note: "The barrel's well, round the cap. The three stops are engraved outside it: Off, On, and a dashed run to Start, where the key is spring-loaded." },
+    cap: { tokens: ["--device-wheel-face", "--device-wheel-shadow"], note: "The barrel face, fixed in place. The key turns on top of it." },
+    key: { name: "Bow", note: "The key's flat grip, turned on the rotate property by an integrator: detents at Off and On, a stiffening return spring past On, hard stops at each end." },
+    light: { name: "Warning lights", tokens: ["--device-meter-off", "--device-meter-on", "--device-rec"], note: "Six glyphs in recesses. On comes the light check, everything lit then out one by one at 120 ms; battery and oil stay red until the engine catches." },
+    lettering: { note: "The stops, engraved round the collar at the angles the key's tip points to." },
+    lcd: { note: "The state and the revs. After the catch the revs flare and settle to 850 rpm on a spring that writes straight into the glass." },
+  },
   knob: {
     cap: { note: "Knurled round its skirt by a conic gradient from var(--a), so it turns without a transform." },
     light: { tokens: ["--device-meter-off", "--device-meter-on"], note: "Fifteen strokes round the collar, lit by the same spring that turns the cap and clicks the detents." },

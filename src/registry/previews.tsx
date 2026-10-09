@@ -10,6 +10,7 @@ import type { ComponentType } from "react";
 const loading = () => <div className="size-6 animate-pulse rounded-full bg-line" />;
 
 export const previews: Record<string, ComponentType> = {
+  "start-key": dynamic(() => import("./components/start-key"), { loading }),
   "drive-mode": dynamic(() => import("./components/drive-mode"), { loading }),
   chrono: dynamic(() => import("./components/chrono"), { loading }),
   throttle: dynamic(() => import("./components/throttle"), { loading }),
