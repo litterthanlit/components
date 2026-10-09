@@ -92,13 +92,27 @@ function stack(scene: HTMLElement) {
   for (const el of els) {
     const parent = parentOf(el);
     const z = Math.max(0, floorOf(el) - floorOf(parent));
-    el.style.setProperty("--z", String(z));
+    if (el.style.getPropertyValue("--z") !== String(z)) el.style.setProperty("--z", String(z));
     placed.set(el, { kind: el.dataset.part!, floor: floorOf(el), z, parent });
   }
   return { kinds, floors: Math.max(0, kinds.length - 1), placed };
 }
 
-/** Where a part's centre lies on the plan, in the scene's own pixels: layout, untouched by the camera. */
+/** How far an element's own translate moves it, in pixels (percentages are of its own box). */
+function translateOf(el: Element) {
+  const t = getComputedStyle(el).translate;
+  if (!t || t === "none") return null;
+  const [tx = "0px", ty = "0px"] = t.split(" ");
+  const box = el as HTMLElement;
+  const px = (v: string, size = 0) => (v.endsWith("%") ? (parseFloat(v) / 100) * size : parseFloat(v) || 0);
+  return { x: px(tx, box.offsetWidth), y: px(ty, box.offsetHeight) };
+}
+
+/**
+ * Where a part's centre lies on the plan, in the scene's own pixels: its
+ * layout, and the translates that move it and the parts it sits in (a
+ * fader's cap rides on one), untouched by the camera.
+ */
 function planCentre(part: Element, scene: HTMLElement) {
   // An SVG has no offsets; the parts drawn in SVG fill the box they sit in.
   const el = part instanceof HTMLElement ? part : part.parentElement!;
@@ -107,6 +121,13 @@ function planCentre(part: Element, scene: HTMLElement) {
   for (let e: HTMLElement | null = el; e && e !== scene; e = e.offsetParent as HTMLElement | null) {
     x += e.offsetLeft;
     y += e.offsetTop;
+  }
+  for (let e: Element | null = el; e && e !== scene; e = e.parentElement) {
+    const t = translateOf(e);
+    if (t) {
+      x += t.x;
+      y += t.y;
+    }
   }
   return { x, y };
 }
@@ -119,10 +140,12 @@ export function Anatomy({ slug, open, spread, picked, zoom = 1, onKinds, onPick,
   const ids = useId();
   const engine = useRef<{ tilt: Spring; spread: Spring; lifts: WeakMap<Element, Spring>; placed: Placed; fit: () => void; guide: () => void } | null>(null);
   const openRef = useRef(open);
+  const kindsRef = useRef(kinds);
   const props = useRef({ onKinds, onPick, onSpread, picked, spread, zoom });
   useLayoutEffect(() => {
     props.current = { onKinds, onPick, onSpread, picked, spread, zoom };
     openRef.current = open;
+    kindsRef.current = kinds;
   });
 
   // The camera, the spread and the risers, drawn straight to the scene.
@@ -165,11 +188,24 @@ export function Anatomy({ slug, open, spread, picked, zoom = 1, onKinds, onPick,
       e.guide();
     };
 
-    /** Dashed risers from each piece of the picked layer down to the part it sits on. */
+    /**
+     * Dashed risers from each piece of the picked layer down to the part it
+     * sits on. A piece its study moves by an inline translate (a fader's cap
+     * on its motor, a switch's cap) is followed while it is picked: every
+     * frame while it moves, four times a second once it has rested for one.
+     */
+    let frame = 0;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const unfollow = () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
     const guide = () => {
       const box = guidesRef.current!;
       const { picked } = props.current;
       const risers: HTMLElement[] = [];
+      const moving: [HTMLElement, HTMLElement][] = [];
+      unfollow();
       if (openRef.current && picked) {
         for (const [el, at] of e.placed) {
           if (at.kind !== picked || !el.isConnected) continue;
@@ -179,9 +215,25 @@ export function Anatomy({ slug, open, spread, picked, zoom = 1, onKinds, onPick,
           riser.className = "anatomy-riser";
           riser.style.cssText = `left:${x.toFixed(2)}px;top:${y.toFixed(2)}px;--base:${base};--climb:${at.z}`;
           risers.push(riser);
+          if (el.style.translate) moving.push([el, riser]);
         }
       }
       box.replaceChildren(...risers);
+      let still = 0; // frames since a piece last moved
+      const follow = () => {
+        let moved = false;
+        for (const [el, riser] of moving) {
+          const { x, y } = planCentre(el, scene);
+          const [left, top] = [`${x.toFixed(2)}px`, `${y.toFixed(2)}px`];
+          if (riser.style.left !== left || riser.style.top !== top) moved = true;
+          riser.style.left = left;
+          riser.style.top = top;
+        }
+        still = moved ? 0 : still + 1;
+        if (still > 60) timer = setTimeout(follow, 250);
+        else frame = requestAnimationFrame(follow);
+      };
+      if (moving.length) frame = requestAnimationFrame(follow);
     };
 
     const e = { tilt, spread, lifts: new WeakMap<Element, Spring>(), placed: new Map() as Placed, fit, guide };
@@ -189,10 +241,13 @@ export function Anatomy({ slug, open, spread, picked, zoom = 1, onKinds, onPick,
     return () => {
       tilt.stop();
       spread.stop();
+      unfollow();
     };
   }, []);
 
-  // The demo loads in its own chunk, so its parts arrive after this mounts: watch until they do.
+  // The demo loads in its own chunk, so its parts arrive after this mounts, and hydration or a
+  // study's own rendering can swap them for new ones. Watch: until the parts are found, and while
+  // the study is apart, so the floors, the fit and the risers always stand on the parts on the page.
   useEffect(() => {
     const scene = sceneRef.current!;
     let raf = 0;
@@ -200,14 +255,17 @@ export function Anatomy({ slug, open, spread, picked, zoom = 1, onKinds, onPick,
       raf = 0;
       const { kinds, placed } = stack(scene);
       if (!kinds.length) return;
-      observer.disconnect();
-      engine.current!.placed = placed;
-      if (openRef.current) engine.current!.fit();
-      setKinds(kinds);
-      props.current.onKinds(kinds);
+      const e = engine.current!;
+      const swapped = placed.size !== e.placed.size || [...placed.keys()].some((el) => !e.placed.has(el));
+      e.placed = placed;
+      if (swapped && openRef.current) e.fit();
+      if (kinds.join() !== kindsRef.current.join()) {
+        setKinds(kinds);
+        props.current.onKinds(kinds);
+      }
     };
     const observer = new MutationObserver(() => {
-      if (!raf) raf = requestAnimationFrame(look);
+      if (!raf && (openRef.current || !kindsRef.current.length)) raf = requestAnimationFrame(look);
     });
     observer.observe(scene, { childList: true, subtree: true });
     raf = requestAnimationFrame(look);
