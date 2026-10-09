@@ -6,6 +6,13 @@ import { parts, type PartInfo } from "@/components/anatomy/parts";
  * enough. A study is listed here once its parts carry `data-part`.
  */
 export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>> = {
+  throttle: {
+    key: { name: "Pedal", tokens: ["--device-wheel-face", "--device-key-shadow"], note: "Brushed aluminium with a pad of rubber studs in rows. It tilts back from its hinge on the rotate property inside a clipping well, and its face darkens with travel." },
+    slot: { name: "Hinge", tokens: ["--device-rim"], note: "A black groove across the foot of the plate, where it is hinged." },
+    well: { name: "Wells", note: "The shift-light strip, and the floor the pedal stands in." },
+    light: { tokens: ["--device-meter-off", "--device-meter-on", "--device-rec"], note: "Twelve shift lights, the last three red. Each that comes on clicks a little higher, and all flash together at the limiter." },
+    lcd: { note: "Revs in light tabular figures with a dim unit, written by the engine loop, with a chip for Idle, Rev and Limiter." },
+  },
   knob: {
     cap: { note: "Knurled round its skirt by a conic gradient from var(--a), so it turns without a transform." },
     light: { tokens: ["--device-meter-off", "--device-meter-on"], note: "Fifteen strokes round the collar, lit by the same spring that turns the cap and clicks the detents." },
