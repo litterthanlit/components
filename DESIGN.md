@@ -392,6 +392,18 @@ A study's page can take it apart. The Anatomy key, beside Replay, latches down; 
 
 It is the materials, shown working: plate, then well, then part. A knob's cap lifts out of its collar with the knurling still turning, a one-time code's cells rise off the bezel while the ghost is still typing, and Gradient Keys' long exposures keep streaming under glass that floats above them.
 
+### Two finishes
+
+It opens as a **technical drawing** of the live study, and a Finish switch beside Spread shows it in its **materials**. Closing, it comes back together in its materials, whichever finish it was in.
+
+The drawing is a drafter's view of the same object, and the same markup, so it still turns, types and clicks:
+
+- Every part is an opaque plane of the canvas, so upper floors hide lower ones, with a 1px hairline in `--device-draw-line` round it and its lettering in `--device-draw-ink`. No gradients, glows, shadows, grain or engraving.
+- Glass stays clear, its edge dashed, as a drafter marks a transparent surface. Canvases and screens keep their motion, quietened.
+- The picked floor is washed in the hand's orange, on its orange risers. Orange means nothing else in the drawing: where a study's own state is orange (a switch that is on, a fader in Touch), it is drawn in ink.
+- A lit light is filled with ink and an unlit one is a hairline ring; red stays only for a light that fires, records or errs.
+- Whatever a part paints inside itself is cleared, and each study draws back what carries its mechanism with the `drawn:` variant, as it would with `dark:`: a knob's pointer and knurling, a fader's scale, lit segments, a needle, a drum's figures. The drawing's own rules are `!important`, so a study's win with Tailwind's `!`: `drawn:bg-(--device-draw-ink)!`. Whatever moves in the materials moves in the drawing.
+
 ### How it works
 
 - **The page's structure is the anatomy.** A study marks each part with `data-part="<kind>"`, and nothing is drawn twice. The kinds are the materials (`plate`, `well`, `collar`, `key`, `cap`, `lcd`, `window`, `bezel`, `slot`, `chip`, `light`, `lettering`) and a few particular ones (`face`, `glass`, `drum`, `reel`, `tape`, `matrix`, `screen`); each has its name, its tokens and its one line in `src/components/anatomy/parts.ts`. A study's entry in `src/registry/anatomy.ts` says what is particular to its own parts, and is what gives its page the key. The attribute does nothing anywhere else, so a study stays one file anyone can copy.
@@ -408,7 +420,8 @@ It is the materials, shown working: plate, then well, then part. A knob's cap li
 - A part is never `display: inline` (transforms skip it) and never moves by its own `transform`.
 - Keep filters, opacity, clips and blends off the path from the plate to a part. A part with nothing marked inside it may use them: it is one plane already.
 - An SVG part is picked by what it draws and lit along its strokes, so a ring of lights can be one part.
-- `npm run check:anatomy` takes every listed study apart at 375 and 1280 px, spread all the way, and fails on anything that would flatten it, a part with its own transform or an unknown kind, or a part that spills off the stage.
+- Draw it back in the drawing with `drawn:` classes in the study's own file: the mechanism as line work, lit lights in ink, unlit ones as hairlines. Look at it in both finishes, both themes.
+- `npm run check:anatomy` takes every listed study apart at 375 and 1280 px, spread all the way, drawn and in its materials, and fails on anything that would flatten it, a part with its own transform or an unknown kind, or a part that spills off the stage.
 
 ## Writing
 

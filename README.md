@@ -4,7 +4,7 @@ A gallery of interface components by [Nick Georgiev](https://litt.design). It's 
 
 - **Design system** (`/system`): principles, colour, type, shape, the player's hardware materials, motion and physics, primitives, sound, the bar every study meets and writing rules, rendered from the real tokens. [`DESIGN.md`](DESIGN.md) is the same language in words, with the reasoning.
 - **Gallery** (`/`) — the home page is a player after a field recorder: a cool silver body in a machined frame whose full-width screen runs one component at a time. Under the screen, a slim tape lays every component end to end as a take with its own waveform, and a red playhead marks the one on screen; drag along it to scrub. The deck keeps only what plays the tape: one strip of LCD with the Litt mark at its left end (it animates only while a mouse is over it) and the transport, the study's name and the take number beside it, and a dial in the body's opposite finish (black on silver, silver in dark) with PLAY at its centre (hold it for STOP). Menu and Source sit at the screen's top corners: Menu opens Home (Find, Options, the design system, litt.design), Source opens the component's page. Phones give the screen the room: the strip shows only the mark, its red light on while the tape runs, beside the dial. The dial's arrows (or ← →) step, turning it scrubs, PLAY (or Space) rolls the tape so each component plays for four seconds (3, 4 or 6 in Options), S or a held centre stops and rewinds to the first frame, ↑ ↓ set the volume, the title on the screen (or Enter) shows what's on screen, Escape goes back. On Home, Options and Find, the dial's centre becomes OK. The logo in the site header, too, animates only on hover. Every press clicks, and Options › Sound (or M) mutes.
-- **Component pages** (`/c/[slug]`) — large interactive stage, background switcher, replay, highlighted source with copy, and an Anatomy key: the running study tilts isometric and comes apart in floors (plate, wells, keys and caps, lights, lettering), with the floor under the hand named beneath the stage, its tokens and why it looks the way it does. Real CSS 3D over the study's own markup; see Anatomy in [`DESIGN.md`](DESIGN.md#anatomy).
+- **Component pages** (`/c/[slug]`) — large interactive stage, background switcher, replay, highlighted source with copy, and an Anatomy key: the running study tilts isometric and comes apart in floors (plate, wells, keys and caps, lights, lettering), drawn as a technical drawing (or in its own materials, one switch away), with the floor under the hand named beneath the stage, its tokens and why it looks the way it does. Real CSS 3D over the study's own markup; see Anatomy in [`DESIGN.md`](DESIGN.md#anatomy).
 - **Capture frames** (`/capture/[slug]`) — chrome-free 1200×675 (16:9) frames for screenshots and screen recordings.
 - **Auto OG images** — every page unfurls with a branded card when you paste the link in a tweet.
 - **One-command export** — `npm run capture` writes 2× PNGs for every component, in dark and light.
@@ -49,7 +49,7 @@ If you change a value in `tokens.css`, mirror it in `tokens.ts` (the device's ma
 1. Create `src/registry/components/my-thing.tsx`. Export the component and a `default` `Demo` that shows it off. Style it with token classes only (`bg-surface`, `text-muted`, `shadow-md`, `ease-out`…) so it follows the theme. Keep demos at or under about 560px wide; capture frames scale them up.
 2. Add an entry to `src/registry/index.ts`: title, description, tagline, tags and date, plus optional `status: "new"` (adds the blue dot) and `background`.
 3. Add one line to `src/registry/previews.tsx`.
-4. If it is built from the device's materials, mark each part with `data-part` (`plate`, `well`, `key`, `lcd`…; the kinds are in `src/components/anatomy/parts.ts`) and add an entry to `src/registry/anatomy.ts`, so its page can take it apart.
+4. If it is built from the device's materials, mark each part with `data-part` (`plate`, `well`, `key`, `lcd`…; the kinds are in `src/components/anatomy/parts.ts`) and add an entry to `src/registry/anatomy.ts`, so its page can take it apart. In the anatomy's drawing, draw its mechanism back with `drawn:` classes (`drawn:bg-(--device-draw-ink)!`).
 
 The component page, OG image and capture route are generated from that entry.
 
@@ -96,7 +96,7 @@ Open a capture frame — the “Capture frame” button on any component page, o
 ffmpeg -i captures/spotlight-card-dark.webm -c:v libx264 -pix_fmt yuv420p -crf 18 captures/spotlight-card.mp4
 ```
 
-Capture params: `theme`, `bg`, `w`, `h`, `zoom` (default 1.6), `label=0` to hide the title/handle watermark, `anatomy=60` to take the study apart that far (the watermark names the floor on show) and `layer=cap` to rest on one floor.
+Capture params: `theme`, `bg`, `w`, `h`, `zoom` (default 1.6), `label=0` to hide the title/handle watermark, `anatomy=60` to take the study apart that far (the watermark names the floor on show), `layer=cap` to rest on one floor and `finish=materials` to show it in its materials rather than drawn.
 
 ## Deploying
 

@@ -49,7 +49,7 @@ Every study meets all ten before it goes on the player. The names are DESIGN.md'
 
 - [ ] 1. **It moves in its first four seconds, untouched.** The starting state is never still for more than about half a second.
 - [ ] 2. **It fits a 282 × 332 box.** An `@container` root, a `cqw`-clamped font size, em inside, touch targets of 24px or more.
-- [ ] 3. **It is built from the materials, and marks them.** Plate, then well, then part. Both themes look intentional. Each part carries `data-part`, and the study is listed in `src/registry/anatomy.ts`.
+- [ ] 3. **It is built from the materials, and marks them.** Plate, then well, then part. Both themes look intentional. Each part carries `data-part`, the study is listed in `src/registry/anatomy.ts`, and its mechanism is drawn back in the anatomy's drawing with `drawn:`.
 - [ ] 4. **It sounds through `play()`.** Existing voices only, varied with `pitch` and `gain`. Its own sounds follow the transport rule; the viewer's input always sounds.
 - [ ] 5. **It turns without transforms.** Conic gradients, SVG attributes, or a transform inside an `overflow-hidden` wrapper.
 - [ ] 6. **It rounds its trigonometry.** Coordinates rendered on the server go to two decimals.
@@ -107,7 +107,7 @@ Then look at it, which no script does:
 - On the player (`/studies`: type its name, press Enter), with the tape playing, paused and stopped.
 - In light and in dark.
 - On a phone 360px wide.
-- Taken apart on its page (the Anatomy key): every floor named, nothing flat, in both themes.
+- Taken apart on its page (the Anatomy key), in both finishes: every floor named, nothing flat, and in the drawing its mechanism drawn back with `drawn:` (it moves as it does in its materials), in both themes.
 
 ## Commit
 
