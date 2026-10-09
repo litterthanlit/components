@@ -396,12 +396,13 @@ export function OneTimeCode({
             data-part="light"
             className={cx(
               "size-[0.42em] shrink-0 rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)",
+              // Drawn, a lit light is a dot of ink and an unlit one the part's own hairline ring; only the error stays red.
               status === "error"
-                ? "bg-(--device-rec) shadow-[0_0_0.45em_var(--device-rec)]"
+                ? "bg-(--device-rec) shadow-[0_0_0.45em_var(--device-rec)] drawn:bg-(--device-rec)!"
                 : status === "success"
-                  ? "bg-(--device-meter-on)"
+                  ? "bg-(--device-meter-on) drawn:bg-(--device-draw-ink)!"
                   : status === "pending"
-                    ? "animate-pulse bg-(--device-hold) shadow-[0_0_0.45em_var(--device-hold)] motion-reduce:animate-none"
+                    ? "animate-pulse bg-(--device-hold) shadow-[0_0_0.45em_var(--device-hold)] motion-reduce:animate-none drawn:bg-(--device-draw-ink)!"
                     : "bg-(--device-meter-off)",
             )}
           />
@@ -411,7 +412,7 @@ export function OneTimeCode({
             className={cx(
               engraved,
               "animate-enter truncate text-[0.6em] tabular-nums tracking-[0.1em]",
-              status === "error" ? "text-(--device-rec) [text-shadow:none]" : status === "idle" ? "text-(--device-label-quiet)" : "text-(--device-label)",
+              status === "error" ? "text-(--device-rec) [text-shadow:none] drawn:text-(--device-rec)!" : status === "idle" ? "text-(--device-label-quiet)" : "text-(--device-label)",
             )}
           >
             {said || hint}
@@ -428,7 +429,7 @@ export function OneTimeCode({
             const selected = engaged && start !== end && i >= start && i < end;
             return (
               <div key={i} className="contents">
-                {i === half && <span aria-hidden className="h-[0.16em] w-[0.4em] shrink-0 rounded-full bg-white/20" />}
+                {i === half && <span aria-hidden className="h-[0.16em] w-[0.4em] shrink-0 rounded-full bg-white/20 drawn:bg-(--device-draw-ink)!" />}
                 <div
                   data-cell
                   data-part="lcd"
@@ -437,14 +438,14 @@ export function OneTimeCode({
                   aria-hidden
                   className={cx(
                     "relative grid h-[3.9em] min-w-0 flex-1 place-items-center overflow-hidden rounded-[0.5em] [background:var(--device-lcd)] shadow-(--device-lcd-edge) transition-colors duration-(--duration-exit)",
-                    status === "error" ? "text-(--device-rec)" : status === "success" ? "text-[#141415]" : "text-(--device-lcd-ink)",
+                    status === "error" ? "text-(--device-rec) drawn:text-(--device-rec)!" : status === "success" ? "text-[#141415]" : "text-(--device-lcd-ink)",
                   )}
                   style={{ transitionDelay: status === "success" ? `${i * 55}ms` : undefined }}
                 >
-                  {/* The backlight: on when the code is accepted, sweeping across. */}
+                  {/* The backlight: on when the code is accepted, sweeping across. Drawn, a frame of ink inside the cell. */}
                   <span
                     className={cx(
-                      "absolute inset-0 bg-[linear-gradient(160deg,#ffffff,#e9e9e7)] transition-opacity duration-(--duration-enter)",
+                      "absolute inset-0 bg-[linear-gradient(160deg,#ffffff,#e9e9e7)] transition-opacity duration-(--duration-enter) drawn:inset-[0.22em]! drawn:rounded-[0.3em]! drawn:shadow-[inset_0_0_0_1px_var(--device-draw-ink)]!",
                       status === "success" ? "opacity-100" : "opacity-0",
                     )}
                     style={{ transitionDelay: status === "success" ? `${i * 55}ms` : undefined }}
@@ -455,7 +456,7 @@ export function OneTimeCode({
                   <svg
                     viewBox={`0 0 ${VIEW.w} ${VIEW.h}`}
                     className={cx(
-                      "relative h-[70%] w-auto transition-opacity duration-(--duration-enter)",
+                      "relative h-[70%] w-auto transition-opacity duration-(--duration-enter) drawn:filter-none!",
                       status === "pending" && "opacity-50",
                       status === "success" ? "" : status === "error" ? "[filter:drop-shadow(0_0_0.22em_rgb(229_72_77/0.55))]" : "[filter:drop-shadow(0_0_0.2em_rgb(255_255_255/0.3))]",
                     )}
@@ -467,7 +468,10 @@ export function OneTimeCode({
                         className={cx(
                           // Like a real LCD, a segment comes on at once and fades as it goes off.
                           "fill-current transition-opacity",
-                          lit.includes(s) ? "opacity-100 duration-0" : cx("duration-150", status === "success" ? "opacity-[0.07]" : "opacity-[0.1]"),
+                          // Drawn, a lit segment is filled in ink and an unlit one only outlined, so the faint 8 stays whole.
+                          lit.includes(s)
+                            ? "opacity-100 duration-0"
+                            : cx("duration-150 drawn:fill-none! drawn:stroke-(--device-draw-line)! drawn:opacity-100! drawn:[vector-effect:non-scaling-stroke]", status === "success" ? "opacity-[0.07]" : "opacity-[0.1]"),
                         )}
                       />
                     ))}
@@ -533,7 +537,7 @@ export function OneTimeCode({
             >
               <span className="relative flex h-full flex-col items-center justify-center gap-[0.18em] rounded-[0.6em] text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75 group-data-pressed/key:translate-y-[2px] group-data-pressed/key:shadow-(--device-key-shadow-pressed) group-data-pressed/key:duration-75">
                 {key === "back" ? (
-                  <svg aria-hidden data-part="lettering" viewBox="0 0 20 14" className="h-[0.95em] w-auto fill-none stroke-current [filter:var(--device-engrave-glyph)]" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round">
+                  <svg aria-hidden data-part="lettering" viewBox="0 0 20 14" className="h-[0.95em] w-auto fill-none stroke-current [filter:var(--device-engrave-glyph)] drawn:filter-none!" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round">
                     <path d="M6.2 1.5H17a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H6.2L1.5 7z" />
                     <path d="m9.5 4.8 4.4 4.4M13.9 4.8 9.5 9.2" />
                   </svg>
@@ -542,7 +546,7 @@ export function OneTimeCode({
                 ) : (
                   <>
                     <span data-part="lettering" className="text-[1.05em] font-medium leading-none tabular-nums [text-shadow:var(--device-engrave)]">{key}</span>
-                    <span data-part="lettering" className="h-[0.42em] text-[0.42em] font-semibold leading-none tracking-[0.16em] text-(--device-label-quiet) [text-shadow:var(--device-engrave)]">
+                    <span data-part="lettering" className="h-[0.42em] text-[0.42em] font-semibold leading-none tracking-[0.16em] text-(--device-label-quiet) [text-shadow:var(--device-engrave)] drawn:text-[color-mix(in_oklab,var(--device-draw-ink)_80%,transparent)]!">
                       {letters}
                     </span>
                   </>

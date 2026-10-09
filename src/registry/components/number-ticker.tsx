@@ -78,8 +78,8 @@ function Drum({ figure, direction, order }: { figure: number; direction: 1 | -1;
           </span>
         ))}
       </span>
-      {/* The drum's curve: figures dim as they turn away, and a fine line of light across the middle. */}
-      <span aria-hidden className="pointer-events-none absolute inset-0 [background:linear-gradient(rgb(0_0_0/0.75),transparent_32%,transparent_68%,rgb(0_0_0/0.75))]" />
+      {/* The drum's curve: figures dim as they turn away, and a fine line of light across the middle. Drawn, the curve is two hairlines the figures roll between. */}
+      <span aria-hidden className="pointer-events-none absolute inset-0 [background:linear-gradient(rgb(0_0_0/0.75),transparent_32%,transparent_68%,rgb(0_0_0/0.75))] drawn:inset-y-[0.2em]! drawn:border-y!" />
       <span aria-hidden className="pointer-events-none absolute inset-x-0 top-[46%] h-px bg-white/[0.06]" />
     </span>
   );
@@ -163,7 +163,8 @@ export default function Demo() {
           </span>
           {/* The change since the last count: a light and a figure on a small screen. */}
           <span data-part="lcd" className="inline-flex shrink-0 items-center gap-[0.4em] rounded-[0.45em] px-[0.5em] py-[0.3em] text-[0.72em] leading-none tabular-nums text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)">
-            <span aria-hidden data-part="light" className={`size-[0.45em] rounded-full ${up ? "bg-(--device-lcd-ink)" : "bg-(--device-rec) shadow-[0_0_0.4em_var(--device-rec)]"}`} />
+            {/* Drawn, up is a dot of ink and down stays red. */}
+            <span aria-hidden data-part="light" className={`size-[0.45em] rounded-full ${up ? "bg-(--device-lcd-ink) drawn:bg-(--device-draw-ink)!" : "bg-(--device-rec) shadow-[0_0_0.4em_var(--device-rec)] drawn:bg-(--device-rec)!"}`} />
             <span className="sr-only">{up ? "Up" : "Down"}</span>
             {up ? "+" : "−"}
             {Math.abs(delta).toLocaleString("en-US")}

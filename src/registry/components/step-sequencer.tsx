@@ -58,6 +58,9 @@ const msFromNow = (ms: number) => performance.now() + ms;
 /** Lettering on the body: tiny tracked capitals, cut in. */
 const engraved = "font-semibold uppercase leading-none tracking-[0.14em] [text-shadow:var(--device-engrave)]";
 
+/** Drawn, what the glass dims is ink at a lower strength. */
+const dimmed = "drawn:text-[color-mix(in_oklab,var(--device-draw-ink)_70%,transparent)]!";
+
 /** Focus that follows the hand: no ring, and Safari still hands the keys to the study. */
 const focusOnPress = (e: PointerEvent<HTMLElement>) => {
   if (e.button === 0) focusQuietly(e.currentTarget);
@@ -310,17 +313,17 @@ export function StepSequencer({ className = "" }: { className?: string }) {
             <div className="flex items-center gap-[0.5em]">
               <span data-part="chip" className="inline-flex items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
                 {running ? (
-                  <span className="size-[0.55em] animate-pulse rounded-full bg-(--device-rec)" />
+                  <span className="size-[0.55em] animate-pulse rounded-full bg-(--device-rec) drawn:bg-(--device-rec)!" />
                 ) : (
-                  <span className="size-[0.5em] rounded-[1px] bg-current" />
+                  <span className="size-[0.5em] rounded-[1px] bg-current drawn:bg-(--device-draw-ink)!" />
                 )}
                 <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em]">{running ? "Play" : "Stop"}</span>
               </span>
-              <span className="ml-auto text-[0.66em] tabular-nums text-(--device-lcd-dim)">{position}</span>
+              <span className={cx("ml-auto text-[0.66em] tabular-nums text-(--device-lcd-dim)", dimmed)}>{position}</span>
             </div>
             <p className="flex items-baseline gap-[0.3em] leading-none">
               <span className="text-[1.55em] font-light tabular-nums tracking-[-0.03em]">{bpm}</span>
-              <span className="text-[0.56em] text-(--device-lcd-dim)">BPM</span>
+              <span className={cx("text-[0.56em] text-(--device-lcd-dim)", dimmed)}>BPM</span>
             </p>
           </div>
 
@@ -336,7 +339,7 @@ export function StepSequencer({ className = "" }: { className?: string }) {
           >
             <span data-part="cap" className="grid size-full place-items-center rounded-full [background:var(--device-wheel-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
               {running ? (
-                <span aria-hidden data-part="lettering" className="size-[0.9em] rounded-[0.14em] bg-(--device-key-ink)" />
+                <span aria-hidden data-part="lettering" className="size-[0.9em] rounded-[0.14em] bg-(--device-key-ink) drawn:bg-(--device-draw-ink)!" />
               ) : (
                 <svg aria-hidden data-part="lettering" viewBox="0 0 16 16" className="ml-[0.12em] size-[1.25em] fill-(--device-rec)">
                   <path d="M4.5 2.4 13.2 8l-8.7 5.6z" />
@@ -346,7 +349,7 @@ export function StepSequencer({ className = "" }: { className?: string }) {
           </button>
         </div>
 
-        {/* The playhead: a red light over the step that is sounding. */}
+        {/* The playhead: a red light over the step that is sounding. Drawn, a light that fires is red, a set one ink and an unlit one only its hairline ring. */}
         <div aria-hidden className="mt-[0.8em] grid items-center gap-x-[0.3em]" style={template}>
           <span />
           {cols.map((col) => (
@@ -356,7 +359,7 @@ export function StepSequencer({ className = "" }: { className?: string }) {
                 className={cx(
                   "h-[0.26em] rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)",
                   col % 4 === 0 ? "w-[0.9em]" : "w-[0.5em]",
-                  col === lit ? "bg-(--device-rec) shadow-[0_0_0.4em_var(--device-rec)]" : "bg-(--device-meter-off)",
+                  col === lit ? "bg-(--device-rec) shadow-[0_0_0.4em_var(--device-rec)] drawn:bg-(--device-rec)!" : "bg-(--device-meter-off)",
                 )}
               />
             </span>
@@ -376,7 +379,7 @@ export function StepSequencer({ className = "" }: { className?: string }) {
                     data-part="light"
                     className={cx(
                       "size-[0.36em] shrink-0 rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)",
-                      firing ? "bg-(--device-rec) shadow-[0_0_0.4em_var(--device-rec)]" : "bg-(--device-meter-off)",
+                      firing ? "bg-(--device-rec) shadow-[0_0_0.4em_var(--device-rec)] drawn:bg-(--device-rec)!" : "bg-(--device-meter-off)",
                     )}
                   />
                   <span id={`${ids}-${track.sound}`} data-part="lettering" className={cx(engraved, "truncate text-[0.6em] text-(--device-label)")}>
@@ -405,7 +408,7 @@ export function StepSequencer({ className = "" }: { className?: string }) {
                           data-part="light"
                           className={cx(
                             "absolute inset-x-[28%] top-[0.42em] h-[0.26em] rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)",
-                            fire ? "bg-(--device-rec) shadow-[0_0_0.45em_var(--device-rec)]" : on ? "bg-(--device-meter-on)" : "bg-(--device-meter-off)",
+                            fire ? "bg-(--device-rec) shadow-[0_0_0.45em_var(--device-rec)] drawn:bg-(--device-rec)!" : on ? "bg-(--device-meter-on) drawn:bg-(--device-draw-ink)!" : "bg-(--device-meter-off)",
                           )}
                         />
                       </span>
@@ -436,7 +439,7 @@ export function StepSequencer({ className = "" }: { className?: string }) {
                   data-part="light"
                   className={cx(
                     "size-[0.36em] rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)",
-                    lit >= 0 && Math.floor(lit / PAGE) === p ? "bg-(--device-rec) shadow-[0_0_0.4em_var(--device-rec)]" : "bg-(--device-meter-off)",
+                    lit >= 0 && Math.floor(lit / PAGE) === p ? "bg-(--device-rec) shadow-[0_0_0.4em_var(--device-rec)] drawn:bg-(--device-rec)!" : "bg-(--device-meter-off)",
                   )}
                 />
                 <span data-part="lettering" className={cx(engraved, "text-[0.62em] tabular-nums tracking-[0.06em]")}>

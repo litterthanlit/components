@@ -85,6 +85,8 @@ const lineOf = (step?: AgentStep | null) => (step ? [step.verb, step.target].fil
 
 /** Lettering on the body: tiny tracked capitals, cut in. */
 const engraved = "font-semibold uppercase leading-none tracking-[0.16em] [text-shadow:var(--device-engrave)]";
+/** Drawn, what the glass dims is ink at a lower strength. */
+const dimmed = "drawn:text-[color-mix(in_oklab,var(--device-draw-ink)_70%,transparent)]!";
 /** A key's face: it sinks onto its base under the hand, or while `data-pressed` (the keyboard, the ghost). */
 const sink =
   "group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75 group-data-pressed/key:translate-y-[2px] group-data-pressed/key:shadow-(--device-key-shadow-pressed) group-data-pressed/key:duration-75";
@@ -131,13 +133,13 @@ function sayFor(state: AgentState, line: string) {
   return "";
 }
 
-/** The chip's glyph says the state before its word does. */
+/** The chip's glyph says the state before its word does. Drawn, red stays for what runs and what fails; the rest are ink, orange being the drawing's own. */
 function ChipGlyph({ state }: { state: AgentState }) {
-  if (isLive(state)) return <span className="size-[0.55em] animate-pulse rounded-full bg-(--device-rec) motion-reduce:animate-none" />;
-  if (state === "waiting") return <span className="size-[0.55em] rounded-full bg-(--device-hold)" />;
-  if (state === "error") return <span className="size-[0.5em] rounded-[1px] bg-(--device-rec)" />;
-  if (state === "stopped") return <span className="size-[0.5em] rounded-[1px] bg-current" />;
-  return <span className="size-[0.55em] rounded-full bg-black" />;
+  if (isLive(state)) return <span className="size-[0.55em] animate-pulse rounded-full bg-(--device-rec) motion-reduce:animate-none drawn:bg-(--device-rec)!" />;
+  if (state === "waiting") return <span className="size-[0.55em] rounded-full bg-(--device-hold) drawn:bg-(--device-draw-ink)!" />;
+  if (state === "error") return <span className="size-[0.5em] rounded-[1px] bg-(--device-rec) drawn:bg-(--device-rec)!" />;
+  if (state === "stopped") return <span className="size-[0.5em] rounded-[1px] bg-current drawn:bg-(--device-draw-ink)!" />;
+  return <span className="size-[0.55em] rounded-full bg-black drawn:bg-(--device-draw-ink)!" />;
 }
 
 /** The run so far, worked out from each change of state as it renders. */
@@ -379,7 +381,7 @@ export function AgentStatus({ state, step, tokens, elapsed, onStop, onRun, onAll
   const word = state === "tool" && track.tools ? `Tool ${track.tools}` : { ready: "Ready", thinking: "Thinking", tool: "Tool", writing: "Writing", waiting: "Waiting", done: "Done", error: "Error", stopped: "Stopped" }[state];
   const said = track.said ? sayFor(state, line) : "";
   const allow = !!onAllow;
-  const unit = "ml-[0.1em] mr-[0.45em] text-[0.3em] font-normal text-(--device-lcd-dim) last:mr-0";
+  const unit = cx("ml-[0.1em] mr-[0.45em] text-[0.3em] font-normal text-(--device-lcd-dim) last:mr-0", dimmed);
 
   return (
     <div
@@ -409,7 +411,7 @@ export function AgentStatus({ state, step, tokens, elapsed, onStop, onRun, onAll
               <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em] tabular-nums">{word}</span>
             </span>
             {tokens !== undefined && state !== "ready" && (
-              <span className="ml-auto truncate text-[0.66em] tabular-nums text-(--device-lcd-dim)">{thousands(tokens)} tokens</span>
+              <span className={cx("ml-auto truncate text-[0.66em] tabular-nums text-(--device-lcd-dim)", dimmed)}>{thousands(tokens)} tokens</span>
             )}
           </div>
 
@@ -418,7 +420,7 @@ export function AgentStatus({ state, step, tokens, elapsed, onStop, onRun, onAll
             ref={clockRef}
             className={cx(
               "flex items-baseline whitespace-nowrap text-[2.1em] font-light leading-none tracking-[-0.03em] tabular-nums transition-colors duration-(--duration-exit) @[24rem]/agent:text-[2.35em]",
-              waiting && "text-(--device-lcd-dim)",
+              waiting && cx("text-(--device-lcd-dim)", dimmed),
             )}
           >
             <span>00</span>
@@ -429,12 +431,12 @@ export function AgentStatus({ state, step, tokens, elapsed, onStop, onRun, onAll
             <span className={unit}>F</span>
           </p>
 
-          <p className={cx("h-[1.25em] min-w-0 text-[0.92em] leading-[1.25] tracking-[-0.01em]", state === "stopped" && "text-(--device-lcd-dim)")}>
+          <p className={cx("h-[1.25em] min-w-0 text-[0.92em] leading-[1.25] tracking-[-0.01em]", state === "stopped" && cx("text-(--device-lcd-dim)", dimmed))}>
             <span ref={lineRef} id={`${ids}-line`} className="inline-block max-w-full truncate align-top">
               {step?.verb}
-              {step?.target && <span className="text-(--device-lcd-dim)"> {step.target}</span>}
+              {step?.target && <span className={cx("text-(--device-lcd-dim)", dimmed)}> {step.target}</span>}
               {state === "writing" && (
-                <span className="ml-[0.12em] inline-block h-[0.95em] w-[0.08em] translate-y-[0.14em] animate-caret bg-current motion-reduce:animate-none" />
+                <span className="ml-[0.12em] inline-block h-[0.95em] w-[0.08em] translate-y-[0.14em] animate-caret bg-current motion-reduce:animate-none drawn:bg-(--device-draw-ink)!" />
               )}
             </span>
           </p>
@@ -452,9 +454,9 @@ export function AgentStatus({ state, step, tokens, elapsed, onStop, onRun, onAll
         {PHASES.map(({ key, name }) => (
           <span key={key} data-light={lightOf(key)} className="group/light flex items-center gap-[0.5em]">
             <span data-part="well" className="grid size-[0.78em] shrink-0 place-items-center rounded-full bg-black/[0.05] shadow-(--device-recess) dark:bg-black/40">
-              <span data-part="light" className="relative size-[0.44em] rounded-full bg-(--device-meter-off) transition-[background-color] duration-(--duration-exit) group-data-[light=fault]/light:bg-(--device-rec) group-data-[light=fault]/light:duration-0 group-data-[light=fire]/light:bg-(--device-rec) group-data-[light=fire]/light:duration-0 group-data-[light=hold]/light:bg-(--device-hold) group-data-[light=hold]/light:duration-0 group-data-[light=set]/light:bg-(--device-meter-on)">
-                {/* The glow on its own layer, so the flicker is never smoothed by the light's fade. */}
-                <span className="absolute inset-0 rounded-full opacity-0 shadow-[0_0_0.45em_var(--device-rec)] transition-opacity duration-(--duration-exit) group-data-[light=fault]/light:opacity-100 group-data-[light=fire]/light:opacity-(--act) group-data-[light=fire]/light:transition-none group-data-[light=hold]/light:opacity-100 group-data-[light=hold]/light:shadow-[0_0_0.5em_var(--device-hold)]" />
+              <span data-part="light" className="relative size-[0.44em] rounded-full bg-(--device-meter-off) transition-[background-color] duration-(--duration-exit) group-data-[light=fault]/light:bg-(--device-rec) group-data-[light=fault]/light:duration-0 group-data-[light=fire]/light:bg-(--device-rec) group-data-[light=fire]/light:duration-0 group-data-[light=hold]/light:bg-(--device-hold) group-data-[light=hold]/light:duration-0 group-data-[light=set]/light:bg-(--device-meter-on) drawn:group-data-[light=set]/light:bg-(--device-draw-ink)!">
+                {/* The glow on its own layer, so the flicker is never smoothed by the light's fade. Drawn, it is the fill that fires: red while firing or faulting (the flicker is its strength), ink while held. */}
+                <span className="absolute inset-0 rounded-full opacity-0 shadow-[0_0_0.45em_var(--device-rec)] transition-opacity duration-(--duration-exit) group-data-[light=fault]/light:opacity-100 group-data-[light=fire]/light:opacity-(--act) group-data-[light=fire]/light:transition-none group-data-[light=hold]/light:opacity-100 group-data-[light=hold]/light:shadow-[0_0_0.5em_var(--device-hold)] drawn:bg-(--device-rec)! drawn:group-data-[light=hold]/light:bg-(--device-draw-ink)!" />
               </span>
             </span>
             <span data-part="lettering" className={cx(engraved, "text-[0.6em] text-(--device-label-quiet) group-data-[light=fault]/light:text-(--device-label) group-data-[light=fire]/light:text-(--device-label) group-data-[light=hold]/light:text-(--device-label)")}>
@@ -489,7 +491,7 @@ export function AgentStatus({ state, step, tokens, elapsed, onStop, onRun, onAll
               data-part="light"
               className={cx(
                 "absolute left-1/2 top-[0.42em] h-[0.24em] w-[2.3em] -translate-x-1/2 rounded-full",
-                waiting ? "bg-(--device-hold) shadow-[0_0_0.45em_var(--device-hold)]" : "bg-(--device-meter-off) transition-[background-color] duration-(--duration-exit)",
+                waiting ? "bg-(--device-hold) shadow-[0_0_0.45em_var(--device-hold)] drawn:bg-(--device-draw-ink)!" : "bg-(--device-meter-off) transition-[background-color] duration-(--duration-exit)",
               )}
             />
             <span data-part="lettering" className="mt-[0.45em] text-[0.8em] font-medium uppercase leading-none tracking-[0.03em] [text-shadow:var(--device-engrave)]">Allow</span>
@@ -512,7 +514,7 @@ export function AgentStatus({ state, step, tokens, elapsed, onStop, onRun, onAll
       >
         <span data-part="cap" className={cx("grid size-full place-items-center rounded-full [background:var(--device-wheel-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out", (canStop || canRun) && sink)}>
           {canStop ? (
-            <span aria-hidden data-part="lettering" className="size-[0.85em] rounded-[0.14em] bg-(--device-key-ink)" />
+            <span aria-hidden data-part="lettering" className="size-[0.85em] rounded-[0.14em] bg-(--device-key-ink) drawn:bg-(--device-draw-ink)!" />
           ) : (
             <svg aria-hidden data-part="lettering" viewBox="0 0 16 16" className="ml-[0.12em] size-[1.2em] fill-(--device-rec)">
               <path d="M4.5 2.4 13.2 8l-8.7 5.6z" />
