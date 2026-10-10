@@ -110,18 +110,24 @@ function inspect({ known, tolerance }) {
   // top to bottom inside a wrapper with no height of its own collapses. Compare every positioned
   // box with the scene's anatomy taken off for one synchronous look.
   const positioned = [...scene.querySelectorAll("*")].filter((el) => el instanceof HTMLElement && ["absolute", "fixed"].includes(getComputedStyle(el).position));
+  // Offsets are whole pixels, each rounded on its own, and taken apart the chain of offset parents
+  // is longer (a part in 3D is a containing block), so a position may drift a pixel per step without
+  // anything having moved. Sizes are rounded once: they are held to the tolerance.
   const box = (el) => {
-    let x = 0, y = 0;
-    for (let e = el; e && e !== scene && scene.contains(e); e = e.offsetParent) { x += e.offsetLeft; y += e.offsetTop; }
-    return [el.offsetWidth, el.offsetHeight, x, y];
+    let x = 0, y = 0, steps = 0;
+    for (let e = el; e && e !== scene && scene.contains(e); e = e.offsetParent) { x += e.offsetLeft; y += e.offsetTop; steps++; }
+    return { w: el.offsetWidth, h: el.offsetHeight, x, y, steps };
   };
   const apart = positioned.map(box);
   delete scene.dataset.anatomy;
   const flat = positioned.map(box);
   scene.dataset.anatomy = "";
   positioned.forEach((el, i) => {
-    const moved = apart[i].some((v, k) => Math.abs(v - flat[i][k]) > tolerance);
-    if (moved) problems.push(`${name(el)}: its layout changes when taken apart (${flat[i].map(Math.round).join(",")} → ${apart[i].map(Math.round).join(",")}): give the wrapper it is placed in the box it means (absolute inset-0, or relative)`);
+    const [a, f] = [apart[i], flat[i]];
+    const drift = tolerance + Math.max(a.steps, f.steps);
+    const resized = Math.abs(a.w - f.w) > tolerance || Math.abs(a.h - f.h) > tolerance;
+    const moved = Math.abs(a.x - f.x) > drift || Math.abs(a.y - f.y) > drift;
+    if (resized || moved) problems.push(`${name(el)}: its layout changes when taken apart (${[f.w, f.h, f.x, f.y].join(",")} → ${[a.w, a.h, a.x, a.y].join(",")}): give the wrapper it is placed in the box it means (absolute inset-0, or relative)`);
   });
 
   // Fully apart, every part stays on the stage.
