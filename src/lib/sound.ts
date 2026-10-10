@@ -710,6 +710,445 @@ export function readLevels(out: [number, number] = [0, 0]): [number, number] {
 }
 
 /* ------------------------------------------------------------------------ */
+/* Engine: a continuous voice that follows rpm and throttle.                 */
+/* ------------------------------------------------------------------------ */
+
+export type Engine = {
+  /** rpm (0–~9,500) and load 0–1 (throttle). Smoothed with setTargetAtTime (~30 ms). */
+  set(rpm: number, load: number): void;
+  /** Limiter fuel cut: hard duck in ~10 ms while on. */
+  cut(on: boolean): void;
+  /** Starter motor while on: a grinding ~12 Hz amplitude-modulated band of noise plus a low whirr. */
+  crank(on: boolean): void;
+  /** 0–1 extra level for the host-transport rule (a ghost while the host tape is paused sets 0). Smoothed. */
+  level(gain: number): void;
+  /** 80 ms fade, then disconnect everything. Safe to call twice. */
+  stop(): void;
+};
+
+/** What the engine graph is told. `open` is the gate: mute, volume 0 and a hidden tab close it. */
+type EngineState = { rpm: number; load: number; cut: boolean; crank: boolean; level: number; open: boolean };
+
+let tanhCurve: Float32Array<ArrayBuffer> | null = null;
+
+/**
+ * The exhaust's saturation: a tanh with a small bias, so the clipping is
+ * lopsided and adds even harmonics (the raspy part of a flat-six) instead of
+ * only odd ones. Computed once; the drive gain in front of it does the rest.
+ */
+function exhaustCurve() {
+  if (!tanhCurve) {
+    const n = 2049;
+    const bias = 0.25;
+    const curve = new Float32Array(n);
+    for (let i = 0; i < n; i++) curve[i] = Math.tanh(2.5 * ((i / (n - 1)) * 2 - 1) + bias) - Math.tanh(bias);
+    tanhCurve = curve;
+  }
+  return tanhCurve;
+}
+
+/** Where the engine sits against the clicks: full throttle at the redline peaks near -14 dBFS leaving the bus, idle near -26. */
+const ENGINE_TRIM = 0.18;
+const bound = (n: number, min: number, max: number) => (Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : min);
+const smoothstep = (a: number, b: number, x: number) => {
+  const t = bound((x - a) / (b - a), 0, 1);
+  return t * t * (3 - 2 * t);
+};
+
+/**
+ * A naturally aspirated flat-six, four-stroke: three firings a crank
+ * revolution, so the firing frequency is f = rpm / 60 × 3 (850 rpm is 42 Hz,
+ * 9,000 is 450 Hz). Works on any BaseAudioContext, so it renders offline too.
+ *
+ *   exhaust  saw at f + square at f/2 (the half-order lumpiness that makes a
+ *            six sound like a six) + sine at 2f → drive → tanh → 24 Hz
+ *            high-pass (the bias leaves DC) → low-pass that opens with load
+ *   rasp     the shared noise through a band-pass at 2f, chopped by the firing
+ *   howl     a triangle at 4f fading in above ~two thirds of the redline: the
+ *            induction note, metallic at the top
+ *   crank    ~12 Hz chopped band-passed noise (the starter's gear grind) and a
+ *            wobbling 52 Hz saw (the motor), independent of rpm
+ *   pops     short high-passed noise bursts straight into the output, for
+ *            overrun and fuel cut
+ *
+ * exhaust, rasp, howl → body (loudness from rpm and load) → cut (limiter duck)
+ * → out (gate and host level); crank and pops join at out. Times are on the
+ * context's clock: `update` and `lope` take `at` so an offline render can
+ * script them; live callers leave it at "now".
+ */
+function buildEngine(ctx: BaseAudioContext, destination: AudioNode, redline: number) {
+  const nodes: AudioNode[] = [];
+  const sources: AudioScheduledSourceNode[] = [];
+  const track = <T extends AudioNode>(n: T) => {
+    nodes.push(n);
+    return n;
+  };
+  const gain = (value: number) => {
+    const g = track(ctx.createGain());
+    g.gain.value = value;
+    return g;
+  };
+  const osc = (type: OscillatorType, freq = 100) => {
+    const o = track(ctx.createOscillator());
+    o.type = type;
+    o.frequency.value = freq;
+    sources.push(o);
+    return o;
+  };
+  const filter = (type: BiquadFilterType, freq: number, q = 0.7) => {
+    const f = track(ctx.createBiquadFilter());
+    f.type = type;
+    f.frequency.value = freq;
+    f.Q.value = q;
+    return f;
+  };
+  const noise = () => {
+    const s = track(ctx.createBufferSource());
+    s.buffer = noiseBuffer(ctx);
+    s.loop = true;
+    sources.push(s);
+    return s;
+  };
+
+  const out = gain(0);
+  out.connect(destination);
+  const cutGain = gain(1);
+  cutGain.connect(out);
+  const body = gain(0);
+  body.connect(cutGain);
+
+  // Exhaust. Saw dominant; the half-order square is what gives the lope.
+  const saw = osc("sawtooth");
+  const half = osc("square");
+  const second = osc("sine");
+  const mix = gain(1);
+  saw.connect(gain(0.5)).connect(mix);
+  half.connect(gain(0.22)).connect(mix);
+  second.connect(gain(0.16)).connect(mix);
+  const drive = gain(1);
+  const shaper = track(ctx.createWaveShaper());
+  shaper.curve = exhaustCurve();
+  shaper.oversample = "2x";
+  const lowpass = filter("lowpass", 1000, 0.9);
+  const exhaustOut = gain(0.62);
+  mix.connect(drive).connect(shaper).connect(filter("highpass", 24)).connect(lowpass).connect(exhaustOut).connect(body);
+
+  // Rasp: noise chopped by the firing. The square swings the gain between 0 and 1.
+  const raspBand = filter("bandpass", 200, 2);
+  const chop = gain(0.5);
+  const chopper = osc("square");
+  chopper.connect(gain(0.5)).connect(chop.gain);
+  const raspGain = gain(0);
+  noise().connect(raspBand).connect(chop).connect(raspGain).connect(body);
+
+  // Induction howl.
+  const howl = osc("triangle");
+  const howlGain = gain(0);
+  howl.connect(howlGain).connect(body);
+
+  // Starter: grind and whirr, straight to the output so the cut can't touch them.
+  const crankGain = gain(0);
+  crankGain.connect(out);
+  const grindBand = filter("bandpass", 750, 1.4);
+  const grindChop = gain(0.45);
+  const grindLfo = osc("sawtooth", 12);
+  grindLfo.connect(gain(0.45)).connect(grindChop.gain);
+  noise().connect(grindBand).connect(grindChop).connect(gain(0.14)).connect(crankGain);
+  const whirr = osc("sawtooth", 52);
+  const wobble = osc("sine", 3.3);
+  wobble.connect(gain(4)).connect(whirr.frequency);
+  whirr.connect(filter("lowpass", 360)).connect(gain(0.085)).connect(crankGain);
+
+  // Pops: a few ms of high-passed noise. Each cleans up after itself.
+  const pending = new Set<() => void>();
+  const pop = (at: number, peak: number) => {
+    const dur = 0.008 + Math.random() * 0.017;
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuffer(ctx);
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = 1400 + Math.random() * 600;
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0, at);
+    env.gain.linearRampToValueAtTime(peak, at + 0.0005);
+    env.gain.exponentialRampToValueAtTime(SILENT, at + 0.0005 + dur);
+    env.gain.setValueAtTime(0, at + 0.0005 + dur);
+    src.connect(hp).connect(env).connect(out);
+    const cleanup = () => {
+      pending.delete(cleanup);
+      for (const n of [src, hp, env]) {
+        try {
+          n.disconnect();
+        } catch {}
+      }
+    };
+    pending.add(cleanup);
+    src.onended = cleanup;
+    src.start(at, Math.random() * (src.buffer.duration - 0.1));
+    src.stop(at + dur + 0.01);
+  };
+  /** `count` pops over `span` seconds, bunched toward the front, fading as they go. */
+  const crackle = (at: number, count: number, span: number, loud: number) => {
+    for (let i = 0; i < count; i++) {
+      const x = Math.pow(Math.random(), 1.5);
+      pop(at + 0.004 + x * span, loud * (0.35 + Math.random() * 0.65) * (1 - 0.5 * x));
+    }
+  };
+
+  const t0 = ctx.currentTime;
+  for (const s of sources) {
+    if (s instanceof AudioBufferSourceNode) s.start(t0, Math.random() * 0.7);
+    else s.start(t0);
+  }
+
+  // What the graph was last told, and the idle lope on top of it.
+  let cur: EngineState = { rpm: 0, load: 0, cut: false, crank: false, level: 1, open: false };
+  let lopeRpm = 0;
+  let lopeGain = 1;
+  let hot = false;
+  let lastPop = -1;
+  let first = true;
+
+  const apply = (at: number, snap: boolean) => {
+    // Pitches and filters jump to place on the first call; the gains always ease in, so the engine never starts with a click.
+    const glide = (p: AudioParam, v: number, tc: number) => (snap ? p.setValueAtTime(v, at) : p.setTargetAtTime(v, at, tc));
+    const ease = (p: AudioParam, v: number, tc: number) => p.setTargetAtTime(v, at, tc);
+    const { rpm: raw, load } = cur;
+    const rpm = raw + lopeRpm;
+    const f = Math.max(rpm, 150) / 20;
+    const rn = bound(raw / redline, 0, 1.1);
+    // The lope is an idle thing: it fades out as the revs and the throttle come up.
+    glide(saw.frequency, f, 0.03);
+    glide(half.frequency, f / 2, 0.03);
+    glide(second.frequency, f * 2, 0.03);
+    glide(drive.gain, 0.7 + load * 1.9 + rn * 0.3, 0.04);
+    glide(lowpass.frequency, 500 + load * 3500 + rpm * 0.35, 0.03);
+    glide(raspBand.frequency, Math.max(f * 2, 160), 0.03);
+    glide(chopper.frequency, f, 0.03);
+    glide(raspGain.gain, 0.1 + 0.34 * load, 0.04);
+    glide(howl.frequency, f * 4, 0.03);
+    const top = smoothstep(redline * 0.67, redline * 0.95, raw);
+    glide(howlGain.gain, 0.12 * top * (0.25 + 0.75 * load), 0.04);
+    // Off is rpm 0: the exhaust fades to nothing as the revs die under ~450.
+    const spin = smoothstep(0, 450, raw);
+    ease(body.gain, ENGINE_TRIM * spin * (0.45 + 0.55 * load) * (0.7 + 0.3 * rn) * lopeGain, 0.04);
+    ease(crankGain.gain, cur.crank ? 1 : 0, cur.crank ? 0.05 : 0.08);
+    ease(out.gain, cur.open ? cur.level : 0, 0.04);
+  };
+
+  return {
+    update(next: EngineState, at = ctx.currentTime) {
+      const s = { ...next, rpm: bound(next.rpm, 0, redline * 1.06), load: bound(next.load, 0, 1), level: bound(next.level, 0, 1) };
+      let changed = first;
+      if (Math.abs(s.rpm - cur.rpm) >= 0.5 || Math.abs(s.load - cur.load) >= 0.002) changed = true;
+      if (s.crank !== cur.crank || s.level !== cur.level || s.open !== cur.open) changed = true;
+
+      // Lift-off at speed: from throttle to none above 4,000 rpm, the overrun crackles.
+      if (s.load > 0.5) hot = true;
+      else if (hot && s.load < 0.1) {
+        hot = false;
+        if (s.rpm > 4000 && s.open && at - lastPop > 0.4) {
+          lastPop = at;
+          crackle(at, 4 + Math.floor(Math.random() * 6), 0.7, 0.16);
+        }
+      }
+      if (s.cut !== cur.cut) {
+        const glide = (v: number, tc: number) => cutGain.gain.setTargetAtTime(v, at, tc);
+        // Duck to 0.08 in ~10 ms (three time constants), let go in ~15.
+        if (s.cut) {
+          glide(0.08, 0.0035);
+          if (s.open && s.rpm > 1000 && at - lastPop > 0.15) {
+            lastPop = at;
+            crackle(at, 1 + Math.floor(Math.random() * 3), 0.06, 0.13);
+          }
+        } else glide(1, 0.005);
+      }
+      cur = s;
+      if (changed) apply(at, first);
+      first = false;
+    },
+    /** A few rpm of random wander and a little level wobble, strongest at a closed-throttle idle. */
+    lope(at = ctx.currentTime) {
+      const idle = (1 - smoothstep(900, 2800, cur.rpm)) * (1 - 0.7 * cur.load);
+      lopeRpm = (Math.random() * 2 - 1) * 14 * idle;
+      lopeGain = 1 - Math.random() * 0.22 * idle;
+      grindLfo.frequency.setTargetAtTime(12 + (Math.random() * 2 - 1) * 1.2, at, 0.05);
+      apply(at, false);
+    },
+    /** Fade over 80 ms, from whatever the level is now. */
+    fade(at = ctx.currentTime) {
+      out.gain.cancelScheduledValues(at);
+      out.gain.setValueAtTime(out.gain.value, at);
+      out.gain.linearRampToValueAtTime(0, at + 0.08);
+    },
+    dispose() {
+      for (const s of sources) {
+        try {
+          s.stop();
+        } catch {}
+      }
+      for (const cleanup of [...pending]) cleanup();
+      for (const n of nodes) {
+        try {
+          n.disconnect();
+        } catch {}
+      }
+    },
+  };
+}
+
+type EngineGraph = ReturnType<typeof buildEngine>;
+
+/**
+ * A live engine voice for the studies that rev. `engine()` returns at once,
+ * on the server and before any gesture: calls only record the latest state
+ * until the shared context exists, then the graph is built and picks it up.
+ * Silent while muted, at volume 0 or with the tab hidden; silent too at rpm 0
+ * with the starter off (the key is "off"), when the graph is dropped after a
+ * moment and rebuilt on demand. Runs through the same bus as the clicks (so
+ * the compressor, the room and the meters apply) and counts against neither
+ * the voice limit nor the rate limits. Never throws.
+ */
+export function engine(options: { redline?: number } = {}): Engine {
+  const redline = bound(options.redline ?? 9000, 3000, 12000);
+  const state: EngineState = { rpm: 0, load: 0, cut: false, crank: false, level: 1, open: false };
+  let graph: EngineGraph | null = null;
+  let stopped = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let quietSince = 0;
+  let unsubscribe: (() => void)[] = [];
+
+  const audible = () => isBrowser() && !isMuted() && getVolume() > 0 && document.visibilityState !== "hidden";
+
+  /** Brings the graph in line with the state: builds it when it's needed and possible, drops it when it has been quiet. */
+  const sync = () => {
+    if (stopped) return;
+    try {
+      state.open = audible();
+      const wanted = state.open && (state.rpm > 0 || state.crank);
+      if (wanted) quietSince = 0;
+      if (!graph) {
+        if (!wanted) return;
+        const ac = context();
+        if (!ac || !bus) return;
+        ready(ac);
+        graph = buildEngine(ac, bus.input, redline);
+      }
+      graph.update(state);
+      if (!wanted) {
+        const now = performance.now();
+        if (!quietSince) quietSince = now;
+        else if (now - quietSince > 1500) {
+          graph.dispose();
+          graph = null;
+          quietSince = 0;
+        }
+      }
+    } catch {
+      graph = null;
+    }
+  };
+
+  /** A slow heartbeat: the idle lope, a late-arriving gesture, and the quiet timeout. */
+  const beat = () => {
+    if (stopped) return;
+    sync();
+    try {
+      if (graph && state.open) graph.lope();
+    } catch {}
+    timer = setTimeout(beat, 70 + Math.random() * 70);
+  };
+
+  const start = () => {
+    if (timer !== undefined || stopped || !isBrowser()) return;
+    try {
+      unsubscribe = [subscribeMuted(sync), subscribeVolume(sync)];
+      document.addEventListener("visibilitychange", sync);
+      unsubscribe.push(() => document.removeEventListener("visibilitychange", sync));
+    } catch {}
+    timer = setTimeout(beat, 100);
+  };
+
+  const touch = () => {
+    start();
+    sync();
+  };
+
+  return {
+    set(rpm, load) {
+      state.rpm = bound(rpm, 0, redline * 1.06);
+      state.load = bound(load, 0, 1);
+      touch();
+    },
+    cut(on) {
+      state.cut = Boolean(on);
+      touch();
+    },
+    crank(on) {
+      state.crank = Boolean(on);
+      touch();
+    },
+    level(gain) {
+      state.level = bound(gain, 0, 1);
+      touch();
+    },
+    stop() {
+      if (stopped) return;
+      stopped = true;
+      try {
+        if (timer !== undefined) clearTimeout(timer);
+        for (const u of unsubscribe) u();
+        unsubscribe = [];
+        const g = graph;
+        graph = null;
+        if (!g) return;
+        g.fade();
+        setTimeout(() => g.dispose(), 100);
+      } catch {}
+    },
+  };
+}
+
+export type EngineFrame = Partial<Omit<EngineState, "open">> & { at: number };
+
+/**
+ * Renders the engine offline through the same bus, for auditioning and
+ * tests: `frames` are changes to the state at times in seconds (sorted; send
+ * one every ~20 ms to draw a sweep). The idle lope is rolled every 100 ms.
+ * Resolves to the rendered buffer, or null where OfflineAudioContext is missing.
+ */
+export async function renderEngine(
+  frames: EngineFrame[],
+  seconds: number,
+  options?: { redline?: number; touch?: boolean },
+  sampleRate = 48000,
+): Promise<AudioBuffer | null> {
+  try {
+    if (typeof OfflineAudioContext === "undefined") return null;
+    const offline = new OfflineAudioContext(2, Math.ceil(sampleRate * seconds), sampleRate);
+    const bus = createBus(offline, offline.destination, LEVEL * (options?.touch ? TOUCH_TRIM : 1));
+    const graph = buildEngine(offline, bus.input, bound(options?.redline ?? 9000, 3000, 12000));
+    const state: EngineState = { rpm: 0, load: 0, cut: false, crank: false, level: 1, open: true };
+    const events: { at: number; frame?: EngineFrame }[] = frames.map((frame) => ({ at: frame.at, frame }));
+    for (let t = 0.05; t < seconds; t += 0.1) events.push({ at: t });
+    events.sort((a, b) => a.at - b.at);
+    for (const { at, frame } of events) {
+      if (frame) {
+        state.rpm = frame.rpm ?? state.rpm;
+        state.load = frame.load ?? state.load;
+        state.cut = frame.cut ?? state.cut;
+        state.crank = frame.crank ?? state.crank;
+        state.level = frame.level ?? state.level;
+        graph.update(state, at);
+      } else graph.lope(at);
+    }
+    return await offline.startRendering();
+  } catch {
+    return null;
+  }
+}
+
+/* ------------------------------------------------------------------------ */
 /* Hosts: a study that makes sound of its own asks whoever runs it.          */
 /* ------------------------------------------------------------------------ */
 

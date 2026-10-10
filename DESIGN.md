@@ -34,6 +34,8 @@ What a study does by itself asks the player first (the transport rule, under Sou
 
 Monochrome, plus red for REC and the playhead, orange for a hand on it, and one blue on the screen for selection. Figures are tabular, so a count never shuffles sideways. Grey text, hairlines and one weight change on the page. The work should be the loudest thing here, and when a colour only ever means one thing, it reads at once.
 
+The one exception is the race line, the six sports-car studies, which have a night cockpit of their own with yellow, red and light that glows (see The race line).
+
 Restraint is also subtraction. The player lost its battery icon, timecodes, scanlines, a BACK key and a keyboard legend because each one repeated something the screen, the LCD or the hold switch already said. Later it lost the file name beside the LCD (the screen names the study), the captions under the transport (▶ and ■ need no words), a maker's window that stood the full height of the deck (it became a nameplate, and then the left end of the LCD: the maker stays quiet inside the readout), the LCD's running clock and level meters (the tape already shows where the playhead is, so the LCD says only the state, the study's name and the take, as a CD player's display does), a FIND key (Find is on Home, and on /), the HOLD switch (Options › Sound and M already muted), the STOP key (hold the dial's centre) and the deck's key row (Menu and Source sit at the screen's top corners, and Options is on Menu). The deck keeps only what plays the tape: the readout (the mark and the LCD on one strip of glass) and the dial. The mark animates only under a mouse: on the deck, nothing moves by itself but the tape and the lights.
 
 It is after a field recorder, not a copy of one, and its finish is after a click-wheel player's: a cool, bead-blasted silver with the dial in black (in dark, graphite with the dial in silver), so the one part the hand works is the one that stands out. Its parts are arranged around what this player does: it runs studies by itself, so PLAY is the largest key on the deck, at the centre of the dial that steps through them. It is printed in the same grey as every other legend. On the body, colour is a signal (the LCD's play dot, the playhead, the window's light), never a way to make a key look important.
@@ -348,6 +350,8 @@ Short sounds synthesized with Web Audio in `src/lib/sound.ts`: a few millisecond
 | `slate` | The line-up tone: 1 kHz held for most of a second | 1000ms |
 | `wake` | The device waking: open fifths blooming in turn. Once per visit | — |
 
+The race line adds one continuous voice, `engine()`, described under The race line. It is not one of these, and no other study uses it.
+
 Use these and no others. Vary a repeated sound with `pitch` and `gain`, never with a new sound: a turn of the dial is `tick` at a pitch between 0.97 and 1.03, a knob's detents rise with its value, a hold's ratchet climbs `0.88 + n × 0.045` light by light.
 
 ### The bus
@@ -409,6 +413,106 @@ It is the materials, shown working: plate, then well, then part. A knob's cap li
 - Keep filters, opacity, clips and blends off the path from the plate to a part. A part with nothing marked inside it may use them: it is one plane already.
 - An SVG part is picked by what it draws and lit along its strokes, so a ring of lights can be one part.
 - `npm run check:anatomy` takes every listed study apart at 375 and 1280 px, spread all the way, and fails on anything that would flatten it, a part with its own transform or an unknown kind, or a part that spills off the stage.
+
+## The race line
+
+Six studies are parts of a sports car, not of a field recorder: Gauge Cluster, Throttle, Drive Mode, Paddle Shifters, Chrono and Start Key. They are the exception to the rest of this file, and the exception is deliberate.
+
+### Why it departs
+
+The brief for these six was sports-car parts with a design of their own, and a more aggressive one. A car's cockpit is a different object from the recorder: black, matte, lit from inside, with a hot colour for what matters and nothing silver. Dressed in the body's silver and graphite, a tachometer reads as a prop; in its own materials it reads as the thing. So the six share materials of their own, the `--race-*` tokens below, instead of `--device-*`.
+
+Do not "fix" them back. A race study that takes the body's plate, key or LCD tokens is the mistake, and a body study that takes a `--race-*` token is the same one. The two sets never mix on a plate. Everything else in this file still holds (see What still holds).
+
+### Materials and tokens
+
+A cockpit is black whatever the page is, so each token has one value, the same in light and dark. They are declared beside the `--device-*` tokens in `tokens.css` and mirrored as `race` in `tokens.ts`, so `[background:var(--race-body)]` and `bg-(--race-yellow)` both work. Colours are tokens: a study never types a hex value.
+
+The order is the same as the body's: **plate, then well, then part**.
+
+| Token | Value | For |
+| --- | --- | --- |
+| `--race-body` | `linear-gradient(180deg, #141416 0%, #0d0d0f 60%, #08080a 100%)` | The plate: matte black, a shade lighter at the top |
+| `--race-weave` | two `repeating-linear-gradient`s at 45° and −45°, 2px bands every 4px, at 2.2% white and 30% black | A carbon twill, on an overlay layer over the plate (`pointer-events-none`, behind the content). Very low contrast: it is felt, not seen |
+| `--race-edge` | `inset 0 1px 0 rgb(255 255 255 / 0.08), inset 0 0 0 1px rgb(255 255 255 / 0.04)` | The machined rim of the plate |
+| `--race-shadow` | `0 1px 2px rgb(0 0 0 / 0.6), 0 18px 36px -18px rgb(0 0 0 / 0.8), 0 40px 80px -40px rgb(0 0 0 / 0.9)` | The plate's drop shadow |
+| `--race-well` | `#050506` | Anything pressed into the plate: a dial's pocket, a slot |
+| `--race-recess` | `inset 0 1px 3px rgb(0 0 0 / 0.9), inset 0 0 0 1px rgb(0 0 0 / 0.6), 0 1px 0 rgb(255 255 255 / 0.06)` | The well's inset shadow and its lit lower lip |
+| `--race-glass` | `linear-gradient(112deg, #151517 0%, #0f0f11 47%, #08080a 47.2%, #050507 100%)` | Gauge faces and LCDs: near-black glass, with the sheen breaking hard at 47% as the body's LCD does |
+| `--race-scanlines` | `repeating-linear-gradient(0deg, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 3px)` | A 1px line every 3px over glass |
+| `--race-ink` | `#f4f4f5` | Figures and lettering that matter |
+| `--race-dim` | `rgb(255 255 255 / 0.5)` | Units and quiet lettering |
+| `--race-faint` | `rgb(255 255 255 / 0.14)` | Hairlines, ticks, the unlit scale |
+| `--race-yellow` | `#ffd400` | The accent: selection, the tach face, what is on |
+| `--race-yellow-ink` | `#0a0a0a` | Lettering on yellow |
+| `--race-red` | `#ff2b2b` | The redline, the needle, the limiter |
+| `--race-green` | `#2bff88` | The first shift lights, and nothing else |
+| `--race-led-off` | `rgb(255 255 255 / 0.07)` | An unlit LED or segment |
+| `--race-glow-yellow` | `0 0 0.6em rgb(255 212 0 / 0.65), 0 0 1.6em rgb(255 212 0 / 0.25)` | Bloom round a lit yellow part |
+| `--race-glow-red` | `0 0 0.6em rgb(255 43 43 / 0.65), 0 0 1.6em rgb(255 43 43 / 0.25)` | Bloom round a lit red part |
+| `--race-glow-white` | `0 0 0.5em rgb(255 255 255 / 0.3), 0 0 1.2em rgb(255 255 255 / 0.1)` | Bloom round figures, subtle |
+| `--race-key-face` | `linear-gradient(#2b2b2f, #141416)` | A black anodized key |
+| `--race-key-shadow` | `inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.9), 0 2px 0 0 #020203, 0 5px 12px -4px rgb(0 0 0 / 0.8)` | The key at rest: lit edge, inner shade, ring, 2px base, drop |
+| `--race-key-shadow-pressed` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.8), 0 0 0 1px rgb(0 0 0 / 0.9), 0 0 0 0 #020203, 0 1px 1px -1px rgb(0 0 0 / 0.6)` | The key sunk onto its base. The same five layers as at rest, so press and release interpolate |
+| `--race-metal` | a 1px vertical grain every 3px over `linear-gradient(180deg, #3d3d42 0%, #26262a 22%, #323237 46%, #18181b 62%, #28282c 100%)` | Brushed dark metal: pedals, paddles and caps |
+| `--font-race` | `var(--font-saira), "Arial Narrow", "Helvetica Neue", sans-serif` | The figures' typeface (see Type) |
+
+A key is a key: it sinks 2px onto its base in 75ms and comes back in `--duration-exit`, with `--race-key-face`, `--race-key-shadow` and `--race-key-shadow-pressed` in place of the `--device-key-*` ones. Radii and em sizing are the body's.
+
+### What each colour means
+
+- **Yellow** is the accent and the selection: the chosen drive mode, the tach face, a lit chrono segment, the key's glow when it is on. Lettering on yellow is `--race-yellow-ink`.
+- **Red** is the redline, the needle and the limiter. When something in the race line is red, an engine is at its limit or a clock is running.
+- **Green** is only the first shift lights. It never marks "on", "ok" or "selected"; yellow does.
+- **Glow means lit, and only lit things glow.** An unlit LED is `--race-led-off` and casts nothing.
+- **Blue never appears.** It belongs to screens and pages.
+
+Colours that must be told apart still differ in lightness as well as hue: yellow and green are both bright, so the shift lights are told apart by position and order as well as colour.
+
+### Type
+
+Figures are set in Saira, loaded through `next/font/google` as a variable font (`--font-saira`, with its width axis and an italic), and reached through `--font-race`. They are condensed (`font-stretch: 62%`), italic, weights 600 to 800, and tabular. Lettering stays Geist capitals, as everywhere on the hardware: labels name, figures count. Saira is used for figures only, a speed, a gear, an rpm, a lap time.
+
+```tsx
+<span className="font-[family-name:var(--font-race)] text-[2.4em] font-bold italic tabular-nums [font-stretch:62%]">128</span>
+```
+
+The font is not preloaded (`preload: false`), so a page without a car study never fetches it; the fallback is the system condensed sans and the figures keep their width.
+
+### Light
+
+- **Bloom** comes from the glow tokens (`--race-glow-yellow`, `--race-glow-red`, `--race-glow-white`) on leaf parts only: an LED, a needle, a figure, a lit segment. The anatomy's flattening rule still holds, so a glow is never put on a container with marked parts inside it. A glow is a `box-shadow` or `text-shadow` on the part itself, and an SVG part uses its stroke or a filter on the leaf.
+- **A needle leaves a light trail.** A few fading ghost needles behind it, or a fading arc behind its tip, both drawn from the same spring that moves the needle and written as SVG attributes (angle, opacity), so the trail is exactly where the needle was, with no second animation to drift out of step.
+- **Scanlines** go over glass (`--race-scanlines`), as the last layer of a gauge face or LCD, under the sheen.
+- **Reduced motion** drops trails and anything that pulses. Lit state still shows; it just holds still.
+
+### Sound
+
+The race line has one voice the others do not: `engine()` in `src/lib/sound.ts`, a synthesized flat-six that follows rpm and load. It is the one continuous voice in the gallery (every other sound is a short event), and only the race line uses it.
+
+```ts
+const e = engine(); e.set(rpm, load); e.cut(on); e.crank(on); e.level(g); e.stop();
+```
+
+- `set(rpm, load)` moves the pitch (rpm) and the weight (load) of the engine.
+- `cut(on)` is the limiter: the fuel cut that stutters the engine at the redline.
+- `crank(on)` is the starter turning the engine over, before it catches.
+- Overrun pops crackle when the throttle closes at high rpm.
+- `level(g)` is the voice's gain, 0 to 1. `stop()` ends it.
+
+It obeys everything the short sounds do: mute, the volume, the viewer's first gesture, and a hidden tab. It also obeys the host-transport rule. A ghost that runs the engine by itself under a paused host calls `level(0)`, so the engine runs on, silent, and comes back when the viewer works the study (the same `touched` flag as in the usual shape). The viewer's own input always sounds.
+
+### What still holds
+
+The race line changes the materials, not the rules.
+
+- **One file per study**, with the same imports rule: `react`, `@/lib/sound` and `@/design-system` only.
+- **Parts are marked** with `data-part`, and the anatomy rules hold: nothing flattens the path from the plate to a part, no part has its own `transform`, no filter, opacity, clip or blend above a marked part. Glow goes on leaves.
+- **Mechanisms are modelled** with `createSpring` or a small integrator: a needle with ballistics, a pedal on its return spring, a paddle with its click, a key with its base. Per-frame work writes variables and attributes, not state.
+- **Accessibility is native**: roles, one tab stop per composite, focus that follows the hand, a live region, reduced motion.
+- **It fits 282 × 332**, sized in em from the plate's font size, and fills the capture frame at 702 × 374.
+- **It moves in its first four seconds**, untouched, and a hand always wins.
+- **It sounds through `sound.ts`**, `play()` for the short sounds and `engine()` for the voice, under the transport rule.
 
 ## Writing
 
