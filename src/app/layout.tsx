@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Saira } from "next/font/google";
 import { ThemeScript } from "@/components/gallery/theme-script";
 import { SoundRuntime } from "@/components/sound/sound-runtime";
 import { site } from "@/site.config";
@@ -13,6 +13,16 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// The race line's figures (the car studies): variable weight and width, upright and italic.
+// Not preloaded, so pages without a car study never fetch it.
+const saira = Saira({
+  variable: "--font-saira",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  axes: ["wdth"],
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -40,7 +50,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       data-theme="light"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${saira.variable} h-full antialiased`}
     >
       <head>
         <ThemeScript />

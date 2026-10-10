@@ -170,6 +170,45 @@ export const materials: { name: string; tokens: DeviceToken[]; use: string }[] =
   { name: "Glass", tokens: ["screen-glass", "screen-glow"], use: "Over a screen: a sheen where the light catches it, and the backlight's bloom as it wakes." },
 ];
 
+/**
+ * The race line's cockpit: the --race-* tokens. One set, the same in both
+ * themes (a cockpit is black whatever the page is). Used by the six car
+ * studies; see "The race line" in DESIGN.md.
+ */
+export const race = {
+  body: "linear-gradient(180deg, #141416 0%, #0d0d0f 60%, #08080a 100%)",
+  weave: "repeating-linear-gradient(45deg, rgb(255 255 255 / 0.022) 0 2px, transparent 2px 4px), repeating-linear-gradient(-45deg, rgb(0 0 0 / 0.3) 0 2px, transparent 2px 4px)",
+  edge: "inset 0 1px 0 rgb(255 255 255 / 0.08), inset 0 0 0 1px rgb(255 255 255 / 0.04)",
+  shadow: "0 1px 2px rgb(0 0 0 / 0.6), 0 18px 36px -18px rgb(0 0 0 / 0.8), 0 40px 80px -40px rgb(0 0 0 / 0.9)",
+  well: "#050506",
+  recess: "inset 0 1px 3px rgb(0 0 0 / 0.9), inset 0 0 0 1px rgb(0 0 0 / 0.6), 0 1px 0 rgb(255 255 255 / 0.06)",
+  glass: "linear-gradient(112deg, #151517 0%, #0f0f11 47%, #08080a 47.2%, #050507 100%)",
+  scanlines: "repeating-linear-gradient(0deg, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 3px)",
+  ink: "#f4f4f5",
+  dim: "rgb(255 255 255 / 0.5)",
+  faint: "rgb(255 255 255 / 0.14)",
+  yellow: "#ffd400",
+  "yellow-ink": "#0a0a0a",
+  red: "#ff2b2b",
+  green: "#2bff88",
+  "led-off": "rgb(255 255 255 / 0.07)",
+  "glow-yellow": "0 0 0.6em rgb(255 212 0 / 0.65), 0 0 1.6em rgb(255 212 0 / 0.25)",
+  "glow-red": "0 0 0.6em rgb(255 43 43 / 0.65), 0 0 1.6em rgb(255 43 43 / 0.25)",
+  "glow-white": "0 0 0.5em rgb(255 255 255 / 0.3), 0 0 1.2em rgb(255 255 255 / 0.1)",
+  "key-face": "linear-gradient(#2b2b2f, #141416)",
+  "key-shadow": "inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.9), 0 2px 0 0 #020203, 0 5px 12px -4px rgb(0 0 0 / 0.8)",
+  "key-shadow-pressed": "inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.8), 0 0 0 1px rgb(0 0 0 / 0.9), 0 0 0 0 #020203, 0 1px 1px -1px rgb(0 0 0 / 0.6)",
+  metal: "repeating-linear-gradient(90deg, rgb(255 255 255 / 0.03) 0 1px, transparent 1px 3px), linear-gradient(180deg, #3d3d42 0%, #26262a 22%, #323237 46%, #18181b 62%, #28282c 100%)",
+} as const;
+
+export type RaceToken = keyof typeof race;
+
+/** The CSS variable behind a race token: `--race-yellow`. */
+export const raceVar = (token: RaceToken) => `--race-${token}`;
+
+/** The race line's figure face: Saira, condensed and italic. Declared in tokens.css as `--font-race`. */
+export const raceFont = { variable: "--font-race", stretch: "62%", weights: [600, 700, 800] } as const;
+
 export const typeScale = [
   { token: "display", size: 32, leading: 1.15, tracking: "-0.035em", weight: 500, use: "Page titles, rarely" },
   { token: "title", size: 20, leading: 1.35, tracking: "-0.018em", weight: 500, use: "Component and section titles" },

@@ -119,6 +119,41 @@
   /* The display: the site's own grounds under glass, and a light that comes on. */
   --screen-glow: rgb(255 255 255 / 0.7);
   --screen-glass: linear-gradient(158deg, rgb(255 255 255 / 0.07) 0%, rgb(255 255 255 / 0.02) 38%, transparent 38.2%);
+  /*
+   * The race line: the six car studies (Gauge Cluster, Throttle, Drive Mode,
+   * Paddle Shifters, Chrono, Start Key) leave the body's silver for a night
+   * cockpit. The same in both themes, since a cockpit is black whatever the
+   * page is, so it is declared once here and [data-theme="dark"] inherits it.
+   * The key shadows keep --device-key-shadow's five layers (lit edge, inner
+   * shade, ring, base, drop) so press and release interpolate.
+   */
+  --race-body: linear-gradient(180deg, #141416 0%, #0d0d0f 60%, #08080a 100%);
+  /* A carbon twill for an overlay layer: two crossed hatches at 45deg, very low contrast. */
+  --race-weave: repeating-linear-gradient(45deg, rgb(255 255 255 / 0.022) 0 2px, transparent 2px 4px), repeating-linear-gradient(-45deg, rgb(0 0 0 / 0.3) 0 2px, transparent 2px 4px);
+  --race-edge: inset 0 1px 0 rgb(255 255 255 / 0.08), inset 0 0 0 1px rgb(255 255 255 / 0.04);
+  --race-shadow: 0 1px 2px rgb(0 0 0 / 0.6), 0 18px 36px -18px rgb(0 0 0 / 0.8), 0 40px 80px -40px rgb(0 0 0 / 0.9);
+  --race-well: #050506;
+  --race-recess: inset 0 1px 3px rgb(0 0 0 / 0.9), inset 0 0 0 1px rgb(0 0 0 / 0.6), 0 1px 0 rgb(255 255 255 / 0.06);
+  --race-glass: linear-gradient(112deg, #151517 0%, #0f0f11 47%, #08080a 47.2%, #050507 100%);
+  --race-scanlines: repeating-linear-gradient(0deg, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 3px);
+  --race-ink: #f4f4f5;
+  --race-dim: rgb(255 255 255 / 0.5);
+  --race-faint: rgb(255 255 255 / 0.14);
+  --race-yellow: #ffd400;
+  --race-yellow-ink: #0a0a0a;
+  --race-red: #ff2b2b;
+  --race-green: #2bff88;
+  --race-led-off: rgb(255 255 255 / 0.07);
+  --race-glow-yellow: 0 0 0.6em rgb(255 212 0 / 0.65), 0 0 1.6em rgb(255 212 0 / 0.25);
+  --race-glow-red: 0 0 0.6em rgb(255 43 43 / 0.65), 0 0 1.6em rgb(255 43 43 / 0.25);
+  --race-glow-white: 0 0 0.5em rgb(255 255 255 / 0.3), 0 0 1.2em rgb(255 255 255 / 0.1);
+  --race-key-face: linear-gradient(#2b2b2f, #141416);
+  --race-key-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.9), 0 2px 0 0 #020203, 0 5px 12px -4px rgb(0 0 0 / 0.8);
+  --race-key-shadow-pressed: inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.8), 0 0 0 1px rgb(0 0 0 / 0.9), 0 0 0 0 #020203, 0 1px 1px -1px rgb(0 0 0 / 0.6);
+  /* Brushed dark metal for pedals, paddles and caps: fine vertical grain over a banded sheen. */
+  --race-metal: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.03) 0 1px, transparent 1px 3px), linear-gradient(180deg, #3d3d42 0%, #26262a 22%, #323237 46%, #18181b 62%, #28282c 100%);
+  /* The race line's figures: Saira, set condensed (font-stretch 62%) and italic. */
+  --font-race: var(--font-saira), "Arial Narrow", "Helvetica Neue", sans-serif;
   color-scheme: light;
 }
 
