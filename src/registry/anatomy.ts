@@ -25,11 +25,13 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     lettering: { note: "The pedal's name between two yellow slashes." },
   },
   "drive-mode": {
-    collar: { note: "The rotary's seat, and the centre key's: round recesses pressed into the plate and the cap." },
-    cap: { tokens: ["--device-wheel-face", "--device-wheel-shadow", "--device-key-shadow"], note: "A knurled cap turned by a conic gradient from var(--a), its pointer a wedge on the skirt. The centre cap is a key that sinks 2px." },
-    light: { tokens: ["--device-meter-off", "--device-meter-on", "--device-rec"], note: "A light beside the chosen mode follows the cap; the ring of twenty goes out one a second over the 20 s boost, drawn from a frame loop." },
-    lettering: { note: "The four modes and their detent marks, engraved round the collar." },
-    lcd: { note: "The mode chip, and three bars that travel on springs to each mode's preset, with the boost count." },
+    collar: { note: "The rotary's seat, and the centre key's: round black recesses pressed into the well and the cap." },
+    cap: { tokens: ["--race-key-face", "--race-key-shadow", "--race-faint", "--race-yellow"], note: "A black knurled cap turned by a conic gradient from var(--a), its pointer a lit yellow wedge on the skirt. The centre cap is a key that sinks 2px." },
+    light: { tokens: ["--race-led-off", "--race-yellow", "--race-red", "--race-glow-yellow", "--race-glow-red"], note: "A light beside the chosen mode follows the cap. The ring of twenty glows red and goes out one a second over the 20 s boost, drawn from a frame loop." },
+    lettering: { note: "The four modes and their detent marks, engraved round the collar, the chosen one lit; the yellow rule and chevrons on the plate and LCD." },
+    lcd: { tokens: ["--race-glass", "--race-yellow", "--race-red"], note: "Black glass with the mode in condensed italic figures, three LED segment bars that travel on springs to each mode's preset, and the boost count in red." },
+    glass: { tokens: ["--race-scanlines"], note: "Scanlines over the LCD, a 1px line every 3px." },
+    well: { tokens: ["--race-well", "--race-recess"], note: "The switch's pocket, pressed into the plate." },
   },
   "paddle-shifters": {
     key: { name: "Paddles", tokens: ["--race-weave", "--race-metal", "--race-key-shadow", "--race-yellow"], note: "Carbon-fibre blades hung from a pivot, with a swept tip and a yellow edge. The face sinks 2px and leans about the pivot on the rotate property, inside the key's own frame, so it never spills." },
