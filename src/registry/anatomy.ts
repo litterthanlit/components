@@ -16,11 +16,13 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     well: { tokens: ["--race-well", "--race-recess"], note: "The cluster's pocket in the plate." },
   },
   throttle: {
-    key: { name: "Pedal", tokens: ["--device-wheel-face", "--device-key-shadow"], note: "Brushed aluminium with a pad of rubber studs in rows. It tilts back from its hinge on the rotate property inside a clipping well, and its face darkens with travel." },
-    slot: { name: "Hinge", tokens: ["--device-rim"], note: "A black groove across the foot of the plate, where it is hinged." },
-    well: { name: "Wells", note: "The shift-light strip, and the floor the pedal stands in." },
-    light: { tokens: ["--device-meter-off", "--device-meter-on", "--device-rec"], note: "Twelve shift lights, the last three red. Each that comes on clicks a little higher, and all flash together at the limiter." },
-    lcd: { note: "Revs in light tabular figures with a dim unit, written by the engine loop, with a chip for Idle, Rev and Limiter." },
+    key: { name: "Pedal", tokens: ["--race-metal", "--race-key-shadow", "--race-yellow"], note: "Black machined metal, chamfered at the toe, its edge and chevron grip in yellow. It tilts back from its hinge on the rotate property inside a clipping well, and the light under it comes up with travel." },
+    slot: { name: "Hinge", tokens: ["--race-well", "--race-yellow"], note: "A groove across the foot of the plate that turns yellow and glows as the pedal goes down." },
+    well: { name: "Wells", tokens: ["--race-well", "--race-recess"], note: "The shift-light bar, and the pedal box the plate stands in, lit from below." },
+    light: { tokens: ["--race-led-off", "--race-green", "--race-yellow", "--race-red", "--race-glow-yellow", "--race-glow-red"], note: "Twelve shift lights, four green, five yellow, three red, each with a hot core and bloom. All flash together at the limiter." },
+    lcd: { tokens: ["--race-glass", "--race-yellow", "--race-ink", "--race-glow-white"], note: "Revs in the race face, glowing white, and red at the limiter, written by the engine loop; a yellow chip says Idle, Rev or Limiter." },
+    glass: { tokens: ["--race-scanlines"], note: "Scanlines over the readout." },
+    lettering: { note: "The pedal's name between two yellow slashes." },
   },
   "drive-mode": {
     collar: { note: "The rotary's seat, and the centre key's: round recesses pressed into the plate and the cap." },
