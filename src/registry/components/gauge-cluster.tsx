@@ -14,14 +14,17 @@ import {
   type Ref,
 } from "react";
 import { createSpring, focusQuietly, type Spring } from "@/design-system";
-import { hostTransport, play } from "@/lib/sound";
+import { engine, hostTransport, play } from "@/lib/sound";
 
 /*
- * A radial gauge after an instrument cluster's: black glass in a polished
- * bezel, figures in light type, a red zone at the end of the scale and a red
- * needle that comes out of a cap at the centre. The cluster sets three of
- * them in a well, the large one in the middle with the two smaller tucked
- * partly behind it, lower and to either side.
+ * An instrument cluster on the night-race line: three radial gauges in a
+ * black well under a bar of shift lights, everything lit from within. The tach
+ * is the hero, a GT car's yellow face with black figures in the race face
+ * (condensed, italic, heavy), a red block at the end of the scale and a black
+ * readout in its lower half that carries the gear in a yellow chip and the road
+ * speed in huge glowing digits. The speedo and the oil temperature are dark
+ * glass with scanlines and white figures, tucked partly behind it, lower and to
+ * either side.
  *
  * A needle is a spring, in degrees, so it keeps its velocity when the value
  * jumps: stiff on the tach (260, 26: about 1.5% overshoot, settled in a third
@@ -31,6 +34,17 @@ import { hostTransport, play } from "@/lib/sound";
  * not React. A value set through the `value` prop travels on the spring; a
  * demo that feeds a gauge sixty times a second uses the handle instead, which
  * is the same path without a render.
+ *
+ * A red needle glows and leaves a light trail: four ghost needles behind it,
+ * drawn in the same frame as the needle from the spring's own velocity. Each
+ * lags it by a further 22 ms, so a fast needle smears over as many degrees as
+ * it has moved in that time and a slow or settled one shows none. Reduced
+ * motion draws none.
+ *
+ * The shift lights are ten LEDs: four green, three yellow, three red, lit one
+ * by one from 5,500 rpm to 7,700 and all flashing together at the limiter
+ * (steady under reduced motion). They are written, like the needles, from the
+ * rpm the cluster is given.
  *
  * Each face is a meter for screen readers (aria-valuemin, max, now and a
  * valuetext with its unit), and the cluster is one tab stop: hold Space or
@@ -43,8 +57,9 @@ import { hostTransport, play } from "@/lib/sound";
  * upshift (the tach drops) in each gear, then the brakes, with a blip of
  * throttle on every downshift. A hand on the cluster takes the throttle in
  * TOUCH, from wherever the lap had got to, and two and a half seconds after
- * it lets go the lap takes the needles back. The tach ticks for each 1,000 rpm
- * it passes, higher as the revs climb, and bumps on the limiter.
+ * it lets go the lap takes the needles back. The engine is heard: one flat-six
+ * voice follows the same rpm and throttle that draw the tach, cuts at the
+ * limiter, and stays silent under a paused tape until a hand works it.
  */
 
 const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(" ");
@@ -64,6 +79,9 @@ function arcPath(from: number, to: number, r: number) {
   const b = polar(to, r);
   return `M${a.x} ${a.y}A${r} ${r} 0 ${Math.abs(to - from) > 180 ? 1 : 0} 1 ${b.x} ${b.y}`;
 }
+
+/** The race face for figures: condensed, italic, heavy. */
+const RACE_FIGURES = "font-[family-name:var(--font-race)] [font-stretch:62%] italic font-bold tabular-nums";
 
 /* --- Gauge ---------------------------------------------------------------- */
 
@@ -90,6 +108,8 @@ export type GaugeProps = {
   minorStep: number;
   /** Large faces carry big figures; small ones are set a size down and tuck behind. */
   size?: "large" | "small";
+  /** The face: dark glass with white figures and scanlines, or the tach's yellow with black ones. */
+  tone?: "glass" | "yellow";
   /** Degrees from upright, clockwise, at the minimum and at the maximum. Default −135 to 135. */
   sweep?: readonly [number, number];
   /** What to print at a long tick. Default: the value. */
@@ -110,17 +130,24 @@ export type GaugeProps = {
 
 /** Each size's measurements, in viewBox units. */
 const FACE = {
-  large: { major: 6.5, minor: 3.2, majorW: 1.5, minorW: 0.8, label: 26, font: 13, weight: 500, tip: 39, tail: 9, needleW: 1.8, hub: 5.8, unitY: 36 },
-  small: { major: 5.5, minor: 2.8, majorW: 1.6, minorW: 0.9, label: 29, font: 9.5, weight: 500, tip: 39, tail: 7, needleW: 1.5, hub: 4.8, unitY: 70 },
+  large: { major: 6.8, minor: 3.4, majorW: 2, minorW: 0.9, label: 26, font: 15.5, weight: 800, tip: 40, tail: 9, needleW: 1.9, hub: 6, unitY: 35 },
+  small: { major: 5.5, minor: 2.8, majorW: 1.7, minorW: 0.9, label: 29, font: 11.5, weight: 700, tip: 39, tail: 7, needleW: 1.5, hub: 4.8, unitY: 70 },
 } as const;
 const TICK_OUT = 41;
 const PIN = 1.04; // the needle may press a little past the end stop
+const CHAR_W = 0.46; // a condensed italic figure's width, in ems
+/** The light trail: four ghosts, each this many seconds behind the needle, and how bright each starts. */
+const TRAIL = [
+  { lag: 0.022, alpha: 0.4 },
+  { lag: 0.044, alpha: 0.26 },
+  { lag: 0.066, alpha: 0.15 },
+  { lag: 0.088, alpha: 0.07 },
+] as const;
+const MAX_SMEAR = 32; // degrees
 
-const bezel =
-  "shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6),inset_0_0_0_1px_rgb(255_255_255/0.08)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6),inset_0_0_0_1px_rgb(255_255_255/0.08)]";
-/** The large face stands proud of the two behind it: a soft shadow falls on them. */
-const bezelLarge =
-  "shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6),inset_0_0_0_1px_rgb(255_255_255/0.1),0_0.2em_1em_0.1em_rgb(0_0_0/0.55)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6),inset_0_0_0_1px_rgb(255_255_255/0.1),0_0.2em_1em_0.1em_rgb(0_0_0/0.7)]";
+const bezel = "[box-shadow:0_0_0_1px_rgb(255_255_255/0.1),inset_0_1px_2px_rgb(0_0_0/0.8),0_0.12em_0.4em_rgb(0_0_0/0.8)]";
+/** The large face stands proud of the two behind it: a hard shadow falls on them. */
+const bezelLarge = "[box-shadow:0_0_0_1px_rgb(255_255_255/0.16),inset_0_1px_2px_rgb(0_0_0/0.8),0_0.2em_1em_0.1em_rgb(0_0_0/0.9)]";
 
 export function Gauge({
   value,
@@ -133,6 +160,7 @@ export function Gauge({
   figureStep = majorStep,
   minorStep,
   size = "small",
+  tone = "glass",
   sweep = [-135, 135],
   figure = (v) => String(v),
   unit,
@@ -150,6 +178,7 @@ export function Gauge({
   const aria = useRef({ at: 0, text: "" }); // the last valuetext written by the handle, and when
   const [initial] = useState(value);
   const f = FACE[size];
+  const yellow = tone === "yellow";
   // What the spring and the handle read when they fire, rather than when they were made.
   const props = useRef({ min, max, sweep, majorStep, format, onMark, needle });
   useLayoutEffect(() => {
@@ -159,15 +188,20 @@ export function Gauge({
   const angleOf = (v: number, p: { min: number; max: number; sweep: readonly [number, number] }) =>
     p.sweep[0] + clamp((v - p.min) / (p.max - p.min), 0, PIN) * (p.sweep[1] - p.sweep[0]);
 
-  // The spring runs in degrees and draws the needle; a long tick passing under it is reported from here.
+  // The spring runs in degrees and draws the needle and its trail; a long tick passing under it is reported from here.
   useLayoutEffect(() => {
-    const lines = [...rootRef.current!.querySelectorAll<SVGLineElement>("[data-needle]")];
+    const root = rootRef.current!;
+    const lines = [...root.querySelectorAll<SVGLineElement>("[data-needle]")];
+    const ghosts = [...root.querySelectorAll<SVGLineElement>("[data-ghost]")];
+    const trails = !reducedMotion();
     const start = props.current;
     const marks = Math.floor((start.max - start.min) / start.majorStep + 1e-6);
     const bandOf = (deg: number, p: typeof start) =>
       clamp(Math.floor(((deg - p.sweep[0]) / (p.sweep[1] - p.sweep[0])) * ((p.max - p.min) / p.majorStep) + 1e-6), 0, marks - 1);
     let band = bandOf(angleOf(initial, start), start);
-    const s = createSpring(angleOf(initial, start), props.current.needle, (deg) => {
+    let lastDeg = angleOf(initial, start);
+    let lastAt = 0;
+    const s = createSpring(lastDeg, props.current.needle, (deg) => {
       const tip = polar(deg, f.tip);
       const tail = polar(deg + 180, f.tail);
       for (const line of lines) {
@@ -175,6 +209,24 @@ export function Gauge({
         line.setAttribute("y1", String(tail.y));
         line.setAttribute("x2", String(tip.x));
         line.setAttribute("y2", String(tip.y));
+      }
+      if (trails) {
+        // The needle's speed from this frame and the last, which a jump (a long gap) does not count.
+        const at = performance.now();
+        const dt = (at - lastAt) / 1000;
+        const speed = lastAt && dt > 0.004 && dt < 0.08 ? (deg - lastDeg) / dt : 0;
+        lastAt = at;
+        lastDeg = deg;
+        ghosts.forEach((ghost, i) => {
+          const smear = clamp(speed * TRAIL[i].lag, -MAX_SMEAR, MAX_SMEAR);
+          const a = polar(deg - smear, f.tip);
+          const b = polar(deg - smear + 180, f.tail);
+          ghost.setAttribute("x1", String(b.x));
+          ghost.setAttribute("y1", String(b.y));
+          ghost.setAttribute("x2", String(a.x));
+          ghost.setAttribute("y2", String(a.y));
+          ghost.setAttribute("opacity", String(round2(TRAIL[i].alpha * clamp(Math.abs(smear) / 3, 0, 1))));
+        });
       }
       const p = props.current;
       const now = bandOf(deg, p);
@@ -240,13 +292,15 @@ export function Gauge({
   const labelAt = (v: number) => {
     const deg = angle(v);
     const rad = (deg * Math.PI) / 180;
-    const w = figure(v).length * font * 0.6;
+    const w = figure(v).length * font * CHAR_W;
     const reach = (Math.abs(Math.sin(rad)) * w + Math.abs(Math.cos(rad)) * font * 0.75) / 2;
     return polar(deg, TICK_OUT - f.major - 2.2 - reach);
   };
   const tip = polar(angleOf(initial, { min, max, sweep }), f.tip);
   const tail = polar(angleOf(initial, { min, max, sweep }) + 180, f.tail);
   const needleAt = { x1: tail.x, y1: tail.y, x2: tip.x, y2: tip.y };
+  const ink = yellow ? "var(--race-yellow-ink)" : "var(--race-ink)";
+  const quiet = yellow ? "var(--race-yellow-ink)" : "var(--race-dim)";
 
   return (
     <div
@@ -258,47 +312,78 @@ export function Gauge({
       aria-valuenow={value}
       aria-valuetext={format(value)}
       data-part="bezel"
-      className={cx("aspect-square overflow-hidden rounded-full bg-(--device-rim) p-[5%]", size === "large" ? bezelLarge : bezel, className)}
+      className={cx("aspect-square overflow-hidden rounded-full bg-(--race-well) p-[4.5%]", size === "large" ? bezelLarge : bezel, className)}
       style={style}
     >
-      <div data-part="face" className="relative size-full overflow-hidden rounded-full [background:var(--device-window)] shadow-(--device-window-edge)">
+      <div
+        data-part="face"
+        className={cx(
+          "relative size-full overflow-hidden rounded-full",
+          yellow ? "[background:radial-gradient(circle_at_50%_44%,transparent_58%,rgb(0_0_0/0.22)_100%),var(--race-yellow)]" : "[background:var(--race-glass)]",
+        )}
+      >
         <svg aria-hidden viewBox="0 0 100 100" className="absolute inset-0 size-full" style={{ fontVariantNumeric: "tabular-nums" }}>
-          <circle cx="50" cy="50" r="48.4" fill="none" stroke="rgb(255 255 255 / 0.07)" strokeWidth="0.5" />
           {/* The red block at the end of the scale, outside the ticks. */}
-          {redline !== undefined && <path d={arcPath(angle(redline), angle(max), 44.4)} fill="none" stroke="var(--device-rec)" strokeWidth="4" />}
-          <path d={arcPath(angle(min), angle(redline ?? max), 41.8)} fill="none" stroke="rgb(255 255 255 / 0.22)" strokeWidth="0.5" />
+          {redline !== undefined && <path d={arcPath(angle(redline), angle(max), 44.6)} fill="none" stroke="var(--race-red)" strokeWidth="4" />}
+          <path d={arcPath(angle(min), angle(redline ?? max), 41.8)} fill="none" stroke={ink} strokeOpacity={yellow ? 0.5 : 0.3} strokeWidth="0.5" />
           {ticks.map(({ v, major }) => {
             const deg = angle(v);
             const a = polar(deg, TICK_OUT);
             const b = polar(deg, TICK_OUT - (major ? f.major : f.minor));
-            return <line key={v} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={major ? "var(--device-lcd-ink)" : "var(--device-lcd-dim)"} strokeWidth={major ? f.majorW : f.minorW} />;
+            const hot = redline !== undefined && v >= redline && !yellow;
+            return <line key={v} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={hot ? "var(--race-red)" : ink} strokeOpacity={major ? 1 : 0.55} strokeWidth={major ? f.majorW : f.minorW} />;
           })}
           {figures.map((v) => {
+            if (figure(v) === "") return null; // a long tick with no figure: the readout sits where it would be
             const t = labelAt(v);
             return (
-              <text key={v} x={t.x} y={t.y} textAnchor="middle" dominantBaseline="central" fontSize={font} fontWeight={f.weight} fill="var(--device-lcd-ink)">
+              <text
+                key={v}
+                x={t.x}
+                y={t.y}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fontSize={font}
+                fontWeight={f.weight}
+                fill={ink}
+                style={{ fontFamily: "var(--font-race)", fontStretch: "62%", fontStyle: "italic" }}
+              >
                 {figure(v)}
               </text>
             );
           })}
           {unit && (
-            <text x="50" y={f.unitY} textAnchor="middle" dominantBaseline="central" fontSize="4.6" letterSpacing="0.3" fill="var(--device-lcd-dim)">
+            <text x="50" y={f.unitY} textAnchor="middle" dominantBaseline="central" fontSize="4.4" letterSpacing="0.4" fill={quiet} fillOpacity={yellow ? 0.75 : 1} style={{ fontWeight: 600, textTransform: "uppercase" }}>
               {unit}
             </text>
           )}
 
-          {/* The needle, written by the spring every frame: a shadow under it, then the needle. */}
-          <line data-needle {...needleAt} stroke="rgb(0 0 0 / 0.55)" strokeWidth={f.needleW} strokeLinecap="round" style={{ translate: "1px 1.6px" }} />
-          <line data-needle {...needleAt} stroke="var(--device-rec)" strokeWidth={f.needleW} strokeLinecap="round" />
-          {/* The cap the needle comes out of. */}
-          <circle cx="50" cy="50" r={f.hub} fill="var(--device-rim)" stroke="rgb(255 255 255 / 0.22)" strokeWidth="0.6" />
-          <circle cx="50" cy="50" r={f.hub - 2.2} fill="rgb(255 255 255 / 0.07)" />
+          {/* The needle, written by the spring every frame: its trail of ghosts, a glow, the needle itself. */}
+          {TRAIL.map((_, i) => (
+            <line key={i} data-ghost {...needleAt} opacity={0} stroke="var(--race-red)" strokeWidth={f.needleW * 0.9} strokeLinecap="round" />
+          ))}
+          <line data-needle {...needleAt} stroke="var(--race-red)" strokeOpacity={0.14} strokeWidth={f.needleW * 4.2} strokeLinecap="round" />
+          <line data-needle {...needleAt} stroke="var(--race-red)" strokeOpacity={0.3} strokeWidth={f.needleW * 2.3} strokeLinecap="round" />
+          {yellow && <line data-needle {...needleAt} stroke="var(--race-yellow-ink)" strokeOpacity={0.85} strokeWidth={f.needleW * 1.7} strokeLinecap="round" />}
+          <line data-needle {...needleAt} stroke="var(--race-red)" strokeWidth={f.needleW} strokeLinecap="round" />
+          {/* The cap the needle comes out of: black, with a red ring and a lit dot. */}
+          <circle cx="50" cy="50" r={f.hub} fill="var(--race-well)" stroke="var(--race-red)" strokeWidth="0.7" />
+          <circle cx="50" cy="50" r={f.hub - 3} fill="var(--race-red)" />
         </svg>
         <div aria-hidden className="absolute inset-0">
           {children}
         </div>
-        {/* Glass over the face, breaking where the light catches it. */}
-        <div aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 rounded-full [background:linear-gradient(160deg,rgb(255_255_255/0.16)_0%,rgb(255_255_255/0.03)_36%,transparent_36.4%)]" />
+        {/* Glass over the face: scanlines on the dark ones, and a sheen breaking where the light catches it. */}
+        <div
+          aria-hidden
+          data-part="glass"
+          className={cx(
+            "pointer-events-none absolute inset-0 rounded-full",
+            yellow
+              ? "[background:linear-gradient(160deg,rgb(255_255_255/0.26)_0%,rgb(255_255_255/0.04)_34%,transparent_34.4%)]"
+              : "[background:var(--race-scanlines),linear-gradient(160deg,rgb(255_255_255/0.12)_0%,rgb(255_255_255/0.02)_36%,transparent_36.4%)]",
+          )}
+        />
       </div>
     </div>
   );
@@ -318,7 +403,7 @@ export type ClusterReading = {
 };
 
 export type ClusterHandle = {
-  /** Sends any of the readings to the needles and the digits; `jump` puts them there at once. Writes the DOM, never React state. */
+  /** Sends any of the readings to the needles, the shift lights and the digits; `jump` puts them there at once. Writes the DOM, never React state. */
   set: (reading: Partial<ClusterReading>, jump?: boolean) => void;
 };
 
@@ -337,6 +422,17 @@ const fmtRpm = (v: number) => `${(Math.round(v / 100) * 100).toLocaleString("en-
 const fmtSpeed = (v: number) => `${Math.round(v)} km/h`;
 const fmtOil = (v: number) => `${Math.round(v)} °C`;
 
+/** The shift lights: four green, three yellow, three red; the first comes on at 5,500 rpm and the last at 7,700. */
+const LEDS = [
+  ...Array.from({ length: 4 }, () => ({ colour: "var(--race-green)", glow: "0 0 0.6em var(--race-green), 0 0 1.4em -0.2em var(--race-green)" })),
+  ...Array.from({ length: 3 }, () => ({ colour: "var(--race-yellow)", glow: "var(--race-glow-yellow)" })),
+  ...Array.from({ length: 3 }, () => ({ colour: "var(--race-red)", glow: "var(--race-glow-red)" })),
+];
+const LED_FROM = 5500;
+const LED_STEP = 244; // rpm between lights
+const LIMITER = 7980; // the model sits at 8,000 while the limiter holds it
+const FLASH = 70; // ms on, ms off
+
 export function GaugeCluster({ rpm, speed, oil, gear, onThrottle, onTick, handle, className }: GaugeClusterProps) {
   const descId = useId();
   const tach = useRef<GaugeHandle>(null);
@@ -344,8 +440,9 @@ export function GaugeCluster({ rpm, speed, oil, gear, onThrottle, onTick, handle
   const oilGauge = useRef<GaugeHandle>(null);
   const gearRef = useRef<HTMLSpanElement>(null);
   const digitsRef = useRef<HTMLSpanElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
   const held = useRef({ pointer: null as number | null, key: false });
-  const [initial] = useState({ gear, speed });
+  const [initial] = useState({ gear, speed, lit: LEDS.filter((_, i) => rpm >= LED_FROM + i * LED_STEP).length });
   const props = useRef({ onThrottle });
   useLayoutEffect(() => {
     props.current = { onThrottle };
@@ -359,11 +456,26 @@ export function GaugeCluster({ rpm, speed, oil, gear, onThrottle, onTick, handle
     }
   };
 
+  /** Lights the shift LEDs for an rpm: one at a time from 5,500, and all together, flashing, at the limiter. */
+  const writeLights = (rpmNow: number) => {
+    const bar = barRef.current;
+    if (!bar) return;
+    const limiter = rpmNow >= LIMITER;
+    const flashOn = limiter && (reducedMotion() || Math.floor(performance.now() / FLASH) % 2 === 0);
+    [...bar.children].forEach((led, i) => {
+      const on = limiter ? flashOn : rpmNow >= LED_FROM + i * LED_STEP;
+      if (led.hasAttribute("data-on") !== on) led.toggleAttribute("data-on", on);
+    });
+  };
+
   useImperativeHandle(
     handle,
     () => ({
       set(r, jump = false) {
-        if (r.rpm !== undefined) tach.current?.set(r.rpm, jump);
+        if (r.rpm !== undefined) {
+          tach.current?.set(r.rpm, jump);
+          writeLights(r.rpm);
+        }
         if (r.speed !== undefined) speedo.current?.set(r.speed, jump);
         if (r.oil !== undefined) oilGauge.current?.set(r.oil, jump);
         writeText(r);
@@ -372,8 +484,9 @@ export function GaugeCluster({ rpm, speed, oil, gear, onThrottle, onTick, handle
      
     [],
   );
-  // Values set through the props reach the digits and the chip too (the needles take them through their own props).
+  // Values set through the props reach the digits, the chip and the lights too (the needles take them through their own props).
   useLayoutEffect(() => writeText({ gear, speed }), [gear, speed]);  
+  useLayoutEffect(() => writeLights(rpm), [rpm]);  
 
   /** The throttle is down while a pointer or the space bar is: tell the owner when that changes. */
   function hold(next: Partial<typeof held.current>) {
@@ -428,14 +541,27 @@ export function GaugeCluster({ rpm, speed, oil, gear, onThrottle, onTick, handle
       onKeyDown={onKeyDown}
       onKeyUp={onKeyUp}
       onBlur={onBlur}
-      className={cx("@container/cluster touch-none select-none rounded-[0.7em] outline-offset-2", className)}
+      className={cx("@container/cluster mx-auto w-[94%] touch-none select-none rounded-[0.6em] outline-offset-2", className)}
     >
       <span id={descId} className="sr-only">
         Hold Space to rev the engine. Pressing and holding the cluster does the same. The lap takes over again two and a half seconds after you let go.
       </span>
 
+      {/* The shift lights: ten LEDs, off until the revs come up, lit with their glow. */}
+      <div ref={barRef} aria-hidden className="mb-[0.55em] flex gap-[0.3em]">
+        {LEDS.map((led, i) => (
+          <span
+            key={i}
+            data-part="light"
+            data-on={i < initial.lit ? "" : undefined}
+            className="h-[0.5em] flex-1 rounded-[0.12em] bg-(--race-led-off) data-[on]:bg-(--led) data-[on]:[box-shadow:var(--glow)]"
+            style={{ "--led": led.colour, "--glow": led.glow } as CSSProperties}
+          />
+        ))}
+      </div>
+
       {/* The cluster's own size: its type is a share of its width, so the digits and the chip scale with the faces. */}
-      <div className="relative aspect-[100/48] text-[4.4cqw]">
+      <div className="relative aspect-[100/46] text-[4.4cqw]">
         <Gauge
           handle={speedo}
           value={speed}
@@ -481,26 +607,29 @@ export function GaugeCluster({ rpm, speed, oil, gear, onThrottle, onTick, handle
           majorStep={1000}
           minorStep={200}
           size="large"
-          figure={(v) => String(v / 1000)}
+          tone="yellow"
+          figure={(v) => (v === 0 || v === TACH_MAX ? "" : String(v / 1000))}
           unit="×1000 rpm"
           needle={{ stiffness: 260, damping: 26 }}
           onMark={(mark, rising) => onTick?.(mark, rising)}
           className="absolute z-20"
           style={{ left: "26%", top: 0, width: "48%" }}
         >
-          {/* Inside the tach, under the needle's cap: the gear in a chip, and the road speed in digits. */}
-          <div className="absolute inset-x-0 flex flex-col items-center" style={{ top: "57%", gap: "0.35em" }}>
-            <span data-part="chip" className="flex min-w-[1.6em] justify-center rounded-[0.4em] bg-white px-[0.5em] py-[0.2em] text-black">
-              <span ref={gearRef} className="text-[0.9em] font-semibold uppercase leading-none tabular-nums">
-                {initial.gear}
+          {/* Inside the tach, under the needle's cap: a black readout with the gear in a yellow chip and the road speed in huge glowing digits. */}
+          <div className="absolute inset-x-0 flex justify-center" style={{ top: "64%" }}>
+            <div className="flex items-center gap-[0.4em] rounded-[0.5em] bg-(--race-well) py-[0.3em] pr-[0.5em] pl-[0.4em] [box-shadow:inset_0_0_0_1px_rgb(255_255_255/0.1)]">
+              <span data-part="chip" className="flex min-w-[1.3em] justify-center rounded-[0.3em] bg-(--race-yellow) px-[0.3em] py-[0.25em] text-(--race-yellow-ink)">
+                <span ref={gearRef} className={cx(RACE_FIGURES, "text-[1.15em] leading-none")}>
+                  {initial.gear}
+                </span>
               </span>
-            </span>
-            <span className="flex items-baseline justify-center gap-[0.3em] tabular-nums">
-              <span ref={digitsRef} className="min-w-[3ch] text-right text-[1.35em] font-light leading-none tracking-[-0.03em] text-(--device-lcd-ink)">
-                {Math.round(initial.speed)}
+              <span className="flex items-baseline gap-[0.25em]">
+                <span ref={digitsRef} className={cx(RACE_FIGURES, "min-w-[2.1ch] text-right text-[2.3em] leading-[0.9] text-(--race-ink) [text-shadow:var(--race-glow-white)]")}>
+                  {Math.round(initial.speed)}
+                </span>
+                <span className="text-[0.42em] font-semibold uppercase leading-none tracking-[0.08em] text-(--race-dim)">km/h</span>
               </span>
-              <span className="text-[0.5em] leading-none text-(--device-lcd-dim)">km/h</span>
-            </span>
+            </div>
           </div>
         </Gauge>
       </div>
@@ -652,6 +781,7 @@ const STEP = 1 / 120;
 
 const gearName = (g: number) => (g ? String(g) : "N");
 
+
 export default function Demo() {
   const rootRef = useRef<HTMLDivElement>(null);
   const clusterRef = useRef<ClusterHandle>(null);
@@ -661,15 +791,11 @@ export default function Demo() {
   const [mode, setMode] = useState<Mode>("off");
   const [announcement, setAnnouncement] = useState("");
 
-  // The cluster's tach ticks for each 1,000 rpm that passes, higher as the revs climb.
-  const tick = (rpm: number) => {
-    if (touched.current || hostTransport(rootRef.current) === "play") play("tick", { gain: 0.3, pitch: 0.9 + (rpm / TACH_MAX) * 0.3 });
-  };
-
   useEffect(() => {
     const root = rootRef.current!;
     const cluster = clusterRef.current!;
     const reduced = reducedMotion();
+    const voice = engine({ redline: LIMIT });
     const timers = new Set<ReturnType<typeof setTimeout>>();
     const later = (fn: () => void, ms: number) => {
       const id = setTimeout(() => {
@@ -678,9 +804,6 @@ export default function Demo() {
       }, ms);
       timers.add(id);
       return id;
-    };
-    const quietly = (name: "bump", options: { gain: number }) => {
-      if (touched.current || hostTransport(root) === "play") play(name, options);
     };
 
     const live = newCar(); // the car under a hand
@@ -694,10 +817,19 @@ export default function Demo() {
     let raf = 0;
     let last = 0;
     let onScreen = true;
-    let armed = true; // the limiter bumps once per visit
     let shownThrottle = -1;
     let lastGear = 0;
     let gearId: ReturnType<typeof setTimeout> | undefined;
+    let cutNow: boolean | undefined;
+    let levelNow = -1;
+
+    /** The engine follows what draws the tach. Automation under a paused tape runs it silent; a hand always sounds. */
+    const sound = (rpm: number, load: number, cut: boolean) => {
+      const level = touched.current || hostTransport(root) === "play" ? 1 : 0;
+      if (level !== levelNow) voice.level((levelNow = level));
+      voice.set(rpm, load);
+      if (cut !== cutNow) voice.cut((cutNow = cut));
+    };
 
     const enter = (next: Mode) => {
       if (next === mode) return;
@@ -715,10 +847,7 @@ export default function Demo() {
         shownThrottle = pct;
         throttleRef.current.textContent = String(pct);
       }
-      if (s.limit && armed) {
-        armed = false;
-        quietly("bump", { gain: 0.5 });
-      } else if (!s.limit && s.rpm < 7000) armed = true;
+      sound(s.rpm, s.thr, s.limit);
     };
 
     const idle = () => {
@@ -782,15 +911,24 @@ export default function Demo() {
       } else if (touching) backId = later(handBack, HAND_BACK);
     };
 
-    // Power-up: each needle swings to the end stop and back, 120 ms behind the one before; then the lap.
+    // Power-up: each needle swings to the end stop and back, 120 ms behind the one before, and the engine blips with the tach; then the lap.
     const begin = () => {
       if (began || hostTransport(root) === "stop") return;
       began = true;
       if (reduced) return;
       enter("read");
+      sound(IDLE, 0, false);
       for (const { key, up, down, full, rest } of POWER_UP) {
-        later(() => !touching && cluster.set({ [key]: full }), up);
-        later(() => !touching && cluster.set({ [key]: rest }), down);
+        later(() => {
+          if (touching) return;
+          cluster.set({ [key]: full });
+          if (key === "rpm") sound(LIMIT * 0.92, 0.9, false);
+        }, up);
+        later(() => {
+          if (touching) return;
+          cluster.set({ [key]: rest });
+          if (key === "rpm") sound(IDLE, 0, false);
+        }, down);
       }
       later(() => {
         lapStart = performance.now();
@@ -803,13 +941,16 @@ export default function Demo() {
     const host = root.closest("[data-transport]");
     const observer = new MutationObserver(begin);
     if (host) observer.observe(host, { attributes: true, attributeFilter: ["data-transport"] });
-    // Off screen, the loop waits.
+    // Off screen, the loop waits, and so does the engine.
     const visible = new IntersectionObserver(([entry]) => {
       onScreen = entry.isIntersecting;
       if (onScreen) run();
       else {
         cancelAnimationFrame(raf);
         raf = 0;
+        voice.set(0, 0);
+        voice.cut(false);
+        cutNow = false;
       }
     });
     visible.observe(root);
@@ -819,6 +960,7 @@ export default function Demo() {
       observer.disconnect();
       visible.disconnect();
       cancelAnimationFrame(raf);
+      voice.stop();
       hand.current = null;
     };
   }, []);
@@ -830,49 +972,52 @@ export default function Demo() {
       onKeyDownCapture={() => (touched.current = true)}
       className="@container w-full max-w-[500px] select-none"
     >
-      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[26rem]:p-[1.1em]">
-        <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[0.9em] p-[0.8em] pt-[1em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] [box-shadow:var(--race-edge),var(--race-shadow)] @[26rem]:p-[1em] @[26rem]:pt-[1.2em]">
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] [background:var(--race-weave)]" />
+        {/* Two rules along the top edge: yellow, then red. */}
+        <span aria-hidden className="absolute top-0 left-[1.2em] h-[2px] w-[4em] bg-(--race-yellow) [box-shadow:var(--race-glow-yellow)]" />
+        <span aria-hidden className="absolute top-0 left-[5.5em] h-[2px] w-[1.2em] bg-(--race-red) [box-shadow:var(--race-glow-red)]" />
 
-        <div data-part="well" className="rounded-[1.05em] bg-(--device-well) p-[0.55em] shadow-(--device-recess)">
-          <GaugeCluster handle={clusterRef} rpm={IDLE} speed={0} oil={OIL_REST} gear="N" onTick={tick} onThrottle={(held) => hand.current?.(held)} />
+        <div data-part="well" className="rounded-[0.6em] bg-(--race-well) px-[0.6em] pt-[0.6em] pb-[0.75em] [box-shadow:var(--race-recess)]">
+          <GaugeCluster handle={clusterRef} rpm={IDLE} speed={0} oil={OIL_REST} gear="N" onThrottle={(held) => hand.current?.(held)} />
         </div>
 
         {/* The automation: a light for the hand, the mode and the throttle. */}
-        <div className="mt-[0.7em] flex items-center gap-[0.6em]">
-          <span aria-hidden className="grid size-[1.1em] shrink-0 place-items-center rounded-full bg-black/[0.05] shadow-(--device-recess)">
-            <span
-              data-part="light"
-              className={cx(
-                "size-[0.5em] rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)",
-                mode === "touch" ? "bg-(--device-hold) shadow-[0_0_0.45em_var(--device-hold)] duration-0" : mode === "read" ? "bg-(--device-meter-on)" : "bg-(--device-meter-off)",
-              )}
-            />
-          </span>
+        <div className="mt-[0.6em] flex items-center gap-[0.6em]">
+          <span
+            data-part="light"
+            aria-hidden
+            className={cx(
+              "size-[0.7em] shrink-0 rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)",
+              mode === "touch" ? "bg-(--race-yellow) [box-shadow:var(--race-glow-yellow)] duration-0" : mode === "read" ? "bg-(--race-dim)" : "bg-(--race-led-off)",
+            )}
+          />
           <span
             aria-hidden
             data-part="lcd"
-            className="flex h-[2.3em] min-w-0 flex-1 items-center justify-between gap-[0.5em] overflow-hidden rounded-[0.7em] px-[0.6em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
+            className="relative flex h-[2.4em] min-w-0 flex-1 items-center justify-between gap-[0.5em] overflow-hidden rounded-[0.5em] px-[0.6em] text-(--race-ink) [background:var(--race-glass)] [box-shadow:inset_0_0_0_1px_rgb(255_255_255/0.08)]"
           >
-            <span data-part="chip" className="inline-flex shrink-0 items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
+            <span data-part="chip" className={cx("relative inline-flex shrink-0 items-center gap-[0.35em] rounded-[0.3em] px-[0.5em] py-[0.26em]", mode === "touch" ? "bg-(--race-yellow) text-(--race-yellow-ink)" : "bg-(--race-faint) text-(--race-ink)")}>
               <span
                 className={cx(
-                  "size-[0.55em] rounded-full",
-                  mode === "touch" ? "bg-(--device-hold)" : mode === "read" ? "animate-pulse bg-(--device-rec)" : "rounded-[1px] bg-current",
+                  "size-[0.5em] rounded-full",
+                  mode === "touch" ? "bg-(--race-yellow-ink)" : mode === "read" ? "animate-pulse bg-(--race-red) motion-reduce:animate-none" : "rounded-[1px] bg-current",
                 )}
               />
-              <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em]">
+              <span className="text-[0.62em] font-semibold uppercase leading-none tracking-[0.1em]">
                 {mode === "touch" ? "Touch" : mode === "read" ? "Auto · Read" : "Auto · Off"}
               </span>
             </span>
-            <span className="min-w-0 truncate text-[0.72em] leading-none tabular-nums text-(--device-lcd-dim)">
-              <span className="hidden @[26rem]:inline">Throttle </span>
-              <span ref={throttleRef} className="text-(--device-lcd-ink)">
+            <span className="relative flex min-w-0 items-baseline gap-[0.35em] truncate leading-none">
+              <span className="hidden text-[0.58em] font-semibold uppercase tracking-[0.12em] text-(--race-dim) @[26rem]:inline">Throttle</span>
+              <span ref={throttleRef} className={cx(RACE_FIGURES, "text-[1.35em] text-(--race-ink)")}>
                 0
-              </span>{" "}
-              %
+              </span>
+              <span className="text-[0.58em] font-semibold text-(--race-dim)">%</span>
             </span>
+            <span aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 [background:var(--race-scanlines)]" />
           </span>
-          <span data-part="lettering" className="shrink-0 whitespace-nowrap text-[0.62em] font-semibold uppercase leading-none tracking-[0.14em] text-(--device-label-quiet) [text-shadow:var(--device-engrave)]">
+          <span data-part="lettering" className="shrink-0 whitespace-nowrap text-[0.62em] font-semibold uppercase leading-none tracking-[0.14em] text-(--race-dim)">
             Hold to rev
           </span>
         </div>
