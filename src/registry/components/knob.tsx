@@ -193,7 +193,7 @@ export function Knob({ label, value, onChange, min, max, detents = 24, taper = "
         style={{ "--a": `${-SWEEP / 2}deg` } as CSSProperties}
       >
         {/* The ring of lights. */}
-        <svg aria-hidden viewBox="0 0 100 100" className="absolute inset-0 size-full">
+        <svg aria-hidden data-part="light" viewBox="0 0 100 100" className="absolute inset-0 size-full">
           {segments.map((d, i) => (
             <path
               key={i}
@@ -201,26 +201,27 @@ export function Knob({ label, value, onChange, min, max, detents = 24, taper = "
               d={d}
               strokeWidth="3.4"
               strokeLinecap="round"
-              className="stroke-(--device-meter-off) transition-[stroke] duration-75 data-on:stroke-(--device-meter-on)"
+              className="stroke-(--device-meter-off) transition-[stroke] duration-75 data-on:stroke-(--device-meter-on) drawn:stroke-(--device-draw-line)! drawn:data-on:stroke-(--device-draw-ink)!"
             />
           ))}
         </svg>
 
         {/* The collar, pressed into the plate, and the cap seated in it. */}
-        <div aria-hidden className="absolute inset-[15%] rounded-full bg-black/[0.035] p-[5%] shadow-(--device-recess) dark:bg-black/30">
-          <div className="relative size-full rounded-full [background:var(--device-wheel-face)] shadow-(--device-wheel-shadow)">
-            {/* Knurling round the skirt: it turns with the cap. */}
+        <div aria-hidden data-part="collar" className="absolute inset-[15%] rounded-full bg-black/[0.035] p-[5%] shadow-(--device-recess) dark:bg-black/30">
+          <div data-part="cap" className="relative size-full rounded-full [background:var(--device-wheel-face)] shadow-(--device-wheel-shadow)">
+            {/* Knurling round the skirt: it turns with the cap. Drawn, fine ink ticks on the same pitch. */}
             <div
-              className="absolute inset-0 rounded-full"
+              className="absolute inset-0 rounded-full drawn:[background:repeating-conic-gradient(from_var(--a),var(--device-draw-ink)_0_2.2deg,transparent_2.2deg_7.5deg)]!"
               style={{
                 background: "repeating-conic-gradient(from var(--a), var(--device-meter-off) 0 1.6deg, transparent 1.6deg 7.5deg)",
                 mask: "radial-gradient(circle closest-side, transparent 72%, #000 74%, #000 97%, transparent 100%)",
               }}
             />
             {/* The turned top, and its pointer. */}
-            <div className="absolute inset-[15%] rounded-full [background:var(--device-wheel-face)] shadow-[0_0_0_1px_rgb(0_0_0/0.06),inset_0_1px_0_rgb(255_255_255/0.9)] dark:shadow-[0_0_0_1px_rgb(0_0_0/0.5),inset_0_1px_0_rgb(255_255_255/0.08)]" />
+            {/* Drawn, the turned top is a hairline ring inside the skirt, and the pointer a line of ink across it. */}
+            <div className="absolute inset-[15%] rounded-full [background:var(--device-wheel-face)] shadow-[0_0_0_1px_rgb(0_0_0/0.06),inset_0_1px_0_rgb(255_255_255/0.9)] dark:shadow-[0_0_0_1px_rgb(0_0_0/0.5),inset_0_1px_0_rgb(255_255_255/0.08)] drawn:outline drawn:outline-1 drawn:outline-(--device-draw-line)" />
             <div
-              className="absolute inset-0 rounded-full"
+              className="absolute inset-0 rounded-full drawn:[background:conic-gradient(from_calc(var(--a)-3deg),var(--device-draw-ink)_0_6deg,transparent_6deg)]!"
               style={{
                 background: "conic-gradient(from calc(var(--a) - 3.5deg), var(--device-key-ink) 0 7deg, transparent 7deg)",
                 mask: "radial-gradient(circle closest-side, transparent 30%, #000 31.5%, #000 64%, transparent 65.5%)",
@@ -234,9 +235,10 @@ export function Knob({ label, value, onChange, min, max, detents = 24, taper = "
       <span
         ref={readoutRef}
         aria-hidden
+        data-part="lcd"
         className="min-h-[1.6em] min-w-[5.6em] rounded-[0.45em] px-[0.5em] py-[0.3em] text-center text-[0.74em] leading-none tabular-nums text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
       />
-      <span aria-hidden className="text-[0.6em] font-semibold uppercase leading-none tracking-[0.16em] text-(--device-label) [text-shadow:var(--device-engrave)]">
+      <span aria-hidden data-part="lettering" className="text-[0.6em] font-semibold uppercase leading-none tracking-[0.16em] text-(--device-label) [text-shadow:var(--device-engrave)]">
         {label}
       </span>
     </div>
@@ -325,20 +327,22 @@ export default function Demo() {
 
   return (
     <div className="@container w-full max-w-[460px] select-none">
-      <div className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.95em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[26rem]:p-[1.2em]">
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.95em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[26rem]:p-[1.2em]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
         <div className="flex items-stretch gap-[0.55em]">
           {/* The scene screen. */}
           <div
             aria-hidden
+            data-part="lcd"
             className="flex h-[3.3em] min-w-0 flex-1 flex-col justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.5em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
           >
-            <span className="inline-flex items-center gap-[0.35em] self-start rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
+            <span data-part="chip" className="inline-flex items-center gap-[0.35em] self-start rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
               <span
                 className={cx(
                   "size-[0.55em] rounded-full",
-                  status === "recall" ? "animate-pulse bg-(--device-rec)" : status === "edited" ? "bg-(--device-hold)" : "bg-black",
+                  // Drawn, the dot keeps red while the motors run (it fires); loaded and edited are ink, as orange is the drawing's own.
+                  status === "recall" ? "animate-pulse bg-(--device-rec) drawn:bg-(--device-rec)!" : status === "edited" ? "bg-(--device-hold) drawn:bg-(--device-draw-ink)!" : "bg-black drawn:bg-(--device-draw-ink)!",
                 )}
               />
               <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em]">{chip[status]}</span>
@@ -359,17 +363,19 @@ export default function Demo() {
               aria-pressed={scene === s && status !== "edited"}
               onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
               onClick={() => recall(s)}
+              data-part="key"
               className="group/key w-[2.9em] shrink-0 rounded-[0.7em] outline-offset-2"
             >
               <span className="relative grid h-full place-items-center rounded-[0.7em] text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
                 <span
                   aria-hidden
+                  data-part="light"
                   className={cx(
                     "absolute inset-x-[30%] top-[0.45em] h-[0.24em] rounded-full transition-[background-color] duration-(--duration-exit)",
-                    scene === s ? "bg-(--device-meter-on)" : "bg-(--device-meter-off)",
+                    scene === s ? "bg-(--device-meter-on) drawn:bg-(--device-draw-ink)!" : "bg-(--device-meter-off)",
                   )}
                 />
-                <span className="mt-[0.5em] text-[0.95em] font-medium leading-none [text-shadow:var(--device-engrave)]">{s}</span>
+                <span data-part="lettering" className="mt-[0.5em] text-[0.95em] font-medium leading-none [text-shadow:var(--device-engrave)]">{s}</span>
               </span>
             </button>
           ))}

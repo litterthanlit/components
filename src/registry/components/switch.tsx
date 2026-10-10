@@ -288,39 +288,41 @@ export function Switch({ label, checked, onCheckedChange, name, disabled = false
         className="group/switch flex min-h-[2.9em] w-full touch-pan-y select-none items-center gap-[0.75em] rounded-[0.7em] px-[0.15em] text-left outline-offset-2 disabled:cursor-not-allowed disabled:opacity-45"
         style={{ "--x": initial ? 1 : 0 } as CSSProperties}
       >
-        <span className="min-w-0 flex-1 truncate text-[0.66em] font-semibold uppercase leading-none tracking-[0.14em] text-(--device-label) [text-shadow:var(--device-engrave)]">
+        <span data-part="lettering" className="min-w-0 flex-1 truncate text-[0.66em] font-semibold uppercase leading-none tracking-[0.14em] text-(--device-label) [text-shadow:var(--device-engrave)] drawn:mr-auto drawn:flex-initial">
           {label}
         </span>
 
-        {/* The light: it comes on at the snap, not when React hears about it. */}
-        <span aria-hidden className="grid size-[0.78em] shrink-0 place-items-center rounded-full bg-black/[0.05] shadow-(--device-recess) dark:bg-black/40">
-          <span className="size-[0.44em] rounded-full bg-(--device-meter-off) transition-[background-color,box-shadow] duration-(--duration-exit) group-data-on/switch:bg-(--device-hold) group-data-on/switch:shadow-[0_0_0.5em_var(--device-hold)] group-data-on/switch:duration-0" />
+        {/* The light: it comes on at the snap, not when React hears about it. Drawn, on is a disc of ink; off stays its hairline ring. */}
+        <span aria-hidden data-part="well" className="grid size-[0.78em] shrink-0 place-items-center rounded-full bg-black/[0.05] shadow-(--device-recess) dark:bg-black/40">
+          <span data-part="light" className="size-[0.44em] rounded-full bg-(--device-meter-off) transition-[background-color,box-shadow] duration-(--duration-exit) group-data-on/switch:bg-(--device-hold) group-data-on/switch:shadow-[0_0_0.5em_var(--device-hold)] group-data-on/switch:duration-0 drawn:group-data-on/switch:bg-(--device-draw-ink)!" />
         </span>
 
-        {/* The track: recessed, its stripe uncovered by the cap as it slides on. */}
+        {/* The track: recessed, its stripe uncovered by the cap as it slides on. Drawn, orange is the picked layer's, so the stripe is a hatch of ink in a hairline box. */}
         <span
           aria-hidden
           data-track
+          data-part="well"
           className="relative shrink-0 rounded-[0.62em] bg-black/[0.09] shadow-(--device-recess) dark:bg-black/45"
           style={{ width: `${TRACK_W}em`, height: `${TRACK_H}em` }}
         >
           <span
-            className="absolute rounded-[0.42em] bg-(--device-hold) bg-[linear-gradient(rgb(255_255_255/0.2),transparent_55%,rgb(0_0_0/0.08))] shadow-[inset_0_1px_2px_rgb(0_0_0/0.3),inset_0_0_0_1px_rgb(0_0_0/0.08)]"
+            className="absolute rounded-[0.42em] bg-(--device-hold) bg-[linear-gradient(rgb(255_255_255/0.2),transparent_55%,rgb(0_0_0/0.08))] shadow-[inset_0_1px_2px_rgb(0_0_0/0.3),inset_0_0_0_1px_rgb(0_0_0/0.08)] drawn:border drawn:[background:repeating-linear-gradient(135deg,var(--device-draw-ink)_0_1px,transparent_1px_4px)]!"
             style={{ left: `${INSET}em`, top: `${INSET}em`, bottom: `${INSET}em`, width: `${TRAVEL + 0.3}em` }}
           />
-          {/* The cap: a knurled key with a raised grip in the middle. */}
+          {/* The cap: a knurled key with a raised grip in the middle. Drawn, the grip is lines of ink. */}
           <span
+            data-part="key"
             className="absolute rounded-[0.42em] [background:var(--device-key-face)] shadow-(--device-key-shadow) [--grip-hi:rgb(255_255_255/0.95)] [--grip:rgb(0_0_0/0.15)] dark:[--grip-hi:rgb(255_255_255/0.08)] dark:[--grip:rgb(0_0_0/0.6)]"
             style={{
               left: `${INSET}em`,
               top: `${INSET}em`,
               bottom: `${INSET}em`,
               width: `${CAP_W}em`,
-              transform: `translateX(calc(var(--x) * ${TRAVEL}em))`,
+              translate: `calc(var(--x) * ${TRAVEL}em) 0`,
             }}
           >
             <span
-              className="absolute inset-x-[0.42em] inset-y-[0.3em] rounded-[0.14em]"
+              className="absolute inset-x-[0.42em] inset-y-[0.3em] rounded-[0.14em] drawn:[background:repeating-linear-gradient(to_right,var(--device-draw-ink)_0_1px,transparent_1px_4px)]!"
               style={{ background: "repeating-linear-gradient(to right, var(--grip) 0 1px, var(--grip-hi) 1px 2px, transparent 2px 3.5px)" }}
             />
           </span>
@@ -391,33 +393,34 @@ export default function Demo() {
 
   return (
     <div ref={rootRef} onPointerDownCapture={stopTest} onKeyDownCapture={stopTest} className="@container w-full max-w-[360px] select-none">
-      <div className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] pb-[0.6em] text-[clamp(11px,4.2cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] pb-[0.6em] text-[clamp(11px,4.2cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
         {/* The input's screen: the self-test, then what is switched on. */}
         <div
           aria-hidden
+          data-part="lcd"
           className="flex h-[3.3em] flex-col justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.5em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
         >
           <div className="flex items-center gap-[0.5em]">
-            <span className="inline-flex shrink-0 items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
+            <span data-part="chip" className="inline-flex shrink-0 items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
               {phase === "test" ? (
-                <span className="size-[0.55em] animate-pulse rounded-full bg-(--device-rec)" />
+                <span className="size-[0.55em] animate-pulse rounded-full bg-(--device-rec) drawn:bg-(--device-rec)!" />
               ) : phase === "ready" ? (
-                <span className="size-[0.55em] rounded-full bg-black" />
+                <span className="size-[0.55em] rounded-full bg-black drawn:bg-(--device-draw-ink)!" />
               ) : (
-                <span className="size-[0.5em] rounded-[1px] bg-current" />
+                <span className="size-[0.5em] rounded-[1px] bg-current drawn:bg-(--device-draw-ink)!" />
               )}
               <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em]">{chips[phase]}</span>
             </span>
-            <span className="ml-auto text-[0.66em] tabular-nums text-(--device-lcd-dim)">48 kHz · 24 bit</span>
+            <span className="ml-auto text-[0.66em] tabular-nums text-(--device-lcd-dim) drawn:text-(--device-draw-line)!">48 kHz · 24 bit</span>
           </div>
           <div className="flex items-baseline gap-[0.6em] leading-none">
             <span className="mr-auto truncate text-[1.05em] font-light tracking-[-0.01em]">Input 1</span>
             {SETTINGS.map((s) => (
               <span
                 key={s.key}
-                className={cx("text-[0.6em] font-semibold tracking-[0.06em] transition-colors duration-(--duration-exit)", state[s.key] ? "text-(--device-lcd-ink)" : "text-white/25")}
+                className={cx("text-[0.6em] font-semibold tracking-[0.06em] transition-colors duration-(--duration-exit)", state[s.key] ? "text-(--device-lcd-ink)" : "text-white/25 drawn:text-(--device-draw-line)!")}
               >
                 {s.short}
               </span>

@@ -49,7 +49,7 @@ export default async function ComponentPage({ params }: PageProps<"/c/[slug]">) 
           {entry.title}
         </h1>
 
-        <DetailStage slug={slug} initial={entry.background} />
+        <DetailStage slug={slug} title={entry.title} initial={entry.background} />
 
         <section aria-labelledby="source-heading" className="mt-20">
           <SectionLabel id="source-heading" className="mb-4">

@@ -8,6 +8,11 @@
 @custom-variant wide (@media (min-width: 720px) and (min-height: 521px));
 @custom-variant roomy (@media (min-width: 1100px) and (min-height: 521px));
 @custom-variant short (@media (orientation: landscape) and (max-height: 520px));
+/* A study taken apart in the drawing finish (src/components/anatomy). A study
+   tunes how its own parts are drawn with it, as it would with dark:. The
+   drawing's own rules below are !important, so a study's win with a `!`:
+   drawn:bg-(--device-draw-ink)! */
+@custom-variant drawn (&:where([data-finish="drawing"] *));
 
 html {
   background: var(--canvas);
@@ -86,6 +91,167 @@ h3 {
 /* Level meter segments: thin bars, as printed on the reference's LCD panel. */
 .meter-ticks {
   background-image: repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 3px);
+}
+
+/* Anatomy: a study taken apart on its page (src/components/anatomy). The
+   scene carries data-anatomy from the moment it opens until its camera has
+   levelled again. The camera tilts it isometric and every part lifts off the
+   part it sits on by --z floors; the transforms nest, so heights add up.
+   Overflow, isolation, filters and blends flatten 3D, so they are opened
+   along the path from the scene down to each part and nowhere else: a part
+   with nothing lifted inside it still clips, as one plane. A part keeps its
+   own translate, rotate and scale; only `transform` is the anatomy's.
+   Animations come off the path and the parts too: an entrance that ends on
+   blur(0) still flattens, and one that fills a transform holds a part down. */
+@property --lift {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+@property --z {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+[data-anatomy] {
+  transform-style: preserve-3d;
+  transform: translateY(calc(var(--spread) * var(--rise, 0px))) scale(calc(1 + var(--tilt) * (var(--fit, 1) - 1)))
+    rotateX(calc(var(--tilt) * var(--pitch))) rotateZ(calc(var(--tilt) * var(--yaw)));
+}
+[data-anatomy] :has([data-part]) {
+  transform-style: preserve-3d;
+  overflow: visible;
+  isolation: auto;
+}
+[data-anatomy] :is(:has([data-part]), [data-part]) {
+  animation: none;
+}
+/* A blend makes its parent an isolated group, and so flat: the plate's grain
+   alone did it. Blends hanging off the path lose them; the grain stays, faint. */
+[data-anatomy] :has([data-part]) > :not(:has([data-part]), [data-part]) {
+  mix-blend-mode: normal;
+}
+[data-anatomy] .device-grain {
+  opacity: calc(var(--device-grain) * 0.2);
+}
+[data-anatomy] [data-part]:not([data-part="plate"]) {
+  transform: translateZ(calc((var(--spread) * var(--z) + var(--lift) * var(--pick)) * var(--gap, 0px)));
+}
+/* The layer the hand is on, in the hand's colour, on dashed risers that stand
+   on the part each piece sits on (--base floors up) and climb to the piece. */
+[data-anatomy] [data-part][data-picked] {
+  outline: 1px solid var(--device-hold);
+  outline-offset: 2px;
+}
+/* An SVG part is picked by what it draws, not by the square it is drawn in,
+   and lit along its strokes rather than outlined round that square. A filter
+   is safe here: an SVG is a leaf, one plane already. */
+[data-anatomy] svg[data-part] {
+  pointer-events: none;
+}
+[data-anatomy] svg[data-part][data-picked] {
+  outline: none;
+  filter: drop-shadow(0 0 0.6px var(--device-hold)) drop-shadow(0 0 0.6px var(--device-hold));
+}
+[data-anatomy] svg[data-part] * {
+  pointer-events: visiblePainted;
+}
+[data-anatomy] [data-anatomy-guides] {
+  transform-style: preserve-3d;
+}
+.anatomy-riser {
+  position: absolute;
+  width: 0;
+  height: calc((var(--spread) * var(--climb) + var(--pick)) * var(--gap, 0px));
+  border-left: 1.5px dashed var(--device-hold);
+  opacity: 0.9;
+  transform-origin: top;
+  transform: translateZ(calc(var(--spread) * var(--base) * var(--gap, 0px))) rotateX(90deg);
+  animation: riser-in var(--duration-enter) var(--ease-out) both;
+}
+@keyframes riser-in {
+  from {
+    opacity: 0;
+  }
+}
+/* The drawing finish: the same live parts, drawn as a technical drawing.
+   Every part is an opaque plane of the canvas, so upper floors hide lower
+   ones, with a hairline round it and its lettering in the drawing's ink;
+   whatever a part paints inside is cleared, so each study draws back what
+   carries its mechanism (a pointer, a lit segment, a needle) with drawn:.
+   Glass stays clear, its edge dashed, as a drafter marks a transparent
+   surface. Screens and canvases keep their motion, quietened. */
+[data-finish="drawing"] .device-grain {
+  display: none;
+}
+[data-finish="drawing"] [data-part] {
+  background: var(--canvas) !important;
+  box-shadow: none !important;
+  outline: 1px solid var(--device-draw-line);
+  outline-offset: 0;
+  color: var(--device-draw-ink) !important;
+  text-shadow: none !important;
+}
+[data-finish="drawing"] [data-part] :not([data-part], svg, svg *, canvas) {
+  background: transparent !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  border-color: var(--device-draw-line) !important;
+  color: inherit !important;
+}
+[data-finish="drawing"] [data-part] canvas {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+[data-finish="drawing"] [data-part="glass"] {
+  background: transparent !important;
+  outline-style: dashed;
+}
+[data-finish="drawing"] svg[data-part] {
+  background: transparent !important;
+  outline: none;
+}
+[data-finish="drawing"] [data-part][data-picked] {
+  background: color-mix(in oklab, var(--device-hold) 16%, var(--canvas)) !important;
+  outline: 1.5px solid var(--device-hold);
+  outline-offset: 0;
+}
+[data-finish="drawing"] [data-part="glass"][data-picked] {
+  background: transparent !important;
+}
+[data-preview][data-dragging] {
+  cursor: grabbing;
+}
+/* Taken apart, the scene no longer fills the layers' own box, so the stage wears their focus ring. */
+[data-preview-content] > [role="listbox"]:focus-visible {
+  outline: none;
+}
+[data-preview]:has(> [data-preview-content] > [role="listbox"]:focus-visible:not([data-quiet])) {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+/* A range on the page: a hairline track and a small round key on it. */
+.range {
+  appearance: none;
+  height: 20px;
+  background: linear-gradient(var(--line-strong), var(--line-strong)) center / 100% 1px no-repeat;
+  cursor: pointer;
+}
+.range::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--key-face);
+  box-shadow: var(--key-shadow);
+}
+.range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 9999px;
+  background: var(--key-face);
+  box-shadow: var(--key-shadow);
 }
 
 /* Soft colour washes behind the page, as on litt.design. */

@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "gradient-keys",
+    title: "Gradient Keys",
+    description:
+      "A launcher's preview window over three keys, each screen a long exposure in a traditional Japanese palette: wakatake's young-bamboo greens, ai indigo fading to asagi, sakura fading to gofun white. The streaks are noise that sweeps across the screen as it flows along it. The selection steps from key to key every 2 s, the window sweeping into each palette along its streaks; a hand on the plate holds it. The keys are radios, and a press on the window sends a ring through its streaks.",
+    tagline: "Long exposures in Japanese palettes: a window and three keys.",
+    tags: ["surface", "pointer", "sound", "webgl"],
+    date: "2026-10-08",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "agent-indicators",
     title: "Agent Indicators",
     description:
@@ -180,9 +191,9 @@ export const registry: RegistryEntry[] = [
     slug: "dither-card",
     title: "Dither Card",
     description:
-      "Project cards with a live, ordered-dither cover: a butterfly that flaps, a jellyfish that pulses and a flower that turns. Hover lights the cover under the cursor and speeds it up, a click sends a ripple through it, and keyboard focus lights it from the centre. Three-tone Bayer dither, raw WebGL, drawn at half resolution and scaled up pixel-perfect.",
-    tagline: "Dithered creatures that follow your cursor.",
-    tags: ["surface", "pointer", "webgl"],
+      "Project links as keys with a screen in each face, after a launcher's LCD keys. Each screen runs a creature in three-tone ordered dither: a butterfly that flaps, a jellyfish that pulses, a flower that turns. A hand lights the screen under it and quickens it; a press sinks the key 2px with a click and sends a ring through the dots; keyboard focus lights it from the centre. Raw WebGL at half resolution, scaled up pixel for pixel.",
+    tagline: "Project keys with a dithered creature on every screen.",
+    tags: ["surface", "pointer", "sound", "webgl"],
     date: "2026-10-02",
     status: "new",
     background: "plain",

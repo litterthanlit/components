@@ -26,6 +26,7 @@ When they disagree: for a value, `tokens.css` wins; for a rule, DESIGN.md and th
 | Words: labels, LCD copy, registry entries, commits | Writing | |
 | The player itself | Ethos; Materials | `src/components/device/` |
 | Review a study | The study bar, then the section each Never item names | Its entry in `src/registry/index.ts` |
+| Mark parts, or take a study apart | Anatomy | `src/components/anatomy/`, `src/registry/anatomy.ts` |
 
 ## Building a study
 
@@ -39,7 +40,7 @@ DESIGN.md's ten steps, one line each. The detail is under "How to make a new stu
 6. Sound it with `play()`, and follow the host-transport rule for anything it does by itself.
 7. Make it accessible: native roles, one tab stop, focus that follows the hand (`focusQuietly`), a live region.
 8. Size it to its container in em. Check it at 282 × 332, on a 360px phone and in the 702 × 374 capture frame, in light and dark.
-9. Register it at the top of `src/registry/index.ts` and with one line in `src/registry/previews.tsx`.
+9. Register it at the top of `src/registry/index.ts` and with one line in `src/registry/previews.tsx`. Mark its parts with `data-part` and list it in `src/registry/anatomy.ts`.
 10. Run the checks (Verify, below), look at it on the player, and commit in the house voice.
 
 ## The study bar
@@ -48,7 +49,7 @@ Every study meets all ten before it goes on the player. The names are DESIGN.md'
 
 - [ ] 1. **It moves in its first four seconds, untouched.** The starting state is never still for more than about half a second.
 - [ ] 2. **It fits a 282 × 332 box.** An `@container` root, a `cqw`-clamped font size, em inside, touch targets of 24px or more.
-- [ ] 3. **It is built from the materials.** Plate, then well, then part. Both themes look intentional.
+- [ ] 3. **It is built from the materials, and marks them.** Plate, then well, then part. Both themes look intentional. Each part carries `data-part`, the study is listed in `src/registry/anatomy.ts`, and its mechanism is drawn back in the anatomy's drawing with `drawn:`.
 - [ ] 4. **It sounds through `play()`.** Existing voices only, varied with `pitch` and `gain`. Its own sounds follow the transport rule; the viewer's input always sounds.
 - [ ] 5. **It turns without transforms.** Conic gradients, SVG attributes, or a transform inside an `overflow-hidden` wrapper.
 - [ ] 6. **It rounds its trigonometry.** Coordinates rendered on the server go to two decimals.
@@ -62,12 +63,13 @@ Every study meets all ten before it goes on the player. The names are DESIGN.md'
 The usual ways work drifts off the language. The section in brackets is where DESIGN.md gives the rule and its reason.
 
 - A flat `shadow-md` card on the hardware, or a study that is a second player. (Elevation; Ethos, The player is an object)
-- A hue or a grey that isn't a token, a colour that means two things, or orange as text: it is 2.3:1 on the plate, a light beside a word. Black or white at an alpha (`bg-black/[0.05]`, `stroke-white/30`) is the idiom and fine. (Ethos, It is restrained; Colour; Lights)
+- A hue or a grey that isn't a token, a colour that means two things, or orange as text: it is 2.3:1 on the plate, a light beside a word. Black or white at an alpha (`bg-black/[0.05]`, `stroke-white/30`) is the idiom and fine, and so is artwork behind a screen's glass, such as a project's cover, in its own palette. (Ethos, It is restrained; Colour; Lights)
 - A colour or shadow typed in when a `--device-*` token holds it. Two shadows have no token and are typed as the recipes type them: the study plate's lighter drop shadow and the bezel's. (Materials)
 - A new sound, or a study's own sounds ignoring `hostTransport`. (Sound: The voices, The host-transport rule)
 - `scale(0)`. Start at 0.95 or more, with opacity. (Curves and durations)
 - A duration and a curve on motion along a path (a position, an angle, a value) that follows the hand or can be interrupted. That is a spring. Presses, lights and fades keep their durations. (Physics carry the feel; Springs)
 - `setState` every frame, or `Math.random` and `performance.now` in component scope. (Study bar 7 and 9)
+- A part (`data-part`) that moves by its own `transform`, or a filter, opacity, clip or blend on the path from the plate to a part: the anatomy owns `transform`, and those flatten it. Use `translate`, `rotate` and `scale`. (Anatomy)
 - Sizes, gaps, padding or radii in px or viewport units inside the plate: those are em of the plate's one font size. Hairlines, shadows, a key's 2px travel and focus offsets stay in px. (Materials; study bar 2)
 - Radii that don't nest inward: plate, then well, then key or LCD, then chip. (Materials; Shape)
 - Taking focus on mount, or a focus ring after a pointer press. (Accessibility is native; study bar 8)
@@ -98,13 +100,14 @@ Give every pass a line reference, so it was looked at rather than waved through.
 .claude/skills/study/scripts/verify.sh [slug ...]
 ```
 
-This generates Next's route types (so a fresh clone type-checks), then runs the type check, lint and a production build, then the overflow check (`check:fit`) against a server it starts and stops itself. Pass slugs to check only those; with none, it checks every study, as CI does. `PORT` moves the server off 3100, `SKIP_BUILD=1` reuses a fresh build, and `CHROMIUM_PATH` picks the browser.
+This generates Next's route types (so a fresh clone type-checks), then runs the type check, lint and a production build, then the overflow check (`check:fit`) and the anatomy check (`check:anatomy`) against a server it starts and stops itself. Pass slugs to check only those; with none, it checks every study, as CI does. `PORT` moves the server off 3100, `SKIP_BUILD=1` reuses a fresh build, and `CHROMIUM_PATH` picks the browser.
 
 Then look at it, which no script does:
 
 - On the player (`/studies`: type its name, press Enter), with the tape playing, paused and stopped.
 - In light and in dark.
 - On a phone 360px wide.
+- Taken apart on its page (the Anatomy key), in both finishes: every floor named, nothing flat, and in the drawing its mechanism drawn back with `drawn:` (it moves as it does in its materials), in both themes.
 
 ## Commit
 

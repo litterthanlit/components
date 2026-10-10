@@ -313,6 +313,7 @@ export function Fader({ label, value, onChange, min, max, step, defaultValue, fo
       <span
         ref={readoutRef}
         aria-hidden
+        data-part="lcd"
         className="min-h-[1.6em] min-w-[5.4em] rounded-[0.45em] px-[0.45em] py-[0.32em] text-center text-[0.72em] leading-none tabular-nums text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
       />
 
@@ -332,13 +333,25 @@ export function Fader({ label, value, onChange, min, max, step, defaultValue, fo
         onPointerMove={onPointerMove}
         onPointerUp={onPointerEnd}
         onPointerCancel={onPointerEnd}
+        data-part="well"
         className="group/fader relative shrink-0 cursor-ns-resize touch-none select-none rounded-[0.85em] bg-(--device-well) shadow-(--device-recess) outline-offset-2"
         style={{ width: `${WIDTH}em`, height: `${TRACK}em`, "--f": initial } as CSSProperties}
       >
-        <div aria-hidden>
+        {/* Taken apart, this wrapper becomes the containing block of everything absolute in it (preserve-3d does that) and it has no height, so the slot's top and bottom would meet; drawn, it fills the well. */}
+        {/* The well's own box: taken apart, this wrapper is what the marks, the slot and the cap are placed in. */}
+        <div aria-hidden className="absolute inset-0">
+          {/* Drawn, each mark's box shrinks to its line (the hairline that outlines it), with the figure set back where it was, and 0 dB's line is the strong one. */}
           {MARKS.map((m) => (
-            <div key={m.label} className="absolute inset-x-0" style={{ top: `${m.y}em` }}>
-              <span className="absolute left-0 top-0 flex w-[1.7em] -translate-y-1/2 justify-end">
+            <div
+              key={m.label}
+              data-part="lettering"
+              className={cx(
+                "absolute inset-x-0 drawn:h-0 drawn:outline-offset-[-0.5px]!",
+                m.label === "0" ? "drawn:left-[1.85em] drawn:right-[0.3em]" : "drawn:left-[2em] drawn:right-[0.45em]",
+              )}
+              style={{ top: `${m.y}em` }}
+            >
+              <span className={cx("absolute left-0 top-0 flex w-[1.7em] -translate-y-1/2 justify-end", m.label === "0" ? "drawn:-left-[1.85em]" : "drawn:-left-[2em]")}>
                 <span
                   className={cx(
                     "whitespace-nowrap text-[0.5em] font-semibold leading-none tracking-[0.02em] tabular-nums [text-shadow:var(--device-engrave)]",
@@ -350,8 +363,8 @@ export function Fader({ label, value, onChange, min, max, step, defaultValue, fo
               </span>
               <span
                 className={cx(
-                  "absolute top-0 h-px -translate-y-1/2 shadow-[0_1px_0_rgb(255_255_255/0.85)] dark:shadow-[0_-1px_0_rgb(0_0_0/0.6)]",
-                  m.label === "0" ? "left-[1.85em] right-[0.3em] bg-(--device-label)" : "left-[2em] right-[0.45em] bg-(--device-label-quiet)/70",
+                  "absolute top-0 h-px -translate-y-1/2 shadow-[0_1px_0_rgb(255_255_255/0.85)] dark:shadow-[0_-1px_0_rgb(0_0_0/0.6)] drawn:inset-x-0 drawn:bg-(--device-draw-ink)!",
+                  m.label === "0" ? "left-[1.85em] right-[0.3em] bg-(--device-label) drawn:h-[2px]" : "left-[2em] right-[0.45em] bg-(--device-label-quiet)/70",
                 )}
               />
             </div>
@@ -359,42 +372,45 @@ export function Fader({ label, value, onChange, min, max, step, defaultValue, fo
           {MINOR.map((y) => (
             <span
               key={y}
-              className="absolute left-[2.2em] right-[0.65em] h-px -translate-y-1/2 bg-(--device-label-quiet)/40 shadow-[0_1px_0_rgb(255_255_255/0.85)] dark:shadow-[0_-1px_0_rgb(0_0_0/0.6)]"
+              data-part="lettering"
+              className="absolute left-[2.2em] right-[0.65em] h-px -translate-y-1/2 bg-(--device-label-quiet)/40 shadow-[0_1px_0_rgb(255_255_255/0.85)] dark:shadow-[0_-1px_0_rgb(0_0_0/0.6)] drawn:h-0 drawn:outline-offset-[-0.5px]!"
               style={{ top: `${y}em` }}
             />
           ))}
 
-          {/* The slot the cap's stem runs in. */}
+          {/* The slot the cap's stem runs in. Drawn, a hairline capsule with the stem's line down its middle. */}
           <div
-            className="absolute w-[0.26em] -translate-x-1/2 rounded-full bg-(--device-rim) shadow-[inset_0_1px_2px_rgb(0_0_0/0.7),0_1px_0_rgb(255_255_255/0.9)] dark:shadow-[inset_0_1px_2px_rgb(0_0_0/0.9),0_1px_0_rgb(255_255_255/0.06)]"
+            data-part="slot"
+            className="absolute w-[0.26em] -translate-x-1/2 rounded-full bg-(--device-rim) shadow-[inset_0_1px_2px_rgb(0_0_0/0.7),0_1px_0_rgb(255_255_255/0.9)] dark:shadow-[inset_0_1px_2px_rgb(0_0_0/0.9),0_1px_0_rgb(255_255_255/0.06)] drawn:[background-image:linear-gradient(var(--device-draw-ink),var(--device-draw-ink))]! drawn:[background-position:center]! drawn:[background-repeat:no-repeat]! drawn:[background-size:1px_100%]!"
             style={{ left: `${SLOT_X}em`, top: `${STOP + CAP / 2 - 0.35}em`, bottom: `${STOP + CAP / 2 - 0.35}em` }}
           />
 
-          {/* The cap: a ridged key, grip lines either side of the line that reads against the scale. */}
+          {/* The cap: a ridged key, grip lines either side of the line that reads against the scale. Drawn, all of them are ink. */}
           <div
             data-cap
+            data-part="key"
             className="absolute rounded-[0.36em] [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[box-shadow] duration-(--duration-exit) group-data-held/fader:shadow-(--device-key-shadow-pressed) [--grip-hi:rgb(255_255_255/0.95)] [--grip:rgb(0_0_0/0.14)] dark:[--grip-hi:rgb(255_255_255/0.07)] dark:[--grip:rgb(0_0_0/0.6)]"
             style={{
               left: `${SLOT_X - 1.25}em`,
               width: "2.5em",
               top: `${STOP}em`,
               height: `${CAP}em`,
-              transform: `translateY(calc((1 - var(--f)) * ${TRAVEL}em))`,
+              translate: `0 calc((1 - var(--f)) * ${TRAVEL}em)`,
             }}
           >
             {["top-[0.24em]", "bottom-[0.24em]"].map((edge) => (
               <span
                 key={edge}
-                className={cx("absolute inset-x-[0.24em] h-[0.66em] rounded-[0.12em]", edge)}
+                className={cx("absolute inset-x-[0.24em] h-[0.66em] rounded-[0.12em] drawn:[background:repeating-linear-gradient(to_bottom,var(--device-draw-ink)_0_1px,transparent_1px_4px)]!", edge)}
                 style={{ background: "repeating-linear-gradient(to bottom, var(--grip) 0 1px, var(--grip-hi) 1px 2px, transparent 2px 3.5px)" }}
               />
             ))}
-            <span className="absolute inset-x-0 top-1/2 h-[0.13em] -translate-y-1/2 bg-(--device-key-ink) shadow-[0_1px_0_var(--grip-hi)]" />
+            <span className="absolute inset-x-0 top-1/2 h-[0.13em] -translate-y-1/2 bg-(--device-key-ink) shadow-[0_1px_0_var(--grip-hi)] drawn:bg-(--device-draw-ink)!" />
           </div>
         </div>
       </div>
 
-      <span aria-hidden className="text-[0.6em] font-semibold uppercase leading-none tracking-[0.16em] text-(--device-label) [text-shadow:var(--device-engrave)]">
+      <span aria-hidden data-part="lettering" className="text-[0.6em] font-semibold uppercase leading-none tracking-[0.16em] text-(--device-label) [text-shadow:var(--device-engrave)]">
         {label}
       </span>
       {name && <input ref={inputRef} type="hidden" name={name} value={value} />}
@@ -555,28 +571,29 @@ export default function Demo() {
 
   return (
     <div ref={rootRef} className="@container w-full max-w-[460px] select-none">
-      <div className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,15px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,15px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
         {/* The automation screen. */}
         <div
           aria-hidden
+          data-part="lcd"
           className="flex h-[3.3em] flex-col justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.5em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
         >
           <div className="flex items-center gap-[0.5em]">
-            <span className="inline-flex shrink-0 items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
+            <span data-part="chip" className="inline-flex shrink-0 items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
               {touched.length ? (
-                <span className="size-[0.55em] rounded-full bg-(--device-hold)" />
+                <span className="size-[0.55em] rounded-full bg-(--device-hold) drawn:bg-(--device-draw-ink)!" />
               ) : playing ? (
-                <span className="size-[0.55em] animate-pulse rounded-full bg-(--device-rec)" />
+                <span className="size-[0.55em] animate-pulse rounded-full bg-(--device-rec) drawn:bg-(--device-rec)!" />
               ) : (
-                <span className="size-[0.5em] rounded-[1px] bg-current" />
+                <span className="size-[0.5em] rounded-[1px] bg-current drawn:bg-(--device-draw-ink)!" />
               )}
               <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em]">
                 {touched.length ? "Touch" : playing ? "Auto · Read" : "Auto · Off"}
               </span>
             </span>
-            <span className="ml-auto text-[0.66em] tabular-nums text-(--device-lcd-dim)">{clock(time)}</span>
+            <span className="ml-auto text-[0.66em] tabular-nums text-(--device-lcd-dim) drawn:text-(--device-draw-line)!">{clock(time)}</span>
           </div>
           <span className="truncate text-[1.05em] font-light leading-none tracking-[-0.01em]">
             {touched.length ? touched.map((c) => c.label).join(" · ") : "Mix · take_04"}
@@ -600,16 +617,18 @@ export default function Demo() {
               {/* The channel's automation light. */}
               <span aria-hidden className="flex items-center gap-[0.4em]">
                 <span
+                  data-part="light"
                   className={cx(
                     "size-[0.4em] rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)",
+                    // Drawn, Read and Touch are both ink (orange is the drawing's own); off stays its hairline ring.
                     modes[key] === "touch"
-                      ? "bg-(--device-hold) shadow-[0_0_0.45em_var(--device-hold)]"
+                      ? "bg-(--device-hold) shadow-[0_0_0.45em_var(--device-hold)] drawn:bg-(--device-draw-ink)!"
                       : modes[key] === "read"
-                        ? "bg-(--device-meter-on)"
+                        ? "bg-(--device-meter-on) drawn:bg-(--device-draw-ink)!"
                         : "bg-(--device-meter-off)",
                   )}
                 />
-                <span className="text-[0.52em] font-semibold uppercase leading-none tracking-[0.14em] text-(--device-label-quiet) [text-shadow:var(--device-engrave)]">
+                <span data-part="lettering" className="text-[0.52em] font-semibold uppercase leading-none tracking-[0.14em] text-(--device-label-quiet) [text-shadow:var(--device-engrave)]">
                   {modes[key]}
                 </span>
               </span>

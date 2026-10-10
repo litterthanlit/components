@@ -120,11 +120,12 @@ const studyBar: { title: string; body: ReactNode }[] = [
     ),
   },
   {
-    title: "Built from the materials",
+    title: "Built from the materials, and marks them",
     body: (
       <>
         A plate of the body&apos;s finish with wells, keys, caps, an LCD and lights. Never a second player, never a flat{" "}
-        <code className={code}>shadow-md</code> card. Both themes look intentional.
+        <code className={code}>shadow-md</code> card. Both themes look intentional. Each part carries <code className={code}>data-part</code>, so its
+        page can take it apart.
       </>
     ),
   },
@@ -582,7 +583,8 @@ export default function SystemPage() {
           </ol>
           <p className="mt-8 max-w-[640px] text-body text-muted">
             Run <code className={code}>npm run check:fit</code> before pushing: it loads every component page, the player&apos;s screen and the
-            capture frame at six widths and fails if anything spills its stage.
+            capture frame at six widths and fails if anything spills its stage. <code className={code}>npm run check:anatomy</code> takes every
+            study apart on its page and fails if anything flattens the 3D or spills.
           </p>
         </Section>
 

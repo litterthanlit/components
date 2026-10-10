@@ -2,7 +2,7 @@
 
 The design language of this gallery: the player on the home page, the studies it runs and the site around them. It is written for designers, engineers and the agents that build here, and it explains the reasons as well as the rules.
 
-The values live in code. `src/design-system/tokens.css` is the source of truth (mirrored for TypeScript in `tokens.ts`); springs are in `src/design-system/motion/spring.ts`, sound in `src/lib/sound.ts`, the player in `src/components/device/`, the studies in `src/registry/components/`. `/studies/system` renders all of it live, in both themes. If this file and the code disagree, the code is right and this file is out of date.
+The values live in code. `src/design-system/tokens.css` is the source of truth (mirrored for TypeScript in `tokens.ts`); springs are in `src/design-system/motion/spring.ts`, sound in `src/lib/sound.ts`, the player in `src/components/device/`, the studies in `src/registry/components/`, the anatomy that takes them apart in `src/components/anatomy/`. `/studies/system` renders all of it live, in both themes. If this file and the code disagree, the code is right and this file is out of date.
 
 ## Ethos
 
@@ -50,7 +50,7 @@ A hardware metaphor is no excuse for a div. The dial's ring, the tape, a knob an
 
 The audience is product teams and people on X. A study is something teams ship (a command palette, a settings toggle, a 2FA field, a progress bar, notifications, a destructive confirm) built to the player's standard. The hardware is the polish; the product pattern is the subject. These are not music toys.
 
-The craft speaks for itself: no debug overlays, no explanatory chrome, no labels that point at what to admire. Component pages were stripped down to the name for the same reason.
+The craft speaks for itself: no debug overlays, no explanatory chrome, no labels that point at what to admire. Component pages were stripped down to the name for the same reason. The one exception is a study's anatomy (see Anatomy), which names its parts because naming them is its job: it is documentation, on the documentation's pages, one part at a time, and never on the player.
 
 ### The house voice is plain, precise, British-spelled and quiet
 
@@ -242,6 +242,8 @@ Neutral grounds, three text greys, one accent. Every token has a light and a dar
 
 Colour is never decoration. On the body the signals are red (`--device-rec`) and orange (`--device-hold`); everything else that lights is monochrome. Blue belongs to screens and pages: the highlight bar, a caret, a status dot. Colours that must be told apart differ in lightness as well as hue.
 
+Artwork behind a screen's glass is the one exception: a project's cover (Gradient Keys) carries its own palette, the same in both themes, kept clear of red, orange and the accent so it never reads as a signal. It is the work, not the interface, so it may be the loudest thing on the plate.
+
 ### Type
 
 Geist for everything and Geist Mono for code and the page's figures, loaded through `next/font/google` as variable fonts (`--font-geist-sans`, `--font-geist-mono`). OG images use the static `src/assets/fonts/Geist-400.ttf` and `Geist-500.ttf`.
@@ -384,6 +386,45 @@ const sound = (name: SoundName) => {
 
 A study that runs a long show (automation, a sequencer) can watch the host's attribute with a `MutationObserver` and start when the tape does.
 
+## Anatomy
+
+A study's page can take it apart. The Anatomy key, beside Replay, latches down; the study restarts, and comes apart while it runs, in floors, one for each kind of part it is built from: the plate at the bottom, then its wells and collars, its LCDs, keys and caps, its lights and chips, and the lettering on top. Pointing at a floor picks it. It rises a little above the rest, takes the hand's orange, stands on dashed risers down to what each piece sits on, and one line under the stage names it, the tokens that draw it and why it looks the way it does. Untouched, it walks down the stack once, 1.6 s a floor.
+
+It is the materials, shown working: plate, then well, then part. A knob's cap lifts out of its collar with the knurling still turning, a one-time code's cells rise off the bezel while the ghost is still typing, and Gradient Keys' long exposures keep streaming under glass that floats above them.
+
+### Two finishes
+
+It opens as a **technical drawing** of the live study, and a Finish switch beside Spread shows it in its **materials**. Closing, it comes back together in its materials, whichever finish it was in.
+
+The drawing is a drafter's view of the same object, and the same markup, so it still turns, types and clicks:
+
+- Every part is an opaque plane of the canvas, so upper floors hide lower ones, with a 1px hairline in `--device-draw-line` round it and its lettering in `--device-draw-ink`. No gradients, glows, shadows, grain or engraving.
+- Glass stays clear, its edge dashed, as a drafter marks a transparent surface. Canvases and screens keep their motion, quietened.
+- The picked floor is washed in the hand's orange, on its orange risers. Orange means nothing else in the drawing: where a study's own state is orange (a switch that is on, a fader in Touch), it is drawn in ink.
+- A lit light is filled with ink and an unlit one is a hairline ring; red stays only for a light that fires, records or errs.
+- Whatever a part paints inside itself is cleared, and each study draws back what carries its mechanism with the `drawn:` variant, as it would with `dark:`: a knob's pointer and knurling, a fader's scale, lit segments, a needle, a drum's figures. The drawing's own rules are `!important`, so a study's win with Tailwind's `!`: `drawn:bg-(--device-draw-ink)!`. Whatever moves in the materials moves in the drawing.
+
+### How it works
+
+- **The page's structure is the anatomy.** A study marks each part with `data-part="<kind>"`, and nothing is drawn twice. The kinds are the materials (`plate`, `well`, `collar`, `key`, `cap`, `lcd`, `window`, `bezel`, `slot`, `chip`, `light`, `lettering`) and a few particular ones (`face`, `glass`, `drum`, `reel`, `tape`, `matrix`, `screen`); each has its name, its tokens and its one line in `src/components/anatomy/parts.ts`. A study's entry in `src/registry/anatomy.ts` says what is particular to its own parts, and is what gives its page the key. The attribute does nothing anywhere else, so a study stays one file anyone can copy.
+- **Real 3D.** The camera tilts the scene isometric (54.74° back and 45° round, the angles Agent Shapes uses) and each part lifts by `translateZ`, by the floors between it and the part it sits on. The transforms nest, so heights add up, and the browser sorts the parts by their true depth: a cap lifted above an LCD paints over it wherever the two cross, which no stacking order in 2D can do.
+- **Nothing on the path may flatten.** Overflow, isolation, filters, opacity, clips and blends turn everything under them into one plane, silently. While a study is apart, `globals.css` opens overflow and isolation along the path from the scene down to each part (one `:has()` rule) and nowhere else, and takes the animations and blends off it: the plate's entrance holds `blur(0)` after it ends, and the grain's `soft-light` isolates the plate. Both flattened the first attempt. A part with nothing marked inside it still clips, as one plane.
+- **The anatomy owns `transform`.** A part that moves rides on `translate`, `rotate` or `scale`, which compose with the anatomy's lift: the Switch's and the Fader's caps do.
+- **Springs.** The camera's tilt and the spread run on `springs.gentle`, the picked floor's lift on `springs.snappy`, all written to CSS variables. The spread clicks every 5%, as a detent does.
+- **A parallel projection needs cues.** A plane lifted straight up, with no shadow, looks much like one lying further back. So the floors stand far enough apart to read, and the picked one has its risers and its orange.
+- **The hand works the anatomy, not the study.** While apart the study is inert: its drags read on-screen boxes that a tilted camera would get wrong. Pointing picks a floor, a sideways drag spreads them, and the keys are a listbox (↑ ↓ pick, ← → spread in 5% steps, Escape closes and hands focus back to the key). Reduced motion jumps, and never walks.
+
+### Marking a study's parts
+
+- Mark the element that draws the material: the key's button (its face sinks inside it), the collar, the cap seated in it, the LCD, the chip on the LCD, the light, the lettering.
+- A part is never `display: inline` (transforms skip it) and never moves by its own `transform`.
+- Taken apart, a wrapper on the path to a part keeps its 3D, and that makes it the containing block of whatever is absolutely positioned inside it. Give such a wrapper the box its children are placed in (`absolute inset-0`, or `relative`), or a slot stretched top to bottom inside a wrapper with no height of its own collapses, as the Fader's did.
+- Keep filters, opacity, clips and blends off the path from the plate to a part. A part with nothing marked inside it may use them: it is one plane already.
+- An SVG part is picked by what it draws and lit along its strokes, so a ring of lights can be one part.
+- A canvas that reads its colour from the page once, at mount, reads a token (`--device-lcd-ink`), not its computed `color`: the study may mount already taken apart and drawn, and would keep the drawing's ink after it closes. Dither Card pins its canvas's colour with `drawn:` for this reason.
+- Draw it back in the drawing with `drawn:` classes in the study's own file: the mechanism as line work, lit lights in ink, unlit ones as hairlines. Look at it in both finishes, both themes.
+- `npm run check:anatomy` takes every listed study apart at 375 and 1280 px, spread all the way, drawn and in its materials, and fails on anything that would flatten it, a part with its own transform or an unknown kind, anything whose layout moves when it comes apart, or a part that spills off the stage.
+
 ## Writing
 
 Plain, precise, British-spelled and quiet. Write it the way you would say it to someone at the next desk.
@@ -405,7 +446,7 @@ What every study meets before it goes on the player. The player gives it a few s
 
 1. **It moves in its first four seconds, untouched.** A rehearsal, a recall, a ghost typing, automation playing back, a self-test, drums rolling from 0. The starting state is never still for more than about half a second. Then it rewards the hand.
 2. **It fits a 282 × 332 box.** That is the smallest stage it gets (the player's floor zoom on a phone, less the stage's padding); the capture frame is 702 × 374. Size to the container, never the viewport: a root `@container w-full max-w-[…px]`, a `cqw`-clamped font size on its child (`text-[clamp(11px,4cqw,14px)]`), everything else in em, `@[26rem]:` for wider containers. Touch targets 24px or more. `npm run check:fit` loads every component page, the player's screen and the capture frame at six widths and fails if anything spills.
-3. **It is built from the materials.** A plate of the body's finish with wells, keys, caps, an LCD and lights. Never a second player, never a flat `shadow-md` card. Both themes look intentional.
+3. **It is built from the materials, and marks them.** A plate of the body's finish with wells, keys, caps, an LCD and lights. Never a second player, never a flat `shadow-md` card. Both themes look intentional. Each part carries `data-part` with its kind, so its page can take it apart (see Anatomy).
 4. **It sounds through `play()`.** Existing sounds only, varied with pitch and gain. Its own sounds follow the transport rule; the viewer's input always sounds. Keys can carry `data-sound="key"` for press and release.
 5. **It turns without transforms.** A rotating part spills its stage when its corners turn, so rotation is `conic-gradient(from var(--a))` or SVG attributes, or a transform inside an `overflow-hidden` wrapper.
 6. **It rounds its trigonometry.** Coordinates rendered on the server are rounded to two decimals (`Math.round(v * 100) / 100` or `toFixed(2)`), so the browser's `Math` agrees when it hydrates.
@@ -424,5 +465,5 @@ What every study meets before it goes on the player. The player gives it a few s
 6. Give it sound: `play()` for the viewer's input; the transport rule for everything it does by itself.
 7. Make it accessible: native roles, one tab stop, focus that follows the hand, a live region, reduced motion.
 8. Size it to its container in em and check it at 282 × 332, on a 360px phone and in the 702 × 374 capture frame, in light and dark.
-9. Register it: an entry at the top of `src/registry/index.ts` (title, a plain description of 70 words or so, a one-line tagline, tags, the date, `status: "new"`, `background: "plain"`) and one line in `src/registry/previews.tsx`.
-10. Run `npx tsc --noEmit`, `npx eslint src` and `npm run check:fit`. Find it on the player (`/`, type, Enter), with the tape playing, paused and stopped, and look at it before you commit. Write the commit message in the house voice.
+9. Register it: an entry at the top of `src/registry/index.ts` (title, a plain description of 70 words or so, a one-line tagline, tags, the date, `status: "new"`, `background: "plain"`) and one line in `src/registry/previews.tsx`. Mark its parts with `data-part` and give it an entry in `src/registry/anatomy.ts`, with a line for any part that is particular to it.
+10. Run `npx tsc --noEmit`, `npx eslint src`, `npm run check:fit` and `npm run check:anatomy`. Find it on the player (`/`, type, Enter), with the tape playing, paused and stopped, and look at it before you commit. Write the commit message in the house voice.

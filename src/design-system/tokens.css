@@ -116,6 +116,9 @@
   --device-meter-on: #25272b;
   --device-rec: #e5484d;
   --device-hold: #ff7a1a;
+  /* The anatomy's technical drawing: a hairline and its lettering, over the canvas. */
+  --device-draw-line: rgb(10 10 10 / 0.38);
+  --device-draw-ink: rgb(10 10 10 / 0.64);
   /* The display: the site's own grounds under glass, and a light that comes on. */
   --screen-glow: rgb(255 255 255 / 0.7);
   --screen-glass: linear-gradient(158deg, rgb(255 255 255 / 0.07) 0%, rgb(255 255 255 / 0.02) 38%, transparent 38.2%);
@@ -195,6 +198,8 @@
   --device-meter-on: #e6e8ec;
   --device-rec: #ff5c62;
   --device-hold: #ff8a33;
+  --device-draw-line: rgb(237 237 237 / 0.34);
+  --device-draw-ink: rgb(237 237 237 / 0.64);
   --screen-glow: rgb(138 154 242 / 0.35);
   --screen-glass: linear-gradient(158deg, rgb(255 255 255 / 0.06) 0%, rgb(255 255 255 / 0.015) 38%, transparent 38.2%);
   color-scheme: dark;
