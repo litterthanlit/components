@@ -2,37 +2,52 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { createSpring, focusQuietly, type Spring } from "@/design-system";
-import { hostTransport, play } from "@/lib/sound";
+import { engine as createEngine, hostTransport, play } from "@/lib/sound";
 
 /*
- * A bounded number stepper after a wheel's pair of shift paddles: a lever on
- * either side, − on the left and + on the right, and between them a small LCD
- * with the gear on a drum, a chip above it and a thin rev bar under it.
+ * A bounded number stepper after a wheel's pair of shift paddles, on the
+ * night-race line: a lever on either side, − on the left and + on the right,
+ * and between them a black glass readout with the gear in huge condensed
+ * yellow figures on a drum, a chip and the revs above it and a strip of shift
+ * lights under it.
  *
- * Each paddle is a key hung from a pivot near its top. Pulled, its face sinks
- * 2px onto its base and tilts a few degrees about the pivot, by the CSS
+ * Each paddle is a carbon-fibre blade hung from a pivot near its top, with a
+ * hard swept tip and a yellow edge line down its inner side. Pulled, its face
+ * sinks 2px onto its base and tilts a few degrees about the pivot, by the CSS
  * `rotate` property inside the key's own overflow-hidden frame, so the lever
  * can swing without spilling. The drum is a column of figures translated by a
- * spring (150 to 200, 21: the tape counter's) that writes `--pos`, and it
- * ticks once for every figure that passes the window, pitched up with the gear.
- * At either end of the range the drum bumps and shakes sideways on a loose
- * spring, and nothing changes.
+ * spring (170, 21) that writes `--pos`, and it ticks once for every figure that
+ * passes the window, pitched up with the gear. At either end of the range the
+ * drum bumps and shakes sideways on a loose spring, and nothing changes.
  *
- * The rev bar is a second spring. A downshift blips it up, as a driver matches
- * revs, and an upshift drops it; then it settles to the cruising level of the
- * gear it landed in. Its tip is a red zone that lights as the bar enters it.
- * Everything that moves writes CSS variables, never React state.
+ * The revs are a second spring, and the one loop that does everything with
+ * them: it lights the ten shift lights (four green, three yellow, three red),
+ * writes the rpm figure and feeds the engine's voice. A downshift blips it up,
+ * as a driver matches revs, with the throttle wide open; an upshift cuts the
+ * ignition for 80ms and the revs drop; then they settle to the cruising level
+ * of the gear it landed in, throttle half closed, and the engine pops on the
+ * lift-off by itself. A light that goes out fades for a moment, an afterglow
+ * that leaves a trail on a fast drop; reduced motion has none.
+ * Everything that moves writes CSS variables or text, never React state.
  *
  * The whole thing is one spinbutton, one tab stop: ← and ↓ shift down, → and ↑
  * shift up, Home and End go to the ends. The paddles are for the pointer. A
  * rehearsal, when given, shifts through a short run on its own until a hand
- * touches it, and never starts under reduced motion.
+ * touches it, and never starts under reduced motion. Its engine is silent while
+ * the host's tape is paused, until a hand works it.
  */
 
 const DRUM = { stiffness: 170, damping: 21 }; // gears on the drum: a little under critical, so it lands without overshoot
 const SHAKE = { stiffness: 520, damping: 9 }; // loose: a kick at the stop rings out in about 0.4s
-const REV = { stiffness: 230, damping: 17 }; // a touch under critical, so the bar overshoots its mark a little
+const REV = { stiffness: 230, damping: 17 }; // a touch under critical, so the revs overshoot their mark a little
 const PULSE = 120; // ms a paddle stays down when it is pulled by a key or by the rehearsal
+const REDLINE = 9000; // rpm at the end of the shift lights
+const CUT = 80; // ms of ignition cut on an upshift
+const LIGHTS = [
+  ...Array.from({ length: 4 }, () => "var(--race-green)"),
+  ...Array.from({ length: 3 }, () => "var(--race-yellow)"),
+  ...Array.from({ length: 3 }, () => "var(--race-red)"),
+];
 
 type Rehearsal = { value: number; at: number };
 
@@ -54,33 +69,40 @@ type PaddleShiftersProps = {
   className?: string;
 };
 
-type Engine = {
+type Mech = {
   place: (value: number) => void;
   move: (from: number, to: number) => void;
   bounce: (dir: 1 | -1) => void;
   pulse: (dir: 1 | -1) => void;
+  /** The engine's level, which follows the host's tape until a hand has worked it. */
+  sync: () => void;
 };
 
 const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(" ");
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const thousands = (n: number) => String(n).replace(/\B(?=(\d{3})+$)/g, " ");
 
-/** Where the rev bar settles in a gear: the lowest value idles, the rest climb from 30% to 60%. */
+/** Where the revs settle in a gear: the lowest value idles, the rest climb from 30% to 60% of the lights. */
 function cruise(v: number, min: number, max: number) {
-  return v <= min ? 0.14 : 0.3 + ((v - min - 1) / Math.max(1, max - min - 1)) * 0.3;
+  return v <= min ? 0.12 : 0.3 + ((v - min - 1) / Math.max(1, max - min - 1)) * 0.3;
 }
+
+/** How hard the throttle is held once the revs have settled. */
+const holding = (v: number, min: number) => (v <= min ? 0.12 : 0.3);
 
 export function PaddleShifters({ value, onChange, min, max, labels, names, label = "Gear", name, rehearsal, className }: PaddleShiftersProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const spinRef = useRef<HTMLDivElement>(null);
   const drumRef = useRef<HTMLDivElement>(null);
+  const rpmRef = useRef<HTMLSpanElement>(null);
   const paddles = useRef<(HTMLButtonElement | null)[]>([null, null]);
-  const engine = useRef<Engine | null>(null);
+  const mech = useRef<Mech | null>(null);
   const seen = useRef<number | null>(null); // the value the mechanism last moved to
   const current = useRef(value); // the value, ahead of the render that confirms a shift
   const pointerShift = useRef(false); // the shift came from a paddle under the finger, which is already down
   const touched = useRef(false); // a hand has worked it: it may sound even while the host is paused
   const [said, setSaid] = useState("");
-  // Props the engine and the handlers read when they fire, rather than when they were made.
+  // Props the mechanism and the handlers read when they fire, rather than when they were made.
   const props = useRef({ onChange, min, max, labels, names, label, rehearsal });
   useLayoutEffect(() => {
     props.current = { onChange, min, max, labels, names, label, rehearsal };
@@ -88,16 +110,25 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
 
   const describe = (v: number) => names?.[v] ?? `${label} ${labels?.[v] ?? v}`;
 
-  // The mechanism: three springs, and the clicks that go with them.
+  // The mechanism: three springs, the lights, the engine, and the clicks that go with them.
   useLayoutEffect(() => {
     const root = rootRef.current!;
     const drum = drumRef.current!;
+    const rpmText = rpmRef.current!;
+    const leds = [...root.querySelectorAll<HTMLElement>("[data-led]")];
     const pulses: (ReturnType<typeof setTimeout> | undefined)[] = [];
     let settle: ReturnType<typeof setTimeout> | undefined;
+    let cutting: ReturnType<typeof setTimeout> | undefined;
     let raf = 0;
     let shown = -1;
+    let load = 0.3; // how hard the throttle is held, as the engine hears it
     // Its own sounds follow the host's tape; a hand always sounds.
     const audible = () => touched.current || hostTransport(root) === "play";
+
+    const voice = createEngine({ redline: REDLINE });
+    const level = () => voice.level(audible() ? 1 : 0);
+    level();
+    const watch = setInterval(level, 250); // the host's tape can be paused with nothing moving
 
     // One click for every figure that passes the window, higher for higher gears.
     const pos: Spring = createSpring(0, DRUM, (p) => {
@@ -105,38 +136,69 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
       const { min, max } = props.current;
       const idx = Math.min(max - min, Math.max(0, Math.round(p)));
       if (idx !== shown) {
-        if (shown !== -1 && audible()) play("tick", { gain: 0.55, pitch: 0.9 + (idx / Math.max(1, max - min)) * 0.25 });
+        if (shown !== -1 && audible()) play("tick", { gain: 0.45, pitch: 0.9 + (idx / Math.max(1, max - min)) * 0.25 });
         shown = idx;
       }
     });
     const shake = createSpring(0, SHAKE, (x) => drum.style.setProperty("--shake", x.toFixed(3)));
-    const rev = createSpring(0, REV, (r) => root.style.setProperty("--rev", r.toFixed(3)));
+    // The one loop for the revs: the lights, the figure and the engine's pitch all follow this spring.
+    const rev = createSpring(0, REV, (r) => {
+      const at = Math.min(1, Math.max(0, r));
+      leds.forEach((led, i) => led.toggleAttribute("data-on", at >= (i + 0.55) / leds.length));
+      rpmText.textContent = thousands(Math.round((at * REDLINE) / 10) * 10);
+      voice.set(at * REDLINE, load);
+    });
+    const hold = (v: number) => {
+      load = holding(v, props.current.min);
+      voice.set(Math.min(1, Math.max(0, rev.value)) * REDLINE, load);
+    };
 
-    engine.current = {
+    mech.current = {
       // First layout: the drum is at the gear and the engine starts, blipping up to a cruise.
       place(v) {
         const { min, max } = props.current;
         pos.jump(v - min);
-        if (reduced()) return rev.jump(cruise(v, min, max));
+        if (reduced()) {
+          load = holding(v, min);
+          return rev.jump(cruise(v, min, max));
+        }
+        load = 1;
         rev.jump(0);
         raf = requestAnimationFrame(() => {
           rev.set(Math.min(1, cruise(v, min, max) + 0.3));
-          settle = setTimeout(() => rev.set(cruise(v, min, max)), 380);
+          settle = setTimeout(() => {
+            hold(v);
+            rev.set(cruise(v, min, max));
+          }, 380);
         });
       },
-      // A shift: the drum travels, the revs blip up on the way down and drop on the way up, then settle.
+      // A shift: the drum travels. Up, the ignition cuts and the revs fall away; down, the throttle blips and they climb. Then they settle.
       move(from, to) {
         const { min, max } = props.current;
         clearTimeout(settle);
+        clearTimeout(cutting);
         const c = cruise(to, min, max);
+        const up = to > from;
+        if (up) {
+          voice.cut(true);
+          cutting = setTimeout(() => voice.cut(false), CUT);
+        } else voice.cut(false);
+        level();
         if (reduced()) {
           pos.jump(to - min);
+          load = holding(to, min);
           return rev.jump(c);
         }
         pos.set(to - min);
-        const up = to > from;
-        rev.set(up ? Math.max(0.05, c - 0.2) : Math.min(1, c + 0.42));
-        settle = setTimeout(() => rev.set(c), up ? 230 : 180);
+        load = up ? 0.6 : 1;
+        rev.set(up ? Math.max(0.05, c - 0.2) : Math.min(1, c + 0.5));
+        settle = setTimeout(
+          () => {
+            hold(to);
+            rev.set(c);
+          },
+          up ? 230 : 180,
+        );
       },
       // The end of the range: the drum is kicked sideways and rings out.
       bounce(dir) {
@@ -157,17 +219,21 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
           if (audible()) play("release", { gain: 0.45, pitch: 1 + 0.05 * dir });
         }, PULSE);
       },
+      sync: level,
     };
 
     return () => {
-      engine.current = null;
+      mech.current = null;
       seen.current = null; // a remount places the drum again
       cancelAnimationFrame(raf);
       clearTimeout(settle);
+      clearTimeout(cutting);
+      clearInterval(watch);
       pulses.forEach(clearTimeout);
       pos.stop();
       shake.stop();
       rev.stop();
+      voice.stop();
     };
   }, []);
 
@@ -176,10 +242,10 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
     const prev = seen.current;
     seen.current = value;
     current.current = value;
-    if (prev === null) engine.current?.place(value);
+    if (prev === null) mech.current?.place(value);
     else if (prev !== value) {
-      engine.current?.move(prev, value);
-      if (!pointerShift.current) engine.current?.pulse(value > prev ? 1 : -1);
+      mech.current?.move(prev, value);
+      if (!pointerShift.current) mech.current?.pulse(value > prev ? 1 : -1);
     }
     pointerShift.current = false;
   }, [value]);
@@ -201,8 +267,8 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
     const target = Math.min(max, Math.max(min, to));
     if (target === current.current) {
       play("bump", { gain: 0.6, pitch: dir > 0 ? 1.05 : 0.95 });
-      engine.current?.bounce(dir);
-      if (via === "key") engine.current?.pulse(dir);
+      mech.current?.bounce(dir);
+      if (via === "key") mech.current?.pulse(dir);
       return;
     }
     current.current = target;
@@ -236,20 +302,22 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
     play("release", { gain: 0.6, pitch: 1 + 0.05 * dir });
   }
 
+  const touch = () => {
+    touched.current = true;
+    mech.current?.sync();
+  };
+
   const figures = Array.from({ length: max - min + 1 }, (_, i) => labels?.[min + i] ?? String(min + i));
 
   return (
-    <div
-      ref={rootRef}
-      onPointerDownCapture={() => (touched.current = true)}
-      onKeyDownCapture={() => (touched.current = true)}
-      className={cx("@container w-full max-w-[400px] select-none", className)}
-    >
-      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
-        <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
+    <div ref={rootRef} onPointerDownCapture={touch} onKeyDownCapture={touch} className={cx("@container w-full max-w-[400px] select-none", className)}>
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[0.9em] p-[0.8em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)]">
+        {/* The carbon twill, felt rather than seen, and a short yellow rule with a raked end along the top edge. */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] [background:var(--race-weave)]" />
+        <span aria-hidden className="pointer-events-none absolute left-[0.8em] top-0 h-[2px] w-[4.2em] [background:linear-gradient(100deg,var(--race-yellow)_0_82%,transparent_82%)]" />
 
         {/* The wheel's hub, pressed into the plate: a paddle either side of the readout. */}
-        <div data-part="well" className="grid h-[16.5em] grid-cols-[4.9em_minmax(0,1fr)_4.9em] items-center gap-[0.3em] rounded-[1.05em] bg-(--device-well) p-[0.45em] shadow-(--device-recess)">
+        <div data-part="well" className="grid h-[15.5em] grid-cols-[4.7em_minmax(0,1fr)_4.7em] items-center gap-[0.35em] rounded-[0.6em] bg-(--race-well) p-[0.4em] shadow-(--race-recess)">
           {([-1, 1] as const).map((dir) => (
             <button
               key={dir}
@@ -267,33 +335,46 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
               style={
                 {
                   "--s": -dir,
-                  // Curved and tapered: a full round at the hand end, the inner shoulder swept, the outer edge near straight.
-                  "--r": dir < 0 ? "0.5em 0.8em 1.3em 0.8em / 0.5em 0.8em 1.8em 0.8em" : "0.8em 0.5em 0.8em 1.3em / 0.8em 0.5em 0.8em 1.8em",
+                  // A hard blade: square shoulders and a long swept tip, on the inner side at the bottom.
+                  "--r": dir < 0 ? "0.25em 0.25em 3.4em 0.25em / 0.25em 0.25em 6.5em 0.25em" : "0.25em 0.25em 0.25em 3.4em / 0.25em 0.25em 0.25em 6.5em",
                 } as CSSProperties
               }
               className={cx(
-                "group/key relative h-full touch-manipulation overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.4em] pt-[0.2em] outline-offset-2",
+                "group/key relative h-full touch-manipulation overflow-hidden rounded-[0.3em] px-[0.7em] pb-[0.4em] pt-[0.2em] outline-offset-2",
                 dir < 0 ? "col-start-1" : "col-start-3",
               )}
             >
               {/* The lever: it hangs from its pivot, leans out 2° at rest and swings 3° the other way when pulled. */}
-              <span className="relative block size-full origin-[calc(50%+var(--s)*1.1em)_0.95em] rounded-[var(--r)] text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow) [rotate:calc(var(--s)*2deg)] transition-[translate,rotate,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:[rotate:calc(var(--s)*-3deg)] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75 group-data-pressed/key:translate-y-[2px] group-data-pressed/key:[rotate:calc(var(--s)*-3deg)] group-data-pressed/key:shadow-(--device-key-shadow-pressed) group-data-pressed/key:duration-75">
-                {/* The pivot, at the inner top edge: the lever swings about it. */}
-                <span aria-hidden className="absolute top-[0.6em] size-[0.7em] -translate-x-1/2 rounded-full bg-black/[0.07] shadow-(--device-recess) [left:calc(50%+var(--s)*1.1em)]" />
-                {/* Its cross-section: a soft highlight down the crown and a shade at the edges. */}
-                <span aria-hidden className="absolute inset-0 rounded-[inherit] [background:linear-gradient(90deg,rgb(0_0_0/0.07),rgb(255_255_255/0.22)_35%,transparent_60%,rgb(0_0_0/0.08))]" />
-                <span aria-hidden className="absolute inset-x-0 top-[46%] text-center text-[2.1em] font-medium leading-none [text-shadow:var(--device-engrave)]">
-                  {dir > 0 ? "+" : "−"}
-                </span>
+              <span
+                className={cx(
+                  "relative block size-full origin-[calc(50%+var(--s)*1.1em)_0.95em] rounded-[var(--r)] text-(--race-dim) [background:var(--race-weave),var(--race-metal)] shadow-(--race-key-shadow) [rotate:calc(var(--s)*2deg)] transition-[translate,rotate,box-shadow] duration-(--duration-exit) ease-out",
+                  "border-(--race-yellow)",
+                  dir < 0 ? "border-r-2" : "border-l-2",
+                  "group-active/key:translate-y-[2px] group-active/key:[rotate:calc(var(--s)*-3deg)] group-active/key:shadow-(--race-key-shadow-pressed) group-active/key:duration-75 group-data-pressed/key:translate-y-[2px] group-data-pressed/key:[rotate:calc(var(--s)*-3deg)] group-data-pressed/key:shadow-(--race-key-shadow-pressed) group-data-pressed/key:duration-75",
+                )}
+              >
+                {/* The pivot, at the inner top edge: a bolt the lever swings about. */}
+                <span aria-hidden className="absolute top-[0.6em] size-[0.7em] -translate-x-1/2 rounded-full bg-(--race-well) shadow-(--race-recess) [left:calc(50%+var(--s)*1.1em)]" />
+                {/* Its cross-section: a hard highlight down the crown and a shade at the edges. */}
+                <span aria-hidden className="absolute inset-0 rounded-[inherit] [background:linear-gradient(90deg,rgb(0_0_0/0.35),rgb(255_255_255/0.07)_30%,transparent_55%,rgb(0_0_0/0.4))]" />
+                {/* The engraved sign, lit faintly from behind; yellow while the lever is pulled. */}
                 <span
                   aria-hidden
-                  className="absolute inset-x-[20%] bottom-[1em] h-[1.5em] [background:repeating-linear-gradient(var(--device-meter-off)_0_1.5px,transparent_1.5px_0.42em)]"
-                />
+                  className="absolute inset-x-0 top-[3.6em] text-center text-[2.3em] font-bold leading-none text-(--race-ink)/70 [text-shadow:var(--race-glow-white)] transition-[color,text-shadow] duration-(--duration-exit) group-active/key:text-(--race-yellow) group-active/key:[text-shadow:var(--race-glow-yellow)] group-active/key:duration-75 group-data-pressed/key:text-(--race-yellow) group-data-pressed/key:[text-shadow:var(--race-glow-yellow)] group-data-pressed/key:duration-75"
+                >
+                  {dir > 0 ? "+" : "−"}
+                </span>
+                {/* Chevrons for grip, pointing the way the lever shifts. */}
+                <svg aria-hidden viewBox="0 0 12 15" className="absolute bottom-[1.2em] left-1/2 h-[1.9em] w-[1.5em] -translate-x-1/2 text-(--race-dim)" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="square">
+                  {[0, 1, 2].map((i) => (
+                    <polyline key={i} points={dir > 0 ? `1,${5 + i * 4.5} 6,${1 + i * 4.5} 11,${5 + i * 4.5}` : `1,${1 + i * 4.5} 6,${5 + i * 4.5} 11,${1 + i * 4.5}`} strokeOpacity={dir > 0 ? 0.9 - i * 0.3 : 0.3 + i * 0.3} />
+                  ))}
+                </svg>
               </span>
             </button>
           ))}
 
-          {/* The readout, between the paddles, is the spinbutton: chip, gear on its drum, revs. The paddles are its siblings, for the pointer. */}
+          {/* The readout, between the paddles, is the spinbutton: chip and revs, the gear on its drum, the shift lights. The paddles are its siblings, for the pointer. */}
           <div
             ref={spinRef}
             role="spinbutton"
@@ -306,32 +387,50 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
             onKeyDown={onKeyDown}
             onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
             data-part="lcd"
-            className="col-start-2 row-start-1 flex min-w-0 flex-col items-stretch gap-[0.7em] rounded-[0.7em] px-[0.7em] pb-[0.8em] pt-[0.7em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge) outline-offset-2"
+            className="relative col-start-2 row-start-1 flex min-w-0 flex-col items-stretch justify-between gap-[0.5em] self-stretch rounded-[0.5em] px-[0.7em] pb-[0.75em] pt-[0.65em] text-(--race-ink) [background:var(--race-glass)] shadow-(--race-edge) outline-offset-2"
           >
-            <span aria-hidden data-part="chip" className="inline-flex items-center gap-[0.35em] self-center rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
-              <span className="size-[0.5em] rounded-full bg-black" />
-              <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em]">{label}</span>
-            </span>
+            <div aria-hidden className="flex items-end justify-between gap-[0.4em]">
+              <span data-part="chip" className="inline-flex items-center rounded-[0.2em] bg-(--race-yellow) px-[0.5em] py-[0.26em] text-(--race-yellow-ink)">
+                <span className="text-[0.62em] font-bold uppercase leading-none tracking-[0.14em]">{label}</span>
+              </span>
+              <span className="flex items-baseline gap-[0.3em] leading-none">
+                <span ref={rpmRef} className="font-[family-name:var(--font-race)] text-[1.3em] font-bold italic tabular-nums [font-stretch:62%]">
+                  0
+                </span>
+                <span className="text-[0.58em] font-semibold uppercase tracking-[0.14em] text-(--race-dim)">rpm</span>
+              </span>
+            </div>
 
             {/* The drum: one figure per gear in a column, translated by the spring's --pos. */}
-            <div ref={drumRef} aria-hidden data-part="drum" className="relative h-[1.2em] overflow-hidden rounded-[0.09em] text-[3.4em] shadow-[inset_0_1px_2px_rgb(0_0_0/0.3),0_1px_0_rgb(255_255_255/0.04)]">
-              <div className="flex flex-col will-change-transform [translate:calc(var(--shake,0)*0.06em)_calc(var(--pos,0)*-1.2em)]">
+            <div ref={drumRef} aria-hidden data-part="drum" className="relative h-[1.08em] shrink-0 overflow-hidden text-[7.2em]">
+              <div className="flex flex-col will-change-transform [translate:calc(var(--shake,0)*0.04em)_calc(var(--pos,0)*-1.08em)]">
                 {figures.map((f, i) => (
-                  <span key={i} className="grid h-[1.2em] place-items-center text-center font-light leading-none tabular-nums tracking-[-0.03em]">
+                  <span
+                    key={i}
+                    className="grid h-[1.08em] place-items-center pr-[0.06em] text-center font-[family-name:var(--font-race)] font-extrabold italic leading-none tabular-nums text-(--race-yellow) [font-stretch:62%] [text-shadow:0_0_0.08em_color-mix(in_srgb,var(--race-yellow)_55%,transparent),0_0_0.26em_color-mix(in_srgb,var(--race-yellow)_24%,transparent)]"
+                  >
                     {f}
                   </span>
                 ))}
               </div>
               {/* The drum's curve: figures dim as they turn away. */}
-              <span aria-hidden className="pointer-events-none absolute inset-0 [background:linear-gradient(rgb(0_0_0/0.55),transparent_30%,transparent_70%,rgb(0_0_0/0.55))]" />
+              <span aria-hidden className="pointer-events-none absolute inset-0 [background:linear-gradient(rgb(0_0_0/0.5),transparent_10%,transparent_90%,rgb(0_0_0/0.5))]" />
             </div>
 
-            {/* The revs: lit to --rev of the bar; the last 22% is the red zone, lit as the bar enters it. */}
-            <div aria-hidden data-part="light" className="relative h-[0.42em] overflow-hidden rounded-full bg-white/15">
-              <span className="absolute inset-y-0 left-[78%] right-0 bg-(--device-rec)/35" />
-              <span className="absolute inset-y-0 left-0 bg-(--device-lcd-ink) [width:calc(min(var(--rev,0),0.78)*100%)]" />
-              <span className="absolute inset-y-0 left-[78%] bg-(--device-rec) [width:calc(max(var(--rev,0)_-_0.78,0)*100%)]" />
+            {/* The shift lights: green, then yellow, then red, as the revs climb. Off is dark; on is lit, and fades out when it goes. */}
+            <div aria-hidden data-part="light" className="flex items-center gap-[0.22em] px-[0.2em]">
+              {LIGHTS.map((colour, i) => (
+                <span
+                  key={i}
+                  data-led=""
+                  style={{ "--led": colour } as CSSProperties}
+                  className="h-[0.7em] min-w-0 flex-1 -skew-x-[18deg] rounded-[0.1em] bg-(--race-led-off) transition-[background-color,box-shadow] duration-300 data-on:bg-(--led) data-on:shadow-[0_0_0.5em_color-mix(in_srgb,var(--led)_70%,transparent),0_0_1.2em_color-mix(in_srgb,var(--led)_28%,transparent)] data-on:duration-0 motion-reduce:duration-0"
+                />
+              ))}
             </div>
+
+            {/* Scanlines, the last layer of the glass. */}
+            <span aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--race-scanlines)]" />
           </div>
         </div>
       </div>

@@ -32,10 +32,13 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     lcd: { note: "The mode chip, and three bars that travel on springs to each mode's preset, with the boost count." },
   },
   "paddle-shifters": {
-    key: { name: "Paddles", note: "Levers hung from a pivot: the face sinks 2px and leans about it on the rotate property, inside the key's own frame, so it never spills." },
-    drum: { name: "Gear drum", note: "A column of figures on a spring (170, 21) that clicks for each figure it passes, higher for higher gears; a looser spring shakes it at either end." },
-    light: { name: "Rev bar", tokens: ["--device-lcd-ink", "--device-rec"], note: "Blips up on a downshift, as a rev-match does, drops on an upshift, then settles. The last 22% is the red zone." },
-    well: { note: "The wheel's hub, pressed into the plate." },
+    key: { name: "Paddles", tokens: ["--race-weave", "--race-metal", "--race-key-shadow", "--race-yellow"], note: "Carbon-fibre blades hung from a pivot, with a swept tip and a yellow edge. The face sinks 2px and leans about the pivot on the rotate property, inside the key's own frame, so it never spills." },
+    drum: { name: "Gear drum", tokens: ["--race-yellow"], note: "A column of huge condensed yellow figures on a spring (170, 21) that ticks for each figure it passes; a looser spring shakes it at either end." },
+    light: { name: "Shift lights", tokens: ["--race-led-off", "--race-green", "--race-yellow", "--race-red"], note: "Ten slanted lights driven by the rev spring: up on a downshift, down on an upshift, and a light that goes out fades behind it." },
+    glass: { tokens: ["--race-scanlines"], note: "Scanlines over the readout." },
+    chip: { tokens: ["--race-yellow", "--race-yellow-ink"], note: "The label, in black on yellow." },
+    lcd: { tokens: ["--race-glass", "--race-edge"], note: "The readout between the paddles: the gear, the revs and the shift lights." },
+    well: { tokens: ["--race-well", "--race-recess"], note: "The wheel's hub, pressed into the plate." },
   },
   chrono: {
     collar: { note: "Pressed into the plate round the bezel, as the knob's collar is." },
