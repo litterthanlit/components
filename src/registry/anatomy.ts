@@ -23,13 +23,10 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     lettering: { name: "Revs", tokens: ["--race-ink", "--race-red", "--race-dim"], note: "The rpm in race-face figures, white, and red at the limiter, with a small dim rpm." },
   },
   "drive-mode": {
-    collar: { note: "The rotary's seat, and the centre key's: round black recesses pressed into the well and the cap." },
-    cap: { tokens: ["--race-key-face", "--race-key-shadow", "--race-faint", "--race-red"], note: "A black knurled cap turned by a conic gradient from var(--a), its pointer a lit red wedge on the skirt. The centre cap is a key that sinks 2px." },
-    light: { tokens: ["--race-led-off", "--race-red", "--race-glow-red"], note: "A light beside the chosen mode follows the cap, lit red. The ring of twenty glows red and goes out one a second over the 20 s boost, drawn from a frame loop." },
-    lettering: { note: "The four modes and their detent marks, engraved round the collar, the chosen one lit red; the red rule and chevrons on the plate and LCD." },
-    lcd: { tokens: ["--race-glass", "--race-red", "--race-ink", "--race-glow-white"], note: "Black glass with the mode in condensed italic red figures, three red LED bars that travel on springs to each mode's preset, and the boost count in white." },
-    glass: { tokens: ["--race-scanlines"], note: "Scanlines over the LCD, a 1px line every 3px." },
-    well: { tokens: ["--race-well", "--race-recess"], note: "The switch's pocket, pressed into the plate." },
+    collar: { note: "The rotary's seat, and the centre key's: round black recesses pressed into the plate and the cap." },
+    cap: { tokens: ["--race-key-face", "--race-key-shadow", "--race-red"], note: "A black knurled cap turned by a conic gradient from var(--a), its pointer one thin red line on the skirt with a faint halo. The centre cap is a key that sinks 2px." },
+    light: { tokens: ["--race-red", "--race-led-off"], note: "A tiny red dot beside the chosen mode follows the cap. A thin red arc round the key shrinks over the 20 s boost, drawn from a frame loop." },
+    lettering: { tokens: ["--race-ink", "--race-dim"], note: "The four modes engraved round the collar, dim, the chosen one white. Above, the mode name in large white condensed italic, crossfading in 120 ms, with a small quiet count while the boost runs." },
   },
   "paddle-shifters": {
     key: { name: "Paddles", tokens: ["--race-metal", "--race-key-shadow", "--race-red"], note: "Slim dark blades hung from a pivot, with a swept tip and a thin red edge on the inner side. The face sinks 2px and leans about the pivot on the rotate property inside the key's own frame, settling with one small overshoot." },

@@ -48,7 +48,7 @@ export const registry: RegistryEntry[] = [
     slug: "drive-mode",
     title: "Drive Mode",
     description:
-      "A mode picker after a steering wheel's drive-mode switch, in a night cockpit: a black knurled cap in a collar, a lit red pointer, the four modes engraved round it and a key in the centre. An engine idles under it, and each mode sets how: Sport+ higher, louder and lumpier. A change blips the throttle; the key starts a 20 s response boost, a red ring of twenty lights that goes out one a second, and flares the revs. Arrow keys, Home and End step the modes.",
+      "A mode picker after a steering wheel's drive-mode switch, on a black cockpit plate: a knurled cap with one thin red pointer, the four modes engraved round it and a key in the centre. The cap turns between detents with a small overshoot and the mode name crossfades above it. An engine idles under it, higher and lumpier in Sport+. The key starts a 20 s response boost, a fine red arc that shrinks as it runs. Arrow keys, Home and End step the modes.",
     tagline: "Turn to a mode, press for a 20 s boost, hear it change.",
     tags: ["input", "pointer", "sound", "a11y"],
     date: "2026-10-09",

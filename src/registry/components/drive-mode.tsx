@@ -1,19 +1,20 @@
 "use client";
 
 import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
-import { createSpring, focusQuietly, springs, type Spring } from "@/design-system";
+import { createSpring, focusQuietly, type Spring } from "@/design-system";
 import { engine, hostTransport, play, type PlayOptions, type SoundName } from "@/lib/sound";
 
 /*
  * A mode picker after a steering wheel's drive-mode switch, on a night
  * cockpit: a black knurled cap in a black collar with four detents across
- * 120°, a red pointer on its skirt, the modes engraved round it with the
- * chosen one lit, and a key in its centre that starts a timed response boost.
- * The boost shows as a ring of twenty red lights that all come on together and
- * go out one a second.
+ * 120°, one thin red pointer line on its skirt, the modes engraved round it
+ * (the chosen one white, with a tiny red dot), and a key in its centre that
+ * starts a timed response boost. The boost shows as a thin red arc round the
+ * key that shrinks over twenty seconds.
  *
- * Values set from outside travel on the motor, a spring in degrees
- * (springs.gentle), and tick through every detent they pass, pitched with the
+ * Values set from outside travel on the motor, a spring in degrees (a touch
+ * under springs.gentle's damping, so the cap overshoots a few per cent and
+ * settles), and tick through every detent they pass, pitched with the
  * detent so a mode recalled from outside sounds like the switch turning by
  * itself. A hand drags the cap round the centre (it follows the pointer's
  * angle, from where it was grabbed) and lets go onto the nearest detent. The
@@ -26,9 +27,10 @@ import { engine, hostTransport, play, type PlayOptions, type SoundName } from "@
  * and the engine pops on the lift. While the host's tape is paused it runs
  * silent until a hand works the switch.
  *
- * The boost ring is drawn from a frame loop straight to the DOM, like the
- * hold-to-confirm ring. It counts real time (20 s); press the key again to
- * cancel. Arrow keys step the modes, Home and End go to the ends.
+ * The boost arc is drawn from a frame loop straight to the DOM, like the
+ * hold-to-confirm ring (stepping by the second under reduced motion). It
+ * counts real time (20 s); press the key again to cancel. Arrow keys step
+ * the modes, Home and End go to the ends.
  */
 
 const MODES = [
@@ -42,9 +44,10 @@ export type DriveModeValue = (typeof MODES)[number]["value"];
 
 const STEP = 40; // degrees between detents: four of them make ±60°
 const ANGLES = MODES.map((_, i) => (i - (MODES.length - 1) / 2) * STEP);
-const LIGHTS = 20; // one per second of the boost
+const SECONDS = 20; // the boost
 const SECOND = 1000;
-const BOOST_MS = LIGHTS * SECOND;
+const BOOST_MS = SECONDS * SECOND;
+const CAP_SPRING = { stiffness: 140, damping: 17 }; // ζ ≈ 0.72: a weighty turn, ~4% overshoot, one clean settle
 
 /** How each mode idles, in thousands of rpm and throttle load: Sport+ sits higher, louder and lumpier. */
 const IDLE = [
@@ -85,19 +88,8 @@ const labelAt = ANGLES.map((deg) => {
   return { left: em(p.x), top: em(p.y) };
 });
 
-/** A short mark engraved on the plate at each detent. */
-const detentMarks = ANGLES.map((deg) => {
-  const a = polar(deg, 5.25, CX, CY);
-  const b = polar(deg, 5.8, CX, CY);
-  return `M${a.x} ${a.y}L${b.x} ${b.y}`;
-});
-
-/** The boost ring's lights, short strokes round the key from twelve o'clock. */
-const ring = Array.from({ length: LIGHTS }, (_, i) => {
-  const a = polar((i + 0.5) * (360 / LIGHTS), 33.6, 50, 50);
-  const b = polar((i + 0.5) * (360 / LIGHTS), 41.6, 50, 50);
-  return `M${a.x} ${a.y}L${b.x} ${b.y}`;
-});
+/** The boost arc: a circle from twelve o'clock, clockwise, in a 100-unit box, with a path length of 100 so a dash is a percentage. */
+const ARC = "M50 11.5a38.5 38.5 0 1 1 0 77a38.5 38.5 0 1 1 0-77";
 
 /**
  * The engine under the switch: it idles at the mode's rpm, and a small spring
@@ -202,7 +194,7 @@ export function DriveMode({ value, onChange, name, boost, onBoostChange, onCount
     const lights = [...root.querySelectorAll<HTMLElement>("[data-mode-light]")];
     let shown = -1;
     index.current = -1; // a remount starts from the value again, not from a stale detent
-    const s = createSpring(0, springs.gentle, (deg) => {
+    const s = createSpring(0, CAP_SPRING, (deg) => {
       root.style.setProperty("--a", `${deg.toFixed(2)}deg`);
       const detent = detentAt(deg);
       if (detent !== shown) {
@@ -241,27 +233,22 @@ export function DriveMode({ value, onChange, name, boost, onBoostChange, onCount
     }
   }, [value]);
 
-  // The boost ring: all twenty lights on at once, one out each second, drawn from a frame loop.
+  // The boost arc: full at the start, shrinking round to twelve o'clock over twenty seconds, drawn from a frame loop.
   useLayoutEffect(() => {
     const root = rootRef.current!;
-    const lights = [...root.querySelectorAll<SVGPathElement>("[data-segment]")];
+    const arc = root.querySelector<SVGPathElement>("[data-arc]")!;
     let raf = 0;
     let begun = 0;
     let lit = -1;
 
-    const show = (n: number) => {
-      lights.forEach((light, i) => {
-        if (i < n) light.dataset.on = "";
-        else delete light.dataset.on;
-      });
-      lit = n;
-    };
+    const draw = (fraction: number) => arc.setAttribute("stroke-dasharray", `${(fraction * 100).toFixed(2)} 100`);
 
     const frame = (now: number) => {
       const left = Math.max(0, BOOST_MS - (now - begun));
-      const n = Math.min(LIGHTS, Math.ceil(left / SECOND));
+      const n = Math.min(SECONDS, Math.ceil(left / SECOND));
+      draw(reducedMotion() ? n / SECONDS : left / BOOST_MS);
       if (n !== lit) {
-        show(n);
+        lit = n;
         props.current.onCount?.(n);
       }
       if (left > 0) {
@@ -269,6 +256,7 @@ export function DriveMode({ value, onChange, name, boost, onBoostChange, onCount
         return;
       }
       raf = 0;
+      delete arc.dataset.on;
       expired.current = true;
       setOwn(false);
       props.current.onBoostChange?.(false, true);
@@ -279,12 +267,14 @@ export function DriveMode({ value, onChange, name, boost, onBoostChange, onCount
         cancelAnimationFrame(raf);
         begun = performance.now();
         lit = -1;
+        draw(1);
+        arc.dataset.on = "";
         raf = requestAnimationFrame(frame);
       },
       cancel() {
         cancelAnimationFrame(raf);
         raf = 0;
-        show(0);
+        delete arc.dataset.on;
       },
     };
     return () => cancelAnimationFrame(raf);
@@ -409,14 +399,7 @@ export function DriveMode({ value, onChange, name, boost, onBoostChange, onCount
     >
       {name && <input type="hidden" name={name} value={value} />}
 
-      {/* The detent marks, engraved on the plate. */}
-      <svg aria-hidden data-part="lettering" viewBox={`0 0 ${W} ${H}`} className="pointer-events-none absolute inset-0 size-full">
-        {detentMarks.map((d, i) => (
-          <path key={i} d={d} strokeWidth="0.14" strokeLinecap="square" className="stroke-(--race-faint)" />
-        ))}
-      </svg>
-
-      {/* The modes, engraved round the collar; the chosen one lights and follows the cap. */}
+      {/* The modes, engraved round the collar; the chosen one is white with a tiny red dot and follows the cap. */}
       {MODES.map((m, i) => (
         <span
           key={m.value}
@@ -430,15 +413,15 @@ export function DriveMode({ value, onChange, name, boost, onBoostChange, onCount
             pick(i);
           }}
           style={labelAt[i]}
-          className="group/mode absolute flex -translate-1/2 cursor-pointer items-center gap-[0.35em] px-[0.3em] py-[0.8em]"
+          className="group/mode absolute flex -translate-1/2 cursor-pointer items-center gap-[0.4em] px-[0.3em] py-[0.8em]"
         >
           <span
             data-part="light"
-            className="size-[0.36em] rounded-full bg-(--race-led-off) transition-[background-color,box-shadow] duration-(--duration-exit) group-data-on/mode:bg-(--race-red) group-data-on/mode:shadow-(--race-glow-red) group-data-on/mode:duration-0"
+            className="size-[0.34em] rounded-full bg-transparent transition-colors duration-(--duration-exit) group-data-on/mode:bg-(--race-red) group-data-on/mode:duration-0"
           />
           <span
             data-part="lettering"
-            className="text-[0.62em] font-semibold uppercase leading-none tracking-[0.16em] text-(--race-dim) transition-[color,text-shadow] duration-(--duration-exit) group-data-on/mode:text-(--race-red) group-data-on/mode:[text-shadow:var(--race-glow-red)] group-data-on/mode:duration-0"
+            className="text-[0.66em] font-semibold uppercase leading-none tracking-[0.16em] text-(--race-dim) transition-colors duration-(--duration-exit) group-data-on/mode:text-(--race-ink) group-data-on/mode:duration-0"
           >
             {m.label}
           </span>
@@ -469,26 +452,26 @@ export function DriveMode({ value, onChange, name, boost, onBoostChange, onCount
           <div
             className="absolute inset-0 rounded-full"
             style={{
-              background: "repeating-conic-gradient(from var(--a), var(--race-faint) 0 1.6deg, transparent 1.6deg 7.5deg)",
+              background: "repeating-conic-gradient(from var(--a), rgb(255 255 255 / 0.1) 0 1deg, transparent 1deg 4deg)",
               mask: "radial-gradient(circle closest-side, transparent 86%, #000 88%, #000 98%, transparent 100%)",
             }}
           />
-          {/* The smooth face, a shade below the skirt: the ring of lights sits on it, so the knurling stays on the skirt. */}
+          {/* The smooth face, a shade below the skirt: the boost arc sits on it, so the knurling stays on the skirt. */}
           <div className="absolute inset-[11%] rounded-full [background:var(--race-body)] shadow-[0_0_0_1px_rgb(0_0_0/0.8),inset_0_1px_3px_rgb(0_0_0/0.9),0_1px_0_var(--race-faint)]" />
-          {/* The pointer: a red wedge across the skirt, lit. */}
-          <div className="absolute inset-0 [filter:drop-shadow(0_0_0.3em_var(--race-red))]">
+          {/* The pointer: one thin red line across the skirt, with a faint halo. */}
+          <div className="absolute inset-0 [filter:drop-shadow(0_0_0.18em_rgb(255_31_31/0.5))]">
             <div
               className="size-full rounded-full"
               style={{
-                background: "conic-gradient(from calc(var(--a) - 3.5deg), var(--race-red) 0 7deg, transparent 7deg)",
-                mask: "radial-gradient(circle closest-side, transparent 66%, #000 68%, #000 97%, transparent 98%)",
+                background: "conic-gradient(from calc(var(--a) - 0.9deg), var(--race-red) 0 1.8deg, transparent 1.8deg)",
+                mask: "radial-gradient(circle closest-side, transparent 70%, #000 72%, #000 97%, transparent 98%)",
               }}
             />
           </div>
         </div>
       </div>
 
-      {/* The boost ring, round the key: red lights, all on together, one out a second. */}
+      {/* The boost arc, round the key: thin and red, shrinking over twenty seconds. */}
       <svg
         aria-hidden
         data-part="light"
@@ -496,16 +479,16 @@ export function DriveMode({ value, onChange, name, boost, onBoostChange, onCount
         className="pointer-events-none absolute"
         style={{ left: em(CX - 3.2), top: em(CY - 3.2), width: "6.4em", height: "6.4em" }}
       >
-        {ring.map((d, i) => (
-          <path
-            key={i}
-            data-segment
-            d={d}
-            strokeWidth="3.2"
-            strokeLinecap="butt"
-            className="stroke-(--race-led-off) transition-[stroke,filter] duration-(--duration-exit) data-on:stroke-(--race-red) data-on:[filter:drop-shadow(0_0_0.3em_var(--race-red))] data-on:duration-0 motion-reduce:transition-none"
-          />
-        ))}
+        <path
+          data-arc
+          d={ARC}
+          pathLength="100"
+          fill="none"
+          strokeWidth="1.1"
+          strokeLinecap="round"
+          strokeDasharray="0 100"
+          className="stroke-(--race-red) opacity-0 transition-opacity duration-(--duration-exit) data-on:opacity-75 data-on:duration-0 motion-reduce:transition-none"
+        />
       </svg>
 
       {/* The key in the centre: a black cap in its own collar, sinking 2px. */}
@@ -531,10 +514,10 @@ export function DriveMode({ value, onChange, name, boost, onBoostChange, onCount
             data-part="cap"
             className="grid size-full place-items-center rounded-full [background:var(--race-key-face)] shadow-(--race-key-shadow) transition-[translate,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--race-key-shadow-pressed) group-active/key:duration-75 group-data-pressed/key:translate-y-[2px] group-data-pressed/key:shadow-(--race-key-shadow-pressed) group-data-pressed/key:duration-75"
           >
-            {/* Its mark glows red while the boost runs. */}
+            {/* Its mark turns red while the boost runs. */}
             <span
               data-part="light"
-              className="size-[24%] rounded-full bg-(--race-led-off) transition-[background-color,box-shadow] duration-(--duration-exit) group-aria-pressed/key:bg-(--race-red) group-aria-pressed/key:shadow-(--race-glow-red) group-aria-pressed/key:duration-0"
+              className="size-[24%] rounded-full bg-(--race-led-off) transition-colors duration-(--duration-exit) group-aria-pressed/key:bg-(--race-red) group-aria-pressed/key:duration-0"
             />
           </span>
         </span>
@@ -545,24 +528,13 @@ export function DriveMode({ value, onChange, name, boost, onBoostChange, onCount
 
 /* --- Demo: the wheel's drive-mode switch ----------------------------------- */
 
-/** Throttle, damping and exhaust as a fraction of travel, for each mode. */
-const PRESETS: Record<DriveModeValue, [number, number, number]> = {
-  wet: [0.26, 0.34, 0.12],
-  normal: [0.5, 0.5, 0.4],
-  sport: [0.76, 0.72, 0.74],
-  "sport-plus": [1, 0.94, 1],
-};
-const BARS = ["Throttle", "Damping", "Exhaust"];
-const SEGMENTS = 14; // LED segments in each bar
-
 export default function Demo() {
   const [mode, setMode] = useState<DriveModeValue>("normal");
   const [boost, setBoost] = useState(false);
-  const [left, setLeft] = useState(LIGHTS);
+  const [left, setLeft] = useState(SECONDS);
   const [said, setSaid] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
   const touched = useRef(false);
-  const bars = useRef<Spring[]>([]);
 
   // The rehearsal is silent in the live region; only a viewer's own changes (and a boost running out) are said.
   const changeMode = (value: DriveModeValue, ghost = false) => {
@@ -571,32 +543,9 @@ export default function Demo() {
   };
   const changeBoost = (on: boolean, expired?: boolean, ghost = false) => {
     setBoost(on);
-    if (on) setLeft(LIGHTS);
-    if (!ghost) setSaid(on ? `Response boost on, ${LIGHTS} s` : expired ? "Response boost ended" : "Response boost cancelled");
+    if (on) setLeft(SECONDS);
+    if (!ghost) setSaid(on ? `Response boost on, ${SECONDS} s` : expired ? "Response boost ended" : "Response boost cancelled");
   };
-
-  // The bars travel on springs to each mode's preset, lighting their segments straight in the DOM.
-  useLayoutEffect(() => {
-    const els = [...rootRef.current!.querySelectorAll<HTMLElement>("[data-bar]")];
-    bars.current = els.map((el, i) => {
-      const segments = [...el.children] as HTMLElement[];
-      let lit = Math.round(PRESETS.normal[i] * SEGMENTS);
-      return createSpring(PRESETS.normal[i], springs.gentle, (v) => {
-        const n = clamp(Math.round(v * SEGMENTS), 0, SEGMENTS);
-        if (n === lit) return;
-        lit = n;
-        segments.forEach((segment, k) => {
-          if (k < n) segment.dataset.on = "";
-          else delete segment.dataset.on;
-        });
-      });
-    });
-    const made = bars.current;
-    return () => made.forEach((s) => s.stop());
-  }, []);
-  useLayoutEffect(() => {
-    bars.current.forEach((s, i) => (reducedMotion() ? s.jump(PRESETS[mode][i]) : s.set(PRESETS[mode][i])));
-  }, [mode]);
 
   // The ghost: Normal, Sport, Sport+, the boost, and back to Normal. The first touch ends it for good.
   const rehearse = useEffectEvent((step: number) => {
@@ -619,68 +568,31 @@ export default function Demo() {
       onKeyDownCapture={() => (touched.current = true)}
       className="@container w-full max-w-[420px] select-none"
     >
-      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[0.9em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)] @[26rem]:p-[1.1em]">
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] [background:var(--race-weave)]" />
-        <span aria-hidden data-part="lettering" className="pointer-events-none absolute top-0 left-[0.9em] h-[0.2em] w-[3.6em] bg-(--race-red)" />
-
-        {/* The cluster's readout: the mode, what it does to the car, the boost. */}
-        <div
-          aria-hidden
-          data-part="lcd"
-          className="relative mt-[0.2em] flex h-[6em] items-stretch gap-[1em] overflow-hidden rounded-[0.6em] py-[0.65em] pr-[0.9em] pl-[1.1em] text-(--race-ink) [background:var(--race-glass)] shadow-[inset_0.2em_0_0_var(--race-red),inset_0_0_0_1px_var(--race-faint)]"
-        >
-          <div className="flex w-[6.6em] shrink-0 flex-col justify-between">
-            <div className="flex flex-col gap-[0.3em]">
-              <span className="flex items-center gap-[0.4em]">
-                <span className="text-[0.56em] font-semibold uppercase leading-none tracking-[0.16em] text-(--race-dim)">Mode</span>
-                <svg aria-hidden data-part="lettering" viewBox="0 0 14 6" fill="none" strokeWidth="1.3" className="h-[0.5em] w-[1.1em] stroke-(--race-red)">
-                  {[0, 4.5, 9].map((x) => (
-                    <path key={x} d={`M${x + 1} 0.5L${x + 3.5} 3L${x + 1} 5.5`} />
-                  ))}
-                </svg>
-              </span>
-              <span className="font-[family-name:var(--font-race)] text-[2.2em] leading-[0.95] font-bold whitespace-nowrap text-(--race-red) uppercase italic [font-stretch:62%] [text-shadow:var(--race-glow-red)] tabular-nums">
-                {MODES[indexOf(mode)].label}
-              </span>
-            </div>
-            <div className="flex items-baseline gap-[0.6em] tabular-nums">
-              <span className="text-[0.56em] font-semibold uppercase leading-none tracking-[0.16em] text-(--race-dim)">Boost</span>
+      <div data-part="plate" className="relative isolate flex animate-enter flex-col items-center gap-[0.5em] overflow-hidden rounded-[0.9em] p-[0.9em] pt-[1.3em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)] @[26rem]:p-[1.1em] @[26rem]:pt-[1.5em]">
+        {/* The one line of text: the mode, large and white. The four names are stacked and crossfade; the boost count hangs quietly beside it. */}
+        <div aria-hidden data-part="lettering" className="grid h-[1.1em] grid-cols-1 items-center text-[3.2em] leading-none text-(--race-ink)">
+          {MODES.map((m) => (
+            <span
+              key={m.value}
+              className={cx(
+                "relative col-start-1 row-start-1 justify-self-center whitespace-nowrap font-[family-name:var(--font-race)] font-bold uppercase italic [font-stretch:62%] opacity-0 transition-opacity duration-[120ms] ease-out",
+                m.value === mode && "opacity-100",
+              )}
+            >
+              {m.label}
               <span
                 className={cx(
-                  "font-[family-name:var(--font-race)] text-[1.45em] leading-none font-bold italic [font-stretch:62%]",
-                  boost ? "text-(--race-ink) [text-shadow:var(--race-glow-white)]" : "text-(--race-faint)",
+                  "absolute bottom-[0.14em] left-full ml-[0.45em] whitespace-nowrap font-[family-name:var(--font-sans)] text-[0.22em] font-semibold normal-case not-italic tracking-[0.04em] text-(--race-dim) tabular-nums [font-stretch:100%] transition-opacity duration-(--duration-exit)",
+                  !boost && "opacity-0",
                 )}
               >
-                {boost ? left : "–"}
-                {boost && <span className="ml-[0.25em] text-[0.5em] font-semibold text-(--race-dim) [text-shadow:none]">s</span>}
+                {left} s
               </span>
-            </div>
-          </div>
-          <div className="flex min-w-0 flex-1 flex-col justify-between">
-            {BARS.map((label, i) => (
-              <div key={label} className="flex items-center gap-[0.7em]">
-                <div className="w-[4em] shrink-0">
-                  <span className="text-[0.56em] font-semibold uppercase leading-none tracking-[0.16em] text-(--race-dim)">{label}</span>
-                </div>
-                <div data-bar className="flex h-[0.7em] min-w-0 flex-1 gap-[0.16em]">
-                  {Array.from({ length: SEGMENTS }, (_, k) => (
-                    <span
-                      key={k}
-                      data-on={k < Math.round(PRESETS.normal[i] * SEGMENTS) || undefined}
-                      className="min-w-0 flex-1 skew-x-[-18deg] rounded-[0.06em] bg-(--race-led-off) transition-[background-color,box-shadow] duration-(--duration-exit) data-on:bg-(--race-red) data-on:shadow-[0_0_0.4em_var(--race-red)] data-on:duration-0 motion-reduce:transition-none"
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-          <span aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--race-scanlines)]" />
+            </span>
+          ))}
         </div>
 
-        {/* The switch, pressed into the plate. */}
-        <div data-part="well" className="mx-auto mt-[0.8em] w-fit rounded-[0.6em] bg-(--race-well) p-[0.4em] shadow-(--race-recess)">
-          <DriveMode value={mode} onChange={(v) => changeMode(v)} name="drive-mode" boost={boost} onBoostChange={changeBoost} onCount={setLeft} />
-        </div>
+        <DriveMode className="mt-[0.6em] text-[1.2em]" value={mode} onChange={(v) => changeMode(v)} name="drive-mode" boost={boost} onBoostChange={changeBoost} onCount={setLeft} />
       </div>
       <p role="status" aria-live="polite" className="sr-only">
         {said}
