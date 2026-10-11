@@ -26,8 +26,8 @@ export const registry: RegistryEntry[] = [
     slug: "gauge-cluster",
     title: "Gauge Cluster",
     description:
-      "Three black dials on a black plate, lit by their figures and needles alone. The tach sits in front with a small red block at the end of its scale, the gear in one large white letter and a pill that says Normal; speed is a quiet figure in the speedo. Each needle is a spring and each dial a meter. On power-up the needles sweep up together, overshoot and settle, then a lap runs with a flat-six under it. Hold, or press Space, to take the throttle.",
-    tagline: "Three black dials, one red needle each.",
+      "Five black dials in a row on a black plate, turned a little away from you, lit by their figures and needles alone: clock, speedo, a big tach in front, oil and fuel. The tach has a small red block, the gear in one large white letter and a pill that says Normal. Each needle is a spring and each dial a meter; the clock keeps real time. On power-up three needles sweep and settle, then a lap runs with a flat-six under it. Hold, or press Space, to take the throttle.",
+    tagline: "Five black dials, one red needle each.",
     tags: ["motion", "svg", "sound", "a11y"],
     date: "2026-10-09",
     status: "new",

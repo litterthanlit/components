@@ -7,8 +7,8 @@ import { parts, type PartInfo } from "@/components/anatomy/parts";
  */
 export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>> = {
   "gauge-cluster": {
-    bezel: { tokens: ["--race-well"], note: "Black, with a hairline lit edge, round each dial. The tach stands proud of the other two and throws a hard shadow on them." },
-    face: { tokens: ["--race-glass", "--race-ink", "--race-red"], note: "Black glass with fine white ticks and white condensed italic figures, a small red block at the end of the tach scale, and one red needle with a faint halo and a metal hub. The needles are drawn through SVG attributes by springs in degrees, never a transform." },
+    bezel: { tokens: ["--race-well"], note: "Black, with a hairline lit edge, round each of the five dials. The tach stands proud of the others and throws a hard shadow on them; the outer dials turn away on the rotate property." },
+    face: { tokens: ["--race-glass", "--race-ink", "--race-red"], note: "Black glass with fine white ticks and white upright figures, a small red block at the end of the tach scale, and red needles with a faint halo and a metal hub. The clock draws two hands and the fuel gauge runs E to F. Needles are drawn through SVG attributes by springs, never a transform." },
     chip: { tokens: ["--race-faint", "--race-dim", "--race-red", "--race-ink"], note: "The mode pill under the tach's hub: Normal at rest, Touch while a hand has the throttle, its outline red then." },
     lettering: { tokens: ["--race-ink"], note: "The gear in one large white letter right of the tach's hub, and the road speed as a small figure in the speedo." },
   },
