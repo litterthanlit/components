@@ -7,7 +7,7 @@ import { hostTransport, play, type PlayOptions, type SoundName } from "@/lib/sou
 /*
  * A stopwatch and lap timer after a dash-top chronograph, on the night-race
  * line, kept as plain as the cluster it comes from: a black dial on a black
- * plate, fine white ticks, white condensed figures at the quarters, one red
+ * plate, fine white ticks, white upright figures at the quarters, one red
  * seconds hand on a small hub and a small thirty-minute sub-dial with a white
  * hand. Beside or under it the time stands directly on the black in one large
  * figure, its hundredths smaller and dim, and the last lap in one small line
@@ -508,7 +508,7 @@ export function Chrono({
   /* --- Render ------------------------------------------------------------- */
 
   const last = laps.length ? hundredths(laps[laps.length - 1]) : null;
-  const cells = (digit: string) => CELLS.map((c, i) => (c === "d" ? <span key={i} className="w-[0.5em] text-center">{digit}</span> : <span key={i} className="mx-[0.01em]">{c}</span>));
+  const cells = (digit: string) => CELLS.map((c, i) => (c === "d" ? <span key={i} className="w-[0.6em] text-center">{digit}</span> : <span key={i} className="mx-[0.01em]">{c}</span>));
   const halo = useId().replace(/\W/g, "");
 
   return (
@@ -518,10 +518,10 @@ export function Chrono({
       aria-label={label}
       onPointerDownCapture={() => (touched.current = true)}
       onKeyDownCapture={() => (touched.current = true)}
-      className={cx("flex flex-col gap-[1em] @[34rem]:grid @[34rem]:grid-cols-[16.2em_minmax(0,1fr)] @[34rem]:items-center @[34rem]:gap-x-[1.4em]", className)}
+      className={cx("flex flex-col gap-[1.4em] @[40rem]:grid @[40rem]:grid-cols-[16.2em_minmax(0,1fr)] @[40rem]:items-center @[40rem]:gap-x-[2.6em] @[40rem]:gap-y-[1.4em]", className)}
     >
       {/* A black dial: ticks, four figures, a sub-dial and one red hand. The hands are drawn by the frame loop. */}
-      <div aria-hidden data-part="face" className="mx-auto size-[14.4em] @[34rem]:row-span-2 @[34rem]:size-[16.2em] rounded-full bg-(--race-well) shadow-[inset_0_0_0_1px_var(--race-faint)]">
+      <div aria-hidden data-part="face" className="mx-auto size-[14.4em] @[40rem]:row-span-2 @[40rem]:size-[16.2em] rounded-full bg-(--race-well) shadow-[inset_0_0_0_1px_var(--race-faint)]">
         <svg viewBox="0 0 200 200" className="block size-full font-sans">
           {/* A faint halo for the seconds hand alone. A fixed region, since a hand's own box has no width. */}
           <defs>
@@ -539,7 +539,7 @@ export function Chrono({
           <path d={DIAL.minor} fill="none" stroke="var(--race-dim)" strokeWidth="0.9" />
           <path d={DIAL.major} fill="none" stroke="var(--race-ink)" strokeWidth="1.6" />
           <path d={DIAL.quarter} fill="none" stroke="var(--race-ink)" strokeWidth="2.4" />
-          <g className="font-[family-name:var(--font-race)] font-bold italic [font-stretch:62%]" fontSize="19" fill="var(--race-ink)" textAnchor="middle" dominantBaseline="central">
+          <g className="font-[family-name:var(--font-race)] font-medium" fontSize="17" fill="var(--race-ink)" textAnchor="middle" dominantBaseline="central">
             {FIGURES.map((f) => (
               <text key={f.text} x={f.x} y={f.y}>
                 {f.text}
@@ -563,8 +563,8 @@ export function Chrono({
       </div>
 
       {/* The readout: the time, large, directly on the plate with its hundredths small and dim, and the last lap beneath. */}
-      <div aria-hidden className="flex flex-col gap-[0.6em] text-(--race-ink) @[34rem]:col-start-2">
-        <div className="font-[family-name:var(--font-race)] text-[6em] font-bold leading-[0.9] italic tabular-nums [font-stretch:62%] @[34rem]:text-[6.4em]">
+      <div aria-hidden className="flex flex-col gap-[1em] text-(--race-ink) @[40rem]:col-start-2">
+        <div className="font-[family-name:var(--font-race)] text-[5em] font-medium leading-[0.95] tabular-nums @[40rem]:text-[5.4em]">
           <p ref={clockRef} className="flex items-baseline whitespace-nowrap [&>:nth-child(3)]:text-(--race-dim) [&>:nth-child(n+6)]:text-(--race-dim) [&>:nth-child(n+6)]:text-[0.5em]">
             {cells("0")}
           </p>
@@ -574,7 +574,7 @@ export function Chrono({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-[0.6em] @[34rem]:col-start-2">
+      <div className="grid grid-cols-2 gap-[0.8em] @[40rem]:col-start-2 @[40rem]:mt-[0.4em]">
         <Key id="start" label={running ? "Stop" : "Start"} lit={running} onAct={() => act("start")} onTouch={touch} />
         <Key id="lap" label={running ? "Lap" : "Reset"} disabled={clean} onAct={() => act("lap")} onTouch={touch} />
       </div>
@@ -633,8 +633,8 @@ export default function Demo() {
   }, []);
 
   return (
-    <div ref={rootRef} onPointerDownCapture={takeOver} onKeyDownCapture={takeOver} className="@container w-full max-w-[640px] select-none">
-      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[0.9em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)]">
+    <div ref={rootRef} onPointerDownCapture={takeOver} onKeyDownCapture={takeOver} className="@container w-full max-w-[760px] select-none">
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.1em] p-[1.4em] text-[clamp(11px,2.4cqw,18px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)]">
         <Chrono
           ref={chrono}
           running={clock.running}

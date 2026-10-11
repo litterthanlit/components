@@ -474,13 +474,13 @@ Colours that must be told apart differ in lightness as well as hue.
 
 ### Type
 
-Figures are set in Saira, loaded through `next/font/google` as a variable font (`--font-saira`, with its width axis and an italic), and reached through `--font-race`. They are condensed (`font-stretch: 62%`), italic, weights 600 to 800, and tabular. Lettering stays Geist capitals, as everywhere on the hardware: labels name, figures count. Saira is used for figures only, a speed, a gear, an rpm, a lap time.
+Figures are set in Saira, loaded through `next/font/google` as a variable font (`--font-saira`, with its width axis and an italic), and reached through `--font-race`. They are upright, regular width, weight 500 and tabular, and they are for figures only. Lettering stays Geist capitals, as everywhere on the hardware: labels name, figures count. Saira is used for figures only, a speed, a gear, an rpm, a lap time.
 
 ```tsx
-<span className="font-[family-name:var(--font-race)] text-[2.4em] font-bold italic tabular-nums [font-stretch:62%]">128</span>
+<span className="font-[family-name:var(--font-race)] text-[2.4em] font-medium tabular-nums">128</span>
 ```
 
-The font is not preloaded (`preload: false`), so a page without a car study never fetches it; the fallback is the system condensed sans and the figures keep their width.
+The font is not preloaded (`preload: false`), so a page without a car study never fetches it; the fallback is the system sans and the figures keep their width.
 
 ### Light
 
@@ -492,6 +492,8 @@ The font is not preloaded (`preload: false`), so a page without a car study neve
 ### Motion
 
 The polish is in the motion, since there is little else to look at. A needle, hand, cap or pedal runs on a spring tuned for a crisp attack, one small overshoot (about 3 to 6% of its travel) and a clean settle, with no jitter. Interruptions continue smoothly, because springs keep their velocity. A count (rpm, speed, a clock) is driven from the same spring or integrator as the needle, so its figures roll with it, tabular and never changing width. The ignition sweep is staggered and eased by the spring itself.
+
+Race studies scale to their stage: the plate font clamps up to 18px, wide layouts switch at 40rem or more, and generous space is kept round their parts.
 
 ### Sound
 
