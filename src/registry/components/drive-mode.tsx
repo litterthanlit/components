@@ -7,7 +7,7 @@ import { engine, hostTransport, play, type PlayOptions, type SoundName } from "@
 /*
  * A mode picker after a steering wheel's drive-mode switch, on a night
  * cockpit: a black knurled cap in a black collar with four detents across
- * 120°, a yellow pointer on its skirt, the modes engraved round it with the
+ * 120°, a red pointer on its skirt, the modes engraved round it with the
  * chosen one lit, and a key in its centre that starts a timed response boost.
  * The boost shows as a ring of twenty red lights that all come on together and
  * go out one a second.
@@ -434,11 +434,11 @@ export function DriveMode({ value, onChange, name, boost, onBoostChange, onCount
         >
           <span
             data-part="light"
-            className="size-[0.36em] rounded-full bg-(--race-led-off) transition-[background-color,box-shadow] duration-(--duration-exit) group-data-on/mode:bg-(--race-yellow) group-data-on/mode:shadow-(--race-glow-yellow) group-data-on/mode:duration-0"
+            className="size-[0.36em] rounded-full bg-(--race-led-off) transition-[background-color,box-shadow] duration-(--duration-exit) group-data-on/mode:bg-(--race-red) group-data-on/mode:shadow-(--race-glow-red) group-data-on/mode:duration-0"
           />
           <span
             data-part="lettering"
-            className="text-[0.62em] font-semibold uppercase leading-none tracking-[0.16em] text-(--race-dim) transition-[color,text-shadow] duration-(--duration-exit) group-data-on/mode:text-(--race-yellow) group-data-on/mode:[text-shadow:var(--race-glow-yellow)] group-data-on/mode:duration-0"
+            className="text-[0.62em] font-semibold uppercase leading-none tracking-[0.16em] text-(--race-dim) transition-[color,text-shadow] duration-(--duration-exit) group-data-on/mode:text-(--race-red) group-data-on/mode:[text-shadow:var(--race-glow-red)] group-data-on/mode:duration-0"
           >
             {m.label}
           </span>
@@ -475,12 +475,12 @@ export function DriveMode({ value, onChange, name, boost, onBoostChange, onCount
           />
           {/* The smooth face, a shade below the skirt: the ring of lights sits on it, so the knurling stays on the skirt. */}
           <div className="absolute inset-[11%] rounded-full [background:var(--race-body)] shadow-[0_0_0_1px_rgb(0_0_0/0.8),inset_0_1px_3px_rgb(0_0_0/0.9),0_1px_0_var(--race-faint)]" />
-          {/* The pointer: a yellow wedge across the skirt, lit. */}
-          <div className="absolute inset-0 [filter:drop-shadow(0_0_0.3em_var(--race-yellow))]">
+          {/* The pointer: a red wedge across the skirt, lit. */}
+          <div className="absolute inset-0 [filter:drop-shadow(0_0_0.3em_var(--race-red))]">
             <div
               className="size-full rounded-full"
               style={{
-                background: "conic-gradient(from calc(var(--a) - 3.5deg), var(--race-yellow) 0 7deg, transparent 7deg)",
+                background: "conic-gradient(from calc(var(--a) - 3.5deg), var(--race-red) 0 7deg, transparent 7deg)",
                 mask: "radial-gradient(circle closest-side, transparent 66%, #000 68%, #000 97%, transparent 98%)",
               }}
             />
@@ -621,25 +621,25 @@ export default function Demo() {
     >
       <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[0.9em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)] @[26rem]:p-[1.1em]">
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] [background:var(--race-weave)]" />
-        <span aria-hidden data-part="lettering" className="pointer-events-none absolute top-0 left-[0.9em] h-[0.2em] w-[3.6em] bg-(--race-yellow)" />
+        <span aria-hidden data-part="lettering" className="pointer-events-none absolute top-0 left-[0.9em] h-[0.2em] w-[3.6em] bg-(--race-red)" />
 
         {/* The cluster's readout: the mode, what it does to the car, the boost. */}
         <div
           aria-hidden
           data-part="lcd"
-          className="relative mt-[0.2em] flex h-[6em] items-stretch gap-[1em] overflow-hidden rounded-[0.6em] py-[0.65em] pr-[0.9em] pl-[1.1em] text-(--race-ink) [background:var(--race-glass)] shadow-[inset_0.2em_0_0_var(--race-yellow),inset_0_0_0_1px_var(--race-faint)]"
+          className="relative mt-[0.2em] flex h-[6em] items-stretch gap-[1em] overflow-hidden rounded-[0.6em] py-[0.65em] pr-[0.9em] pl-[1.1em] text-(--race-ink) [background:var(--race-glass)] shadow-[inset_0.2em_0_0_var(--race-red),inset_0_0_0_1px_var(--race-faint)]"
         >
           <div className="flex w-[6.6em] shrink-0 flex-col justify-between">
             <div className="flex flex-col gap-[0.3em]">
               <span className="flex items-center gap-[0.4em]">
                 <span className="text-[0.56em] font-semibold uppercase leading-none tracking-[0.16em] text-(--race-dim)">Mode</span>
-                <svg aria-hidden data-part="lettering" viewBox="0 0 14 6" fill="none" strokeWidth="1.3" className="h-[0.5em] w-[1.1em] stroke-(--race-yellow)">
+                <svg aria-hidden data-part="lettering" viewBox="0 0 14 6" fill="none" strokeWidth="1.3" className="h-[0.5em] w-[1.1em] stroke-(--race-red)">
                   {[0, 4.5, 9].map((x) => (
                     <path key={x} d={`M${x + 1} 0.5L${x + 3.5} 3L${x + 1} 5.5`} />
                   ))}
                 </svg>
               </span>
-              <span className="font-[family-name:var(--font-race)] text-[2.2em] leading-[0.95] font-bold whitespace-nowrap text-(--race-yellow) uppercase italic [font-stretch:62%] [text-shadow:var(--race-glow-yellow)] tabular-nums">
+              <span className="font-[family-name:var(--font-race)] text-[2.2em] leading-[0.95] font-bold whitespace-nowrap text-(--race-red) uppercase italic [font-stretch:62%] [text-shadow:var(--race-glow-red)] tabular-nums">
                 {MODES[indexOf(mode)].label}
               </span>
             </div>
@@ -648,7 +648,7 @@ export default function Demo() {
               <span
                 className={cx(
                   "font-[family-name:var(--font-race)] text-[1.45em] leading-none font-bold italic [font-stretch:62%]",
-                  boost ? "text-(--race-red) [text-shadow:var(--race-glow-red)]" : "text-(--race-faint)",
+                  boost ? "text-(--race-ink) [text-shadow:var(--race-glow-white)]" : "text-(--race-faint)",
                 )}
               >
                 {boost ? left : "–"}
@@ -667,7 +667,7 @@ export default function Demo() {
                     <span
                       key={k}
                       data-on={k < Math.round(PRESETS.normal[i] * SEGMENTS) || undefined}
-                      className="min-w-0 flex-1 skew-x-[-18deg] rounded-[0.06em] bg-(--race-led-off) transition-[background-color,box-shadow] duration-(--duration-exit) data-on:bg-(--race-yellow) data-on:shadow-[0_0_0.4em_var(--race-yellow)] data-on:duration-0 motion-reduce:transition-none"
+                      className="min-w-0 flex-1 skew-x-[-18deg] rounded-[0.06em] bg-(--race-led-off) transition-[background-color,box-shadow] duration-(--duration-exit) data-on:bg-(--race-red) data-on:shadow-[0_0_0.4em_var(--race-red)] data-on:duration-0 motion-reduce:transition-none"
                     />
                   ))}
                 </div>
