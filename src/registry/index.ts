@@ -70,8 +70,8 @@ export const registry: RegistryEntry[] = [
     slug: "throttle",
     title: "Throttle",
     description:
-      "A spring-return analogue input after an accelerator pedal: a chamfered plate of black machined metal with a red chevron grip that brightens as it goes down, hinged at its foot in a well that glows red from below. The value follows the hand at once; let go and a return spring takes it home with a little rebound. Space or Down pushes it in, Up eases off. The demo turns it into revs: twelve shift lights, a limiter at 8,000 rpm and a flat-six you can hear.",
-    tagline: "A night-race pedal: the revs, the lights and the engine follow it.",
+      "A spring-return analogue input after an organ-hinged accelerator: dark machined metal with a few fine ribs, hinged at its foot. Press it and it tilts back; let go and a weighty return spring takes it home with one small rebound. The value is how far it is pressed. The demo reads it as revs, one large figure over a hairline that runs white to a red redline. At the limiter the figure turns red and the line pulses. A flat-six follows every frame.",
+    tagline: "A pedal that springs home, and an engine that follows it.",
     tags: ["input", "pointer", "sound", "a11y"],
     date: "2026-10-09",
     status: "new",

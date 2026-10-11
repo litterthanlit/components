@@ -16,13 +16,11 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     well: { tokens: ["--race-well", "--race-recess"], note: "The cluster's pocket in the plate." },
   },
   throttle: {
-    key: { name: "Pedal", tokens: ["--race-metal", "--race-key-shadow", "--race-red", "--race-red-deep"], note: "Black machined metal, chamfered at the toe, its edge and chevron grip in a red that brightens with travel. It tilts back from its hinge on the rotate property inside a clipping well." },
-    slot: { name: "Hinge", tokens: ["--race-well", "--race-red"], note: "A groove across the foot of the plate that turns red and glows as the pedal goes down." },
-    well: { name: "Wells", tokens: ["--race-well", "--race-recess"], note: "The shift-light bar, and the pedal box the plate stands in, lit from below." },
-    light: { tokens: ["--race-led-off", "--race-ink", "--race-red", "--race-glow-white", "--race-glow-red"], note: "Twelve shift lights, four white then eight red, each with a hot core and bloom. All flash red together at the limiter." },
-    lcd: { tokens: ["--race-glass", "--race-red-deep", "--race-ink", "--race-glow-white"], note: "Revs in the race face, glowing white and red at the limiter; a deep red chip says Idle, Rev or Limiter, lit red at the last two." },
-    glass: { tokens: ["--race-scanlines"], note: "Scanlines over the readout." },
-    lettering: { note: "The pedal's name between two red slashes." },
+    key: { name: "Pedal", tokens: ["--race-metal", "--race-key-shadow", "--race-faint", "--race-red"], note: "Dark machined metal with six fine ribs; the toe rib turns red with travel. It tilts back from its hinge on the rotate property inside a clipping well." },
+    slot: { name: "Hinge", tokens: ["--race-well", "--race-red"], note: "A thin line on the floor at the foot of the plate, faint red at rest and brighter as the pedal goes down." },
+    well: { name: "Pedal box", tokens: ["--race-well", "--race-recess"], note: "The pocket the pedal stands in, pressed into the plate." },
+    light: { name: "Rev hairline", tokens: ["--race-faint", "--race-ink", "--race-red"], note: "A 2px line under the figure, white to the redline and red beyond it, with a fine red tick. It follows the integrator and pulses calmly at the limiter." },
+    lettering: { name: "Revs", tokens: ["--race-ink", "--race-red", "--race-dim"], note: "The rpm in race-face figures, white, and red at the limiter, with a small dim rpm." },
   },
   "drive-mode": {
     collar: { note: "The rotary's seat, and the centre key's: round black recesses pressed into the well and the cap." },

@@ -2,14 +2,14 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { createSpring, focusQuietly, type Spring } from "@/design-system";
-import { engine as engineVoice, hostTransport, play, type PlayOptions, type SoundName } from "@/lib/sound";
+import { engine as engineVoice, hostTransport, play } from "@/lib/sound";
 
 /*
  * A spring-return analogue input after an organ-hinged accelerator pedal: a
- * chamfered plate of black machined metal, its edge and chevron grip picked out
- * in red, standing in a well with its hinge at the foot and a light under it
- * that comes up as it goes down. Press it and it tilts back from the hinge; let
- * go and a return spring takes it home with a little rebound. Its value, 0 to 1, is
+ * plate of dark machined metal with a few fine grip ribs, standing in a pocket
+ * with its hinge at the foot and a thin line on the floor under it that comes
+ * up red as it goes down. Press it and it tilts back from the hinge; let go and
+ * a return spring takes it home with one small rebound. Its value, 0 to 1, is
  * how far it is pressed: a scrub speed, a zoom rate, anything that should
  * stop the moment a foot leaves it.
  *
@@ -27,24 +27,27 @@ import { engine as engineVoice, hostTransport, play, type PlayOptions, type Soun
  * With `name` it carries its value in a hidden input, for forms.
  *
  * The demo is the other half of the mechanism: a small integrator turns the
- * pedal into revs, with shift lights over them and a limiter at the top, and
- * the same revs drive a flat-six that you can hear: it follows the integrator
- * every frame, cuts at the limiter and crackles when the foot comes off.
+ * pedal into revs, drawn as one large figure over a hairline that fills white
+ * and red toward a redline, with a limiter at the top, and the same revs drive
+ * a flat-six that you can hear: it follows the integrator every frame, cuts at
+ * the limiter and crackles when the foot comes off. At the limiter the figure
+ * turns red and the hairline pulses, slowly.
  */
 
 /* The well, in em. The plate's foot sits on the hinge; the hand reaches REACH of the plate's length. */
 const WELL_H = 13.6;
+const WELL_W = 14.6;
 const PEDAL_W = 9.4;
 const PEDAL_H = 11.4;
 const PEDAL_TOP = 0.8;
 const HINGE = PEDAL_TOP + PEDAL_H;
 const REACH = 0.8;
 const TILT = 34; // degrees from upright to the floor
-const CHEVRONS = [27, 40, 53, 66, 79, 92]; // the grip: rows of chevrons, in tenths of an em down the plate
+const RIBS = 6; // the grip: fine ribs across the plate, the first at the toe
 const DEPTH = "40em"; // the well's perspective: the toe shrinks to about 84% at full travel
 
-/** The return spring, in permille of travel: ζ ≈ 0.62, so it rebounds about 8% of whatever it was pushed. */
-const RETURN = { stiffness: 320, damping: 22 };
+/** The return spring, in permille of travel: ζ ≈ 0.72, so it rebounds about 4% of whatever it was pushed, once. */
+const RETURN = { stiffness: 300, damping: 25 };
 const PUSH = 1.7; // travel per second while Space or Down is held
 const EASE = 2.5; // travel per second Up takes off
 const FLOOR = 5; // travel per second while End is held
@@ -98,6 +101,7 @@ export function Throttle({ value, onChange, onTravel, name, label, className }: 
     const s = createSpring(initial * 1000, RETURN, (permille) => {
       const d = permille / 1000;
       root.style.setProperty("--d", d.toFixed(4));
+      root.style.setProperty("--l", clamp(d, 0, 1).toFixed(4)); // the drawn depth, without the rebound, for colours
       props.current.onTravel?.(d);
     });
     spring.current = s;
@@ -235,7 +239,7 @@ export function Throttle({ value, onChange, onTravel, name, label, className }: 
   const pct = Math.round(clamp(value, 0, 1) * 100);
 
   return (
-    <div className={cx("flex flex-col items-center gap-[0.55em]", className)}>
+    <div className={cx("flex flex-col items-center", className)}>
       {/* The well: the pedal stands in it, hinged at its foot, and tilts back as it is pressed. */}
       <div
         ref={rootRef}
@@ -255,47 +259,25 @@ export function Throttle({ value, onChange, onTravel, name, label, className }: 
         onPointerUp={(e) => engine.current?.pointerUp(e.pointerId)}
         onPointerCancel={(e) => engine.current?.pointerUp(e.pointerId)}
         data-part="well"
-        className="relative w-full cursor-ns-resize touch-none select-none overflow-hidden rounded-[0.6em] bg-(--race-well) shadow-(--race-recess) outline-offset-2"
-        style={{ height: `${WELL_H}em`, "--d": initial } as CSSProperties}
+        className="relative max-w-full cursor-ns-resize touch-none select-none overflow-hidden rounded-[0.6em] bg-(--race-well) shadow-(--race-recess) outline-offset-2"
+        style={{ width: `${WELL_W}em`, height: `${WELL_H}em`, "--d": initial, "--l": clamp(initial, 0, 1) } as CSSProperties}
       >
         <div aria-hidden className="absolute inset-0" style={{ perspective: DEPTH, perspectiveOrigin: `50% ${em(HINGE)}` }}>
-          {/* The light under the pedal: it spills round the plate and across the floor, and grows with travel. */}
-          <div
-            aria-hidden
-            className="absolute inset-0"
-            style={{ opacity: "calc(0.08 + var(--d) * 0.92)", "--lit": "color-mix(in srgb, var(--race-red) calc(var(--d) * 100%), var(--race-red-deep))" } as CSSProperties}
-          >
-            <div
-              className="absolute inset-0"
-              style={{ background: `radial-gradient(ellipse 58% 40% at 50% ${em(HINGE)}, color-mix(in srgb, var(--lit) 74%, transparent), color-mix(in srgb, var(--lit) 18%, transparent) 55%, transparent)` }}
-            />
-            <div
-              className="absolute inset-x-0 bottom-0"
-              style={{ top: `${em(HINGE)}`, background: "linear-gradient(to bottom, color-mix(in srgb, var(--lit) 55%, transparent), color-mix(in srgb, var(--lit) 6%, transparent))" }}
-            />
-          </div>
-
-          {/* Rails: the pedal box's side walls. */}
-          {[-1, 1].map((side) => (
-            <div key={side} className="absolute w-px bg-(--race-faint)" style={{ left: `calc(50% + ${em(side * (PEDAL_W / 2 + 0.9))})`, top: 0, height: em(HINGE) }} />
-          ))}
-
-          {/* The hinge: a groove across the foot of the plate that lights up as the plate lifts off the floor. */}
+          {/* The hinge: a line on the floor at the foot of the plate, faint at rest and red at full travel. */}
           <div
             data-part="slot"
-            className="absolute left-1/2 h-[0.45em] -translate-x-1/2 rounded-[0.1em]"
+            className="absolute left-1/2 h-[2px] -translate-x-1/2"
             style={{
-              width: em(PEDAL_W + 1.8),
-              top: em(HINGE - 0.1),
-              backgroundColor: "color-mix(in srgb, var(--race-red) calc(var(--d) * 100%), var(--race-well))",
-              boxShadow: "inset 0 1px 2px rgb(0 0 0 / 0.8), 0 0 calc(var(--d) * 1.1em) calc(var(--d) * 0.12em) color-mix(in srgb, var(--race-red) calc(var(--d) * 70%), transparent)",
+              width: em(PEDAL_W),
+              top: em(HINGE + 0.25),
+              backgroundColor: "color-mix(in srgb, var(--race-red) calc(14% + var(--l) * 86%), var(--race-well))",
             }}
           />
 
-          {/* The plate: black machined metal, chamfered at the toe, its edge and chevron grip in red that brightens with travel, and a shade that deepens with travel. */}
+          {/* The plate: dark machined metal with fine ribs; the toe rib turns red with travel, and a shade deepens. */}
           <div
             data-part="key"
-            className="absolute [background:var(--race-metal)] shadow-(--race-key-shadow) [clip-path:polygon(1.1em_0,calc(100%-1.1em)_0,100%_1.1em,100%_100%,0_100%,0_1.1em)]"
+            className="absolute rounded-[0.5em] [background:var(--race-metal)] shadow-(--race-key-shadow)"
             style={{
               left: `calc(50% - ${PEDAL_W / 2}em)`,
               width: `${em(PEDAL_W)}`,
@@ -305,35 +287,19 @@ export function Throttle({ value, onChange, onTravel, name, label, className }: 
               rotate: `x calc(var(--d) * ${TILT}deg)`,
             }}
           >
-            <div className="absolute inset-0 bg-(--race-well)" style={{ opacity: "calc(var(--d) * 0.4)" }} />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, color-mix(in srgb, var(--race-red) calc(var(--d) * 42%), transparent), transparent 46%)" }} />
-            <div className="absolute inset-x-[1.2em] top-[2.1em] bottom-[1.1em] rounded-[0.2em] bg-(--race-well) shadow-[inset_0_1px_3px_rgb(0_0_0/0.9),0_1px_0_rgb(255_255_255/0.07)]" />
-            <svg
-              aria-hidden
-              viewBox="0 0 94 114"
-              className="absolute inset-0 size-full"
-              fill="none"
-              style={{ stroke: "color-mix(in srgb, var(--race-red) calc(var(--d) * 100%), var(--race-red-deep))" }}
-            >
-              <polygon points="11.8,0.8 82.2,0.8 93.2,11.8 93.2,113.2 0.8,113.2 0.8,11.8" strokeWidth="1.6" strokeLinejoin="miter" />
-              <line x1="14" y1="9" x2="80" y2="9" strokeWidth="1" strokeOpacity="0.5" />
-              <g strokeWidth="3.2" strokeLinejoin="miter" style={{ opacity: "calc(0.6 + var(--d) * 0.4)" }}>
-                {CHEVRONS.map((y) => (
-                  <path key={y} d={`M18 ${y + 7}L47 ${y}L76 ${y + 7}`} />
-                ))}
-              </g>
-            </svg>
+            <div className="absolute inset-0 rounded-[inherit] bg-(--race-well)" style={{ opacity: "calc(var(--l) * 0.4)" }} />
+            <div className="absolute inset-x-[1.8em] top-[2.6em] bottom-[1.8em] flex flex-col justify-between">
+              {Array.from({ length: RIBS }, (_, i) => (
+                <span
+                  key={i}
+                  className="block h-[2px] shadow-[0_1px_0_rgb(0_0_0/0.7)]"
+                  style={{ backgroundColor: i === 0 ? "color-mix(in srgb, var(--race-red) calc(var(--l) * 100%), var(--race-dim))" : "var(--race-faint)" }}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>
-
-      <span aria-hidden className="flex items-center gap-[0.7em]">
-        <span className="h-[0.7em] w-[0.5em] [transform:skewX(-24deg)] bg-(--race-red)" />
-        <span data-part="lettering" className="text-[0.62em] font-semibold uppercase leading-none tracking-[0.2em] text-(--race-dim)">
-          {label}
-        </span>
-        <span className="h-[0.7em] w-[0.5em] [transform:skewX(-24deg)] bg-(--race-red)" />
-      </span>
       {name && <input type="hidden" name={name} value={value} />}
     </div>
   );
@@ -348,15 +314,10 @@ const RISE = { tau: 0.22, min: 2400, max: 16000 }; // rpm/s: quick, and never an
 const FALL = { tau: 0.7, min: 700, max: 6000 }; // slower back to idle
 const CUT = 0.07; // s the fuel stays cut at the limiter
 const CUT_FALL = 3000; // rpm/s while it is cut: about 200 rpm of bounce
-const FLASH_HOLD = 0.4; // s the shift lights flash after the last cut
-const FLASH_HALF = 0.055; // s per half-cycle: all twelve flash together, red
+const FLASH_HOLD = 0.4; // s the limiter pulse carries on after the last cut
+const PULSE_HZ = 2.5; // the limiter pulse: calm, not a strobe
+const REDLINE = 0.88; // where on the hairline the red begins
 const STEP = 1 / 240;
-
-const SHIFT = 12;
-const WHITE = 4; // the first four lights are white, the rest red
-const SHIFT_FROM = 3000; // rpm of the first light; the twelfth is lit at 7,796
-const SHIFT_STEP = 436;
-const THRESHOLDS = Array.from({ length: SHIFT }, (_, i) => SHIFT_FROM + i * SHIFT_STEP);
 
 /** The ghost: three blips, the last one into the limiter. [ms, throttle] */
 const GHOST: [number, number][] = [
@@ -368,18 +329,7 @@ const GHOST: [number, number][] = [
   [3700, 0],
 ];
 
-/* An LED is off until its light comes on, then it is lit with a hot core and its bloom. The white ones turn red while the strip flashes at the limiter. */
-const LED = {
-  white:
-    "[--led:var(--race-ink)] [--glow:var(--race-glow-white)] [[data-flash]_&]:[--led:var(--race-red)] [[data-flash]_&]:[--glow:var(--race-glow-red)]",
-  red: "[--led:var(--race-red)] [--glow:var(--race-glow-red)]",
-};
-const LED_ON = "data-on:bg-(--led) data-on:shadow-[inset_0_0_0.3em_color-mix(in_srgb,var(--race-ink)_55%,transparent),var(--glow)]";
-
-const chipText = { idle: "Idle", rev: "Rev", limiter: "Limiter" } as const;
-type ChipState = keyof typeof chipText;
-
-/** 7,196 rpm, with the comma tabular figures set it with. */
+/** 7,190 rpm, with the comma tabular figures set it with. */
 const figures = (rpm: number) => (rpm >= 1000 ? `${Math.floor(rpm / 1000)},${String(rpm % 1000).padStart(3, "0")}` : String(rpm));
 
 export default function Demo() {
@@ -397,32 +347,23 @@ export default function Demo() {
   // flat-six every frame it draws, and the fuel cut to its limiter.
   useLayoutEffect(() => {
     const root = rootRef.current!;
-    const lights = [...root.querySelectorAll<HTMLElement>("[data-shift-light]")];
-    const strip = root.querySelector<HTMLElement>("[data-shift]")!;
+    const bar = root.querySelector<HTMLElement>("[data-bar]")!;
     const figure = root.querySelector<HTMLElement>("[data-rpm]")!;
-    const chip = root.querySelector<HTMLElement>("[data-chip]")!;
-    const chipLabel = chip.querySelector<HTMLElement>("[data-chip-text]")!;
 
     let r = IDLE;
     let cut = 0;
     let flash = 0;
-    let t = 0;
     let shownRpm = IDLE;
     const voice = engineVoice({ redline: LIMIT });
     const still = reducedMotion();
-    let natural = 0; // lights lit by the revs alone
-    let shown = 0; // lights drawn, flashing included
     let flashing = false;
-    let state: ChipState = "idle";
+    let pulse = 0; // s into the limiter pulse
     let said = false;
     let raf = 0;
     let last = 0;
 
     // What it does by itself follows the host's tape; a hand on it always sounds.
     const audible = () => touched.current || hostTransport(root) === "play";
-    const sound = (name: SoundName, options?: PlayOptions) => {
-      if (audible()) play(name, options);
-    };
 
     const hit = () => {
       voice.cut(true);
@@ -435,9 +376,11 @@ export default function Demo() {
     const target = () => IDLE + clamp(depth.current, 0, 1) * (LIMIT - IDLE);
 
     const step = (h: number) => {
-      t += h;
       const to = target();
-      if (flash > 0) flash -= h;
+      if (flash > 0) {
+        flash -= h;
+        pulse += h;
+      }
       if (cut > 0) {
         cut -= h;
         r -= CUT_FALL * h;
@@ -460,37 +403,24 @@ export default function Demo() {
     };
 
     const draw = () => {
-      const rpm = Math.round(r);
+      // Revs to the nearest ten, so the last figure rolls without flicker.
+      const rpm = Math.round(r / 10) * 10;
       if (rpm !== shownRpm) {
         shownRpm = rpm;
         figure.textContent = figures(rpm);
       }
+      bar.style.setProperty("--rev", clamp(r / LIMIT, 0, 1).toFixed(4));
 
-      const n = THRESHOLDS.filter((limit) => r >= limit).length;
+      // The limiter: the figure goes red and the hairline breathes at a calm 2.5 Hz; steady under reduced motion.
       const isFlashing = flash > 0;
-      const on = isFlashing ? (still || (Math.floor(t / FLASH_HALF) & 1) === 0 ? SHIFT : 0) : n;
-      // A ratchet under the engine: each light the revs bring on ticks a little higher, quietly.
-      if (!isFlashing && n > natural) sound("tick", { gain: 0.2, pitch: 0.9 + n * 0.04 });
-      natural = n;
       if (isFlashing !== flashing) {
         flashing = isFlashing;
-        strip.toggleAttribute("data-flash", flashing);
+        bar.toggleAttribute("data-limit", flashing);
         figure.toggleAttribute("data-limit", flashing);
+        if (flashing) pulse = 0;
+        else bar.style.removeProperty("--breath");
       }
-      if (on !== shown) {
-        shown = on;
-        lights.forEach((light, i) => {
-          if (i < on) light.dataset.on = "";
-          else delete light.dataset.on;
-        });
-      }
-
-      const next: ChipState = isFlashing ? "limiter" : r > IDLE + 40 ? "rev" : "idle";
-      if (next !== state) {
-        state = next;
-        chip.dataset.state = next;
-        chipLabel.textContent = chipText[next];
-      }
+      if (flashing && !still) bar.style.setProperty("--breath", (0.6 + 0.4 * (0.5 + 0.5 * Math.cos(2 * Math.PI * PULSE_HZ * pulse))).toFixed(3));
 
       // The voice follows the integrator and the drawn pedal, frame for frame.
       voice.level(audible() ? 1 : 0);
@@ -553,59 +483,30 @@ export default function Demo() {
 
   return (
     <div ref={rootRef} onPointerDownCapture={touch} onKeyDownCapture={touch} className="@container w-full max-w-[320px] select-none">
-      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[0.9em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)]">
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] [background:var(--race-weave)]" />
-
-        {/* The shift bar: twelve LEDs, four white then eight red. At the limiter they flash red together. */}
-        <div data-part="well" data-shift className="group/shift flex gap-[0.3em] rounded-[0.6em] bg-(--race-well) p-[0.5em] shadow-(--race-recess)">
-          {Array.from({ length: SHIFT }, (_, i) => (
-            <span
-              key={i}
-              aria-hidden
-              data-part="light"
-              data-shift-light
-              className={cx(
-                "h-[1.05em] min-w-0 flex-1 rounded-[0.12em] bg-(--race-led-off) transition-[background-color,box-shadow] duration-(--duration-exit) group-data-flash/shift:duration-0 data-on:duration-0",
-                LED_ON,
-                i < WHITE ? LED.white : LED.red,
-              )}
-            />
-          ))}
+      <div data-part="plate" className="relative flex animate-enter flex-col items-center overflow-hidden rounded-[0.9em] px-[0.9em] pt-[1.3em] pb-[1.1em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)]">
+        {/* The revs: one large figure, white, red at the limiter. */}
+        <div aria-hidden data-part="lettering" className="relative text-(--race-ink)">
+          <span className="grid justify-items-end font-[family-name:var(--font-race)] text-[5.6em] leading-[0.9] font-bold tabular-nums italic [font-stretch:62%]">
+            <span className="invisible col-start-1 row-start-1">8,888</span>
+            <span data-rpm className="col-start-1 row-start-1 transition-colors duration-(--duration-exit) data-limit:text-(--race-red) data-limit:duration-0">
+              {figures(IDLE)}
+            </span>
+          </span>
+          <span className="absolute bottom-[0.45em] left-full ml-[0.7em] text-[0.62em] font-semibold uppercase leading-none tracking-[0.2em] text-(--race-dim)">rpm</span>
         </div>
 
-        {/* The readout: revs in the race face on black glass, with a chip for the state. */}
-        <div
-          aria-hidden
-          data-part="lcd"
-          className="relative mt-[0.55em] flex items-center justify-between gap-[0.6em] rounded-[0.4em] py-[0.5em] pr-[0.8em] pl-[1.1em] text-(--race-ink) [background:var(--race-glass)] shadow-[inset_0.2em_0_0_var(--race-red-deep),inset_0_0_0_1px_var(--race-faint)]"
-        >
-          <span
-            data-part="chip"
-            data-chip
-            data-state="idle"
-            className="group/chip inline-flex shrink-0 items-center gap-[0.4em] rounded-[0.25em] px-[0.55em] py-[0.3em] bg-(--race-red-deep) text-(--race-red-ink) transition-[background-color,box-shadow] duration-(--duration-exit) data-[state=limiter]:bg-(--race-red) data-[state=limiter]:shadow-(--race-glow-red) data-[state=rev]:bg-(--race-red) data-[state=rev]:shadow-(--race-glow-red)"
-          >
-            <span className="size-[0.5em] rounded-full bg-current group-data-[state=limiter]/chip:rounded-[1px] group-data-[state=rev]/chip:animate-pulse motion-reduce:group-data-[state=rev]/chip:animate-none" />
-            <span data-chip-text className="text-[0.6em] font-bold uppercase leading-none tracking-[0.12em]">
-              Idle
-            </span>
-          </span>
-          <span className="flex items-baseline whitespace-nowrap">
-            <span className="grid justify-items-end font-[family-name:var(--font-race)] text-[4.1em] leading-[0.85] font-bold tabular-nums italic [font-stretch:62%]">
-              <span data-rpm className="text-(--race-ink) [text-shadow:var(--race-glow-white)] data-limit:text-(--race-red) data-limit:[text-shadow:var(--race-glow-red)]">
-                {figures(IDLE)}
-              </span>
-            </span>
-            <span className="ml-[0.5em] text-[0.62em] font-semibold uppercase tracking-[0.2em] text-(--race-dim)">rpm</span>
-          </span>
-          <span aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--race-scanlines)]" />
+        {/* The hairline: white to the redline, red beyond it, a fine tick where the red begins. It follows the same revs. */}
+        <div aria-hidden data-part="light" data-bar className="relative mt-[1.1em] h-[2px] w-full bg-(--race-faint) transition-opacity duration-(--duration-exit) data-limit:transition-none [opacity:var(--breath,1)]">
+          <span className="absolute inset-y-0 left-0 origin-left bg-(--race-ink)" style={{ width: `${REDLINE * 100}%`, transform: `scaleX(clamp(0, var(--rev, 0) / ${REDLINE}, 1))` }} />
+          <span className="absolute inset-y-0 origin-left bg-(--race-red)" style={{ left: `${REDLINE * 100}%`, right: 0, transform: `scaleX(clamp(0, (var(--rev, 0) - ${REDLINE}) / ${1 - REDLINE}, 1))` }} />
+          <span className="absolute -top-[0.3em] h-[0.8em] w-px bg-(--race-red)" style={{ left: `${REDLINE * 100}%` }} />
         </div>
 
         <Throttle
           label="Throttle"
           name="throttle"
           value={throttle}
-          className="mt-[0.55em]"
+          className="mt-[1.4em]"
           onChange={setThrottle}
           onTravel={(d) => {
             depth.current = d;
