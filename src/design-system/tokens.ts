@@ -187,13 +187,11 @@ export const race = {
   ink: "#f4f4f5",
   dim: "rgb(255 255 255 / 0.5)",
   faint: "rgb(255 255 255 / 0.14)",
-  yellow: "#ffd400",
-  "yellow-ink": "#0a0a0a",
-  red: "#ff2b2b",
-  green: "#2bff88",
+  red: "#ff1f1f",
+  "red-deep": "#a80000",
+  "red-ink": "#ffffff",
   "led-off": "rgb(255 255 255 / 0.07)",
-  "glow-yellow": "0 0 0.6em rgb(255 212 0 / 0.65), 0 0 1.6em rgb(255 212 0 / 0.25)",
-  "glow-red": "0 0 0.6em rgb(255 43 43 / 0.65), 0 0 1.6em rgb(255 43 43 / 0.25)",
+  "glow-red": "0 0 0.6em rgb(255 31 31 / 0.7), 0 0 1.6em rgb(255 31 31 / 0.28)",
   "glow-white": "0 0 0.5em rgb(255 255 255 / 0.3), 0 0 1.2em rgb(255 255 255 / 0.1)",
   "key-face": "linear-gradient(#2b2b2f, #141416)",
   "key-shadow": "inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.9), 0 2px 0 0 #020203, 0 5px 12px -4px rgb(0 0 0 / 0.8)",
@@ -203,7 +201,7 @@ export const race = {
 
 export type RaceToken = keyof typeof race;
 
-/** The CSS variable behind a race token: `--race-yellow`. */
+/** The CSS variable behind a race token: `--race-red`. */
 export const raceVar = (token: RaceToken) => `--race-${token}`;
 
 /** The race line's figure face: Saira, condensed and italic. Declared in tokens.css as `--font-race`. */

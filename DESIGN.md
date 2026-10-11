@@ -34,7 +34,7 @@ What a study does by itself asks the player first (the transport rule, under Sou
 
 Monochrome, plus red for REC and the playhead, orange for a hand on it, and one blue on the screen for selection. Figures are tabular, so a count never shuffles sideways. Grey text, hairlines and one weight change on the page. The work should be the loudest thing here, and when a colour only ever means one thing, it reads at once.
 
-The one exception is the race line, the six sports-car studies, which have a night cockpit of their own with yellow, red and light that glows (see The race line).
+The one exception is the race line, the six sports-car studies, which have a night cockpit of their own in black and red, with light that glows (see The race line).
 
 Restraint is also subtraction. The player lost its battery icon, timecodes, scanlines, a BACK key and a keyboard legend because each one repeated something the screen, the LCD or the hold switch already said. Later it lost the file name beside the LCD (the screen names the study), the captions under the transport (▶ and ■ need no words), a maker's window that stood the full height of the deck (it became a nameplate, and then the left end of the LCD: the maker stays quiet inside the readout), the LCD's running clock and level meters (the tape already shows where the playhead is, so the LCD says only the state, the study's name and the take, as a CD player's display does), a FIND key (Find is on Home, and on /), the HOLD switch (Options › Sound and M already muted), the STOP key (hold the dial's centre) and the deck's key row (Menu and Source sit at the screen's top corners, and Options is on Menu). The deck keeps only what plays the tape: the readout (the mark and the LCD on one strip of glass) and the dial. The mark animates only under a mouse: on the deck, nothing moves by itself but the tape and the lights.
 
@@ -426,7 +426,7 @@ Do not "fix" them back. A race study that takes the body's plate, key or LCD tok
 
 ### Materials and tokens
 
-A cockpit is black whatever the page is, so each token has one value, the same in light and dark. They are declared beside the `--device-*` tokens in `tokens.css` and mirrored as `race` in `tokens.ts`, so `[background:var(--race-body)]` and `bg-(--race-yellow)` both work. Colours are tokens: a study never types a hex value.
+A cockpit is black whatever the page is, so each token has one value, the same in light and dark. They are declared beside the `--device-*` tokens in `tokens.css` and mirrored as `race` in `tokens.ts`, so `[background:var(--race-body)]` and `bg-(--race-red)` both work. Colours are tokens: a study never types a hex value.
 
 The order is the same as the body's: **plate, then well, then part**.
 
@@ -443,14 +443,12 @@ The order is the same as the body's: **plate, then well, then part**.
 | `--race-ink` | `#f4f4f5` | Figures and lettering that matter |
 | `--race-dim` | `rgb(255 255 255 / 0.5)` | Units and quiet lettering |
 | `--race-faint` | `rgb(255 255 255 / 0.14)` | Hairlines, ticks, the unlit scale |
-| `--race-yellow` | `#ffd400` | The accent: selection, the tach face, what is on |
-| `--race-yellow-ink` | `#0a0a0a` | Lettering on yellow |
-| `--race-red` | `#ff2b2b` | The redline, the needle, the limiter |
-| `--race-green` | `#2bff88` | The first shift lights, and nothing else |
+| `--race-red` | `#ff1f1f` | Red lit: the redline, the needle, the limiter, the selected mode, what is on, the top shift lights |
+| `--race-red-deep` | `#a80000` | Red quiet: chip fills, rules, stripes, redline zones. It does not glow |
+| `--race-red-ink` | `#ffffff` | Lettering on red |
 | `--race-led-off` | `rgb(255 255 255 / 0.07)` | An unlit LED or segment |
-| `--race-glow-yellow` | `0 0 0.6em rgb(255 212 0 / 0.65), 0 0 1.6em rgb(255 212 0 / 0.25)` | Bloom round a lit yellow part |
-| `--race-glow-red` | `0 0 0.6em rgb(255 43 43 / 0.65), 0 0 1.6em rgb(255 43 43 / 0.25)` | Bloom round a lit red part |
-| `--race-glow-white` | `0 0 0.5em rgb(255 255 255 / 0.3), 0 0 1.2em rgb(255 255 255 / 0.1)` | Bloom round figures, subtle |
+| `--race-glow-red` | `0 0 0.6em rgb(255 31 31 / 0.7), 0 0 1.6em rgb(255 31 31 / 0.28)` | Bloom round a lit red part |
+| `--race-glow-white` | `0 0 0.5em rgb(255 255 255 / 0.3), 0 0 1.2em rgb(255 255 255 / 0.1)` | Bloom round figures and the first shift lights, subtle |
 | `--race-key-face` | `linear-gradient(#2b2b2f, #141416)` | A black anodized key |
 | `--race-key-shadow` | `inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.9), 0 2px 0 0 #020203, 0 5px 12px -4px rgb(0 0 0 / 0.8)` | The key at rest: lit edge, inner shade, ring, 2px base, drop |
 | `--race-key-shadow-pressed` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.8), 0 0 0 1px rgb(0 0 0 / 0.9), 0 0 0 0 #020203, 0 1px 1px -1px rgb(0 0 0 / 0.6)` | The key sunk onto its base. The same five layers as at rest, so press and release interpolate |
@@ -461,13 +459,16 @@ A key is a key: it sinks 2px onto its base in 75ms and comes back in `--duration
 
 ### What each colour means
 
-- **Yellow** is the accent and the selection: the chosen drive mode, the tach face, a lit chrono segment, the key's glow when it is on. Lettering on yellow is `--race-yellow-ink`.
-- **Red** is the redline, the needle and the limiter. When something in the race line is red, an engine is at its limit or a clock is running.
-- **Green** is only the first shift lights. It never marks "on", "ok" or "selected"; yellow does.
-- **Glow means lit, and only lit things glow.** An unlit LED is `--race-led-off` and casts nothing.
+The race line is black and red, and nothing else, because the user asked for black and red.
+
+- **Black** is everything at rest: the plate, the well, the glass, an unlit LED.
+- **White** is figures, labels and the first shift lights. Lettering is `--race-ink`, `--race-dim` or `--race-faint`; the first shift lights are white and bloom with `--race-glow-white`.
+- **Red** is the only colour: the redline, the needle, the limiter, the selection and "on" (the chosen drive mode, a lit chrono segment, a key's glow when it is on), and the top shift lights. Lettering on red is `--race-red-ink`. When something in the race line is red, an engine is at its limit, a clock is running or a choice is made.
+- **Lit red and deep red.** `--race-red` is red lit; `--race-red-deep` is red quiet, for chip fills, rules, stripes and redline zones. Not everything red glows.
+- **Glow means lit, and only lit things glow, and only red or white glows.** An unlit LED is `--race-led-off` and casts nothing; deep red casts nothing.
 - **Blue never appears.** It belongs to screens and pages.
 
-Colours that must be told apart still differ in lightness as well as hue: yellow and green are both bright, so the shift lights are told apart by position and order as well as colour.
+Colours that must be told apart differ in lightness and position, never in hue alone: the white and red shift lights are told apart by order (white first, red after) as well as colour, and lit red is told from deep red by brightness and by its bloom.
 
 ### Type
 
@@ -481,7 +482,7 @@ The font is not preloaded (`preload: false`), so a page without a car study neve
 
 ### Light
 
-- **Bloom** comes from the glow tokens (`--race-glow-yellow`, `--race-glow-red`, `--race-glow-white`) on leaf parts only: an LED, a needle, a figure, a lit segment. The anatomy's flattening rule still holds, so a glow is never put on a container with marked parts inside it. A glow is a `box-shadow` or `text-shadow` on the part itself, and an SVG part uses its stroke or a filter on the leaf.
+- **Bloom** comes from the glow tokens (`--race-glow-red`, `--race-glow-white`) on leaf parts only: an LED, a needle, a figure, a lit segment. The anatomy's flattening rule still holds, so a glow is never put on a container with marked parts inside it. A glow is a `box-shadow` or `text-shadow` on the part itself, and an SVG part uses its stroke or a filter on the leaf.
 - **A needle leaves a light trail.** A few fading ghost needles behind it, or a fading arc behind its tip, both drawn from the same spring that moves the needle and written as SVG attributes (angle, opacity), so the trail is exactly where the needle was, with no second animation to drift out of step.
 - **Scanlines** go over glass (`--race-scanlines`), as the last layer of a gauge face or LCD, under the sheen.
 - **Reduced motion** drops trails and anything that pulses. Lit state still shows; it just holds still.

@@ -139,13 +139,11 @@
   --race-ink: #f4f4f5;
   --race-dim: rgb(255 255 255 / 0.5);
   --race-faint: rgb(255 255 255 / 0.14);
-  --race-yellow: #ffd400;
-  --race-yellow-ink: #0a0a0a;
-  --race-red: #ff2b2b;
-  --race-green: #2bff88;
+  --race-red: #ff1f1f;
+  --race-red-deep: #a80000;
+  --race-red-ink: #ffffff;
   --race-led-off: rgb(255 255 255 / 0.07);
-  --race-glow-yellow: 0 0 0.6em rgb(255 212 0 / 0.65), 0 0 1.6em rgb(255 212 0 / 0.25);
-  --race-glow-red: 0 0 0.6em rgb(255 43 43 / 0.65), 0 0 1.6em rgb(255 43 43 / 0.25);
+  --race-glow-red: 0 0 0.6em rgb(255 31 31 / 0.7), 0 0 1.6em rgb(255 31 31 / 0.28);
   --race-glow-white: 0 0 0.5em rgb(255 255 255 / 0.3), 0 0 1.2em rgb(255 255 255 / 0.1);
   --race-key-face: linear-gradient(#2b2b2f, #141416);
   --race-key-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.9), 0 2px 0 0 #020203, 0 5px 12px -4px rgb(0 0 0 / 0.8);
