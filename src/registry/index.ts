@@ -59,7 +59,7 @@ export const registry: RegistryEntry[] = [
     slug: "chrono",
     title: "Chrono",
     description:
-      "A stopwatch and lap timer for the night race: a black glass dial lit from inside, sixty ticks, a yellow seconds hand that drags a light trail behind it, and a thirty-minute sub-dial with a red hand. A huge LCD reads the time to the hundredth, with the last lap against the one before in green or red. Reset is a flyback: the hands spring home, clicking past each 5 s mark. A ghost starts it and takes a lap.",
+      "A stopwatch and lap timer for the night race: a black glass dial lit from inside, sixty ticks, a red seconds hand that drags a light trail behind it, and a thirty-minute sub-dial with a white hand. A huge LCD reads the time to the hundredth, with the last lap against the one before in white when faster and red when slower. Reset is a flyback: the hands spring home, clicking past each 5 s mark. A ghost starts it and takes a lap.",
     tagline: "A night-race stopwatch whose hand leaves a light trail.",
     tags: ["input", "motion", "sound", "svg"],
     date: "2026-10-09",

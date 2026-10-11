@@ -6,11 +6,11 @@ import { hostTransport, play, type PlayOptions, type SoundName } from "@/lib/sou
 
 /*
  * A stopwatch and lap timer after a dash-top chronograph, on the night-race
- * line: pitch-black glass lit from within. Sixty ticks, a yellow marker at
- * twelve, a yellow seconds hand that glows and drags a light trail behind it,
- * a counterweight, a thirty-minute sub-dial with a red hand, and beside or
+ * line: pitch-black glass lit from within. Sixty ticks, a red marker at
+ * twelve, a red seconds hand that glows and drags a light trail behind it,
+ * a counterweight, a thirty-minute sub-dial with a white hand, and beside or
  * under it an LCD with the time to the hundredth in huge condensed figures and
- * the last lap against the one before, green when it was faster and red when
+ * the last lap against the one before, white when it was faster and red when
  * slower. Two keys with a lit strip: START and STOP, and LAP, which is RESET
  * once it has stopped.
  *
@@ -166,7 +166,7 @@ const sink =
 type KeyProps = {
   id: ChronoKey;
   label: string;
-  /** The key's LED: lit yellow while the clock runs. LAP lights it white for a moment per lap, from outside. */
+  /** The key's LED: lit red while the clock runs. LAP lights it white for a moment per lap, from outside. */
   lit?: boolean;
   disabled?: boolean;
   onAct: () => void;
@@ -221,7 +221,7 @@ function Key({ id, label, lit, disabled, onAct, onTouch }: KeyProps) {
           data-on={lit || undefined}
           className={cx(
             "absolute inset-x-[22%] top-[0.42em] h-[0.2em] rounded-full bg-(--race-led-off) transition-[background-color,box-shadow] duration-(--duration-exit) data-on:duration-0",
-            id === "start" ? "data-on:bg-(--race-yellow) data-on:shadow-(--race-glow-yellow)" : "data-on:bg-(--race-ink) data-on:shadow-(--race-glow-yellow)",
+            id === "start" ? "data-on:bg-(--race-red) data-on:shadow-(--race-glow-red)" : "data-on:bg-(--race-ink) data-on:shadow-(--race-glow-white)",
           )}
         />
         <span
@@ -569,11 +569,11 @@ export function Chrono({
                   </feMerge>
                 </filter>
               </defs>
-              <circle cx={C} cy={C} r="97.6" fill="none" stroke="var(--race-yellow)" strokeOpacity="0.55" strokeWidth="0.7" />
+              <circle cx={C} cy={C} r="97.6" fill="none" stroke="var(--race-red)" strokeOpacity="0.55" strokeWidth="0.7" />
               <path d={DIAL.minor} fill="none" stroke="var(--race-faint)" strokeWidth="1" />
               <path d={DIAL.major} fill="none" stroke="var(--race-dim)" strokeWidth="1.7" />
               <path d={DIAL.quarter} fill="none" stroke="var(--race-ink)" strokeWidth="2.8" />
-              <path d="M95.6 1.2H104.4L100 9.6Z" fill="var(--race-yellow)" filter={`url(#${glow})`} />
+              <path d="M95.6 1.2H104.4L100 9.6Z" fill="var(--race-red)" filter={`url(#${glow})`} />
               <g className="font-[family-name:var(--font-race)] font-bold italic [font-stretch:62%]" fontSize="16" fill="var(--race-ink)" textAnchor="middle" dominantBaseline="central">
                 {FIGURES.map((f) => (
                   <text key={f.text} x={f.x} y={f.y}>
@@ -582,29 +582,29 @@ export function Chrono({
                 ))}
               </g>
 
-              {/* The minutes sub-dial: thirty minutes round, with a red hand. */}
+              {/* The minutes sub-dial: thirty minutes round, with a white hand. */}
               <circle cx={SUB.x} cy={SUB.y} r={SUB.r + 2.2} fill="var(--race-well)" stroke="var(--race-faint)" strokeWidth="0.8" />
               <path d={REGISTER.minor} fill="none" stroke="var(--race-faint)" strokeWidth="0.7" />
               <path d={REGISTER.major} fill="none" stroke="var(--race-dim)" strokeWidth="1.1" />
               <path d={REGISTER.quarter} fill="none" stroke="var(--race-ink)" strokeWidth="1.6" />
               <g filter={`url(#${glow})`}>
-                <line data-minute x1={REST.minute[0].x} y1={REST.minute[0].y} x2={REST.minute[1].x} y2={REST.minute[1].y} stroke="var(--race-red)" strokeWidth="1.8" strokeLinecap="round" />
-                <circle cx={SUB.x} cy={SUB.y} r="2.6" fill="var(--race-red)" />
+                <line data-minute x1={REST.minute[0].x} y1={REST.minute[0].y} x2={REST.minute[1].x} y2={REST.minute[1].y} stroke="var(--race-ink)" strokeWidth="1.8" strokeLinecap="round" />
+                <circle cx={SUB.x} cy={SUB.y} r="2.6" fill="var(--race-ink)" />
               </g>
               <circle cx={SUB.x} cy={SUB.y} r="0.9" fill="var(--race-well)" />
 
               {/* The light trail: ghost hands behind the seconds hand, each dimmer, laid by the frame loop. */}
               <g data-trail opacity="0">
                 {GHOSTS.map((o, i) => (
-                  <line key={i} data-ghost x1={REST.hand[0].x} y1={REST.hand[0].y} x2={REST.hand[1].x} y2={REST.hand[1].y} stroke="var(--race-yellow)" strokeOpacity={o} strokeWidth="2.6" strokeLinecap="round" />
+                  <line key={i} data-ghost x1={REST.hand[0].x} y1={REST.hand[0].y} x2={REST.hand[1].x} y2={REST.hand[1].y} stroke="var(--race-red)" strokeOpacity={o} strokeWidth="2.6" strokeLinecap="round" />
                 ))}
               </g>
 
               {/* The seconds hand: a lit blade, a counterweight on its tail and the pivot's cap over both. */}
               <g filter={`url(#${glow})`}>
-                <line data-hand x1={REST.hand[0].x} y1={REST.hand[0].y} x2={REST.hand[1].x} y2={REST.hand[1].y} stroke="var(--race-yellow)" strokeWidth="1.6" strokeLinecap="round" />
-                <line data-weight x1={REST.weight[0].x} y1={REST.weight[0].y} x2={REST.weight[1].x} y2={REST.weight[1].y} stroke="var(--race-yellow)" strokeWidth="4.8" />
-                <circle cx={C} cy={C} r="5.6" fill="var(--race-yellow)" />
+                <line data-hand x1={REST.hand[0].x} y1={REST.hand[0].y} x2={REST.hand[1].x} y2={REST.hand[1].y} stroke="var(--race-red)" strokeWidth="1.6" strokeLinecap="round" />
+                <line data-weight x1={REST.weight[0].x} y1={REST.weight[0].y} x2={REST.weight[1].x} y2={REST.weight[1].y} stroke="var(--race-red)" strokeWidth="4.8" />
+                <circle cx={C} cy={C} r="5.6" fill="var(--race-red)" />
               </g>
               <circle cx={C} cy={C} r="2" fill="var(--race-well)" />
             </svg>
@@ -619,10 +619,10 @@ export function Chrono({
         <div
           aria-hidden
           data-part="lcd"
-          className="relative flex flex-col gap-[0.35em] rounded-[0.4em] py-[0.55em] pr-[0.8em] pl-[1em] text-(--race-ink) [background:var(--race-glass)] shadow-[inset_0.18em_0_0_var(--race-yellow),inset_0_0_0_1px_var(--race-faint)]"
+          className="relative flex flex-col gap-[0.35em] rounded-[0.4em] py-[0.55em] pr-[0.8em] pl-[1em] text-(--race-ink) [background:var(--race-glass)] shadow-[inset_0.18em_0_0_var(--race-red),inset_0_0_0_1px_var(--race-faint)]"
         >
           <div className="flex items-center justify-between gap-[0.6em]">
-            <span data-part="chip" className={cx("inline-flex shrink-0 items-center gap-[0.4em] rounded-[0.25em] bg-(--race-yellow) px-[0.5em] py-[0.28em] text-(--race-yellow-ink)", running && "shadow-(--race-glow-yellow)")}>
+            <span data-part="chip" className={cx("inline-flex shrink-0 items-center gap-[0.4em] rounded-[0.25em] px-[0.5em] py-[0.28em] text-(--race-red-ink)", running ? "bg-(--race-red) shadow-(--race-glow-red)" : "bg-(--race-red-deep)")}>
               <span
                 className={
                   running
@@ -642,14 +642,14 @@ export function Chrono({
                   <span className="text-(--race-dim)">Lap {laps.length}</span>
                   <span>{span(last)}</span>
                   {before !== null && (
-                    <span className={cx("font-semibold", last < before ? "text-(--race-green)" : last > before ? "text-(--race-red)" : "text-(--race-dim)")}>{signed(last - before)}</span>
+                    <span className={cx("font-semibold", last < before ? "text-(--race-ink)" : last > before ? "text-(--race-red)" : "text-(--race-dim)")}>{signed(last - before)}</span>
                   )}
                 </>
               )}
             </p>
           </div>
           <div className="font-[family-name:var(--font-race)] text-[5.4em] font-bold leading-[0.88] italic tabular-nums [font-stretch:62%] @[34rem]:text-[6em]">
-            <p ref={clockRef} className="flex items-baseline whitespace-nowrap [text-shadow:var(--race-glow-white)] [&>:nth-child(3)]:text-(--race-dim) [&>:nth-child(6)]:text-(--race-dim) [&>:nth-child(n+7)]:text-(--race-yellow) [&>:nth-child(n+7)]:[text-shadow:var(--race-glow-yellow)]">
+            <p ref={clockRef} className="flex items-baseline whitespace-nowrap [text-shadow:var(--race-glow-white)] [&>:nth-child(3)]:text-(--race-dim) [&>:nth-child(6)]:text-(--race-dim) [&>:nth-child(n+7)]:text-(--race-red) [&>:nth-child(n+7)]:[text-shadow:var(--race-glow-red)]">
               {cells("0")}
             </p>
           </div>
