@@ -482,21 +482,21 @@ export default function Demo() {
   }
 
   return (
-    <div ref={rootRef} onPointerDownCapture={touch} onKeyDownCapture={touch} className="@container w-full max-w-[320px] select-none">
-      <div data-part="plate" className="relative flex animate-enter flex-col items-center overflow-hidden rounded-[0.9em] px-[0.9em] pt-[1.3em] pb-[1.1em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)]">
+    <div ref={rootRef} onPointerDownCapture={touch} onKeyDownCapture={touch} className="@container w-full max-w-[460px] select-none">
+      <div data-part="plate" className="relative flex animate-enter flex-col items-center overflow-hidden rounded-[0.9em] px-[1.4em] pt-[1.8em] pb-[1.4em] text-[clamp(11px,3.2cqw,18px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)]">
         {/* The revs: one large figure, white, red at the limiter. */}
         <div aria-hidden data-part="lettering" className="relative text-(--race-ink)">
-          <span className="grid justify-items-end font-[family-name:var(--font-race)] text-[5.6em] leading-[0.9] font-bold tabular-nums italic [font-stretch:62%]">
+          <span className="grid justify-items-end font-[family-name:var(--font-race)] text-[4.6em] leading-[0.9] font-medium tabular-nums">
             <span className="invisible col-start-1 row-start-1">8,888</span>
             <span data-rpm className="col-start-1 row-start-1 transition-colors duration-(--duration-exit) data-limit:text-(--race-red) data-limit:duration-0">
               {figures(IDLE)}
             </span>
           </span>
-          <span className="absolute bottom-[0.45em] left-full ml-[0.7em] text-[0.62em] font-semibold uppercase leading-none tracking-[0.2em] text-(--race-dim)">rpm</span>
+          <span className="absolute bottom-[0.45em] left-full ml-[0.9em] text-[0.62em] font-semibold uppercase leading-none tracking-[0.2em] text-(--race-dim)">rpm</span>
         </div>
 
         {/* The hairline: white to the redline, red beyond it, a fine tick where the red begins. It follows the same revs. */}
-        <div aria-hidden data-part="light" data-bar className="relative mt-[1.1em] h-[2px] w-full bg-(--race-faint) transition-opacity duration-(--duration-exit) data-limit:transition-none [opacity:var(--breath,1)]">
+        <div aria-hidden data-part="light" data-bar className="relative mt-[1.7em] h-[2px] w-full bg-(--race-faint) transition-opacity duration-(--duration-exit) data-limit:transition-none [opacity:var(--breath,1)]">
           <span className="absolute inset-y-0 left-0 origin-left bg-(--race-ink)" style={{ width: `${REDLINE * 100}%`, transform: `scaleX(clamp(0, var(--rev, 0) / ${REDLINE}, 1))` }} />
           <span className="absolute inset-y-0 origin-left bg-(--race-red)" style={{ left: `${REDLINE * 100}%`, right: 0, transform: `scaleX(clamp(0, (var(--rev, 0) - ${REDLINE}) / ${1 - REDLINE}, 1))` }} />
           <span className="absolute -top-[0.3em] h-[0.8em] w-px bg-(--race-red)" style={{ left: `${REDLINE * 100}%` }} />
@@ -506,7 +506,7 @@ export default function Demo() {
           label="Throttle"
           name="throttle"
           value={throttle}
-          className="mt-[1.4em]"
+          className="mt-[2.1em]"
           onChange={setThrottle}
           onTravel={(d) => {
             depth.current = d;
