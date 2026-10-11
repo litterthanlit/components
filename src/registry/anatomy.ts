@@ -32,13 +32,9 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     well: { tokens: ["--race-well", "--race-recess"], note: "The switch's pocket, pressed into the plate." },
   },
   "paddle-shifters": {
-    key: { name: "Paddles", tokens: ["--race-weave", "--race-metal", "--race-key-shadow", "--race-red"], note: "Carbon-fibre blades hung from a pivot, with a swept tip and a red edge. The face sinks 2px and leans about the pivot on the rotate property, inside the key's own frame, so it never spills." },
-    drum: { name: "Gear drum", tokens: ["--race-ink", "--race-glow-red"], note: "A column of huge condensed white figures, blooming red, on a spring (170, 21) that ticks for each figure it passes; a looser spring shakes it at either end." },
-    light: { name: "Shift lights", tokens: ["--race-led-off", "--race-ink", "--race-red"], note: "Ten slanted lights driven by the rev spring, four white then six red: up on a downshift, down on an upshift, and a light that goes out fades behind it." },
-    glass: { tokens: ["--race-scanlines"], note: "Scanlines over the readout." },
-    chip: { tokens: ["--race-red-deep", "--race-red-ink"], note: "The label, in white on deep red." },
-    lcd: { tokens: ["--race-glass", "--race-edge"], note: "The readout between the paddles: the gear, the revs and the shift lights." },
-    well: { tokens: ["--race-well", "--race-recess"], note: "The wheel's hub, pressed into the plate." },
+    key: { name: "Paddles", tokens: ["--race-metal", "--race-key-shadow", "--race-red"], note: "Slim dark blades hung from a pivot, with a swept tip and a thin red edge on the inner side. The face sinks 2px and leans about the pivot on the rotate property inside the key's own frame, settling with one small overshoot." },
+    drum: { name: "Gear drum", tokens: ["--race-ink"], note: "A column of huge condensed white figures on a spring (300, 25) that ticks for each figure it passes; a looser spring shakes it at either end." },
+    light: { name: "Rev hairline", tokens: ["--race-faint", "--race-ink", "--race-red"], note: "One thin line under the gear, white with red near the top, driven by the rev spring: up on a downshift, down on an upshift." },
   },
   chrono: {
     face: { tokens: ["--race-well", "--race-ink", "--race-dim", "--race-faint", "--race-red"], note: "A black dial on the black plate: fine white ticks, condensed italic figures at 60, 15, 30 and 45, a thirty-minute sub-dial with a white hand, and one red seconds hand on a small hub with a faint halo." },
