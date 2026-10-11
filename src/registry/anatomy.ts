@@ -43,13 +43,10 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     well: { tokens: ["--race-well", "--race-recess"], note: "The wheel's hub, pressed into the plate." },
   },
   chrono: {
-    collar: { note: "A black well pressed into the plate round the bezel." },
-    bezel: { tokens: ["--race-metal", "--race-edge"], note: "A dark brushed-metal rim round the dial with a lit top edge." },
-    face: { tokens: ["--race-glass", "--race-ink", "--race-faint", "--race-red"], note: "Near-black glass under a thin red ring: sixty ticks, a red marker at twelve, condensed italic figures and a thirty-minute sub-dial with a white hand. The red seconds hand glows and drags four ghost hands behind it, written in the same frame as the hand." },
-    glass: { tokens: ["--race-scanlines"], note: "A scanline every 3px over the dial and again over the LCD." },
-    lcd: { tokens: ["--race-glass", "--race-red", "--race-ink", "--race-glow-red"], note: "The time to the hundredth in huge condensed figures, the hundredths lit red, and the last lap against the one before: white when faster, red when slower." },
-    chip: { tokens: ["--race-red-deep", "--race-red", "--race-red-ink", "--race-glow-red"], note: "The state in white on deep red; it lights red and glows while the clock runs." },
-    light: { tokens: ["--race-led-off", "--race-red", "--race-glow-red", "--race-glow-white"], note: "An LED in each key: red on Start while the clock runs, white on Lap for 160 ms per lap." },
+    face: { tokens: ["--race-well", "--race-ink", "--race-dim", "--race-faint", "--race-red"], note: "A black dial on the black plate: fine white ticks, condensed italic figures at 60, 15, 30 and 45, a thirty-minute sub-dial with a white hand, and one red seconds hand on a small hub with a faint halo." },
+    key: { tokens: ["--race-key-face", "--race-key-shadow", "--race-key-shadow-pressed"], note: "Two quiet dark keys that sink 2px onto their base: Start and Stop, and Lap, which is Reset once stopped." },
+    light: { tokens: ["--race-led-off", "--race-red", "--race-glow-red"], note: "A single small red dot on Start and Stop: on at once while the clock runs, off softly." },
+    lettering: { tokens: ["--race-ink", "--race-faint"], note: "Plain white capitals on the keys; dim when Reset has nothing to clear." },
   },
   "start-key": {
     collar: { tokens: ["--race-well", "--race-recess"], note: "The barrel's well, knurled all round its rim. The three stops are engraved outside it: Off, On, and a red dashed run to Start, where the key is spring-loaded." },
