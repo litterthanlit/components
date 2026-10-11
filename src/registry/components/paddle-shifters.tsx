@@ -300,10 +300,10 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
   const figures = Array.from({ length: max - min + 1 }, (_, i) => labels?.[min + i] ?? String(min + i));
 
   return (
-    <div ref={rootRef} onPointerDownCapture={touch} onKeyDownCapture={touch} className={cx("@container w-full max-w-[400px] select-none", className)}>
-      <div data-part="plate" className="relative animate-enter overflow-hidden rounded-[0.9em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)]">
+    <div ref={rootRef} onPointerDownCapture={touch} onKeyDownCapture={touch} className={cx("@container w-full max-w-[600px] select-none", className)}>
+      <div data-part="plate" className="relative animate-enter overflow-hidden rounded-[0.9em] p-[1.4em] text-[clamp(11px,3.2cqw,18px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)]">
         {/* A paddle either side of the gear. */}
-        <div className="grid h-[13.5em] grid-cols-[3.6em_minmax(0,1fr)_3.6em] items-center gap-[0.6em]">
+        <div className="grid h-[14.5em] grid-cols-[3.4em_minmax(0,1fr)_3.4em] items-center gap-[1.8em]">
           {([-1, 1] as const).map((dir) => (
             <button
               key={dir}
@@ -339,7 +339,7 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
                 )}
               >
                 {/* The sign: engraved near the pivot, white while the lever is pulled. */}
-                <span aria-hidden className="absolute inset-x-0 top-[2.4em] text-center text-[1.8em] font-bold leading-none">
+                <span aria-hidden className="absolute inset-x-0 top-[2.4em] text-center text-[1.7em] font-medium leading-none">
                   {dir > 0 ? "+" : "−"}
                 </span>
               </span>
@@ -358,15 +358,15 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
             aria-valuetext={describe(value)}
             onKeyDown={onKeyDown}
             onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
-            className="col-start-2 row-start-1 flex min-w-0 flex-col items-center justify-center gap-[1.1em] self-stretch rounded-[0.5em] text-(--race-ink) outline-offset-2"
+            className="col-start-2 row-start-1 flex min-w-0 flex-col items-center justify-center gap-[2em] self-stretch rounded-[0.5em] text-(--race-ink) outline-offset-2"
           >
             {/* The drum: one figure per gear in a column, translated by the spring's --pos. */}
-            <div ref={drumRef} aria-hidden data-part="drum" className="relative h-[1.08em] w-full shrink-0 overflow-hidden text-[8.4em]">
+            <div ref={drumRef} aria-hidden data-part="drum" className="relative h-[1.08em] w-full shrink-0 overflow-hidden text-[6.4em]">
               <div className="flex flex-col will-change-transform [translate:calc(var(--shake,0)*0.03em)_calc(var(--pos,0)*-1.08em)]">
                 {figures.map((f, i) => (
                   <span
                     key={i}
-                    className="grid h-[1.08em] place-items-center pr-[0.06em] text-center font-[family-name:var(--font-race)] font-extrabold italic leading-none tabular-nums text-(--race-ink) [font-stretch:62%]"
+                    className="grid h-[1.08em] place-items-center pr-[0.06em] text-center font-[family-name:var(--font-race)] font-medium leading-none tabular-nums text-(--race-ink)"
                   >
                     {f}
                   </span>
