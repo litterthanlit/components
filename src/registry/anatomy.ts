@@ -8,10 +8,10 @@ import { parts, type PartInfo } from "@/components/anatomy/parts";
 export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>> = {
   "gauge-cluster": {
     bezel: { tokens: ["--race-well"], note: "Black, with a hairline lit edge, round each face. The large one stands proud of the two behind it and throws a hard shadow on them." },
-    face: { tokens: ["--race-yellow", "--race-yellow-ink", "--race-glass", "--race-ink", "--race-red"], note: "The tach is yellow with black figures; the speedo and oil gauge are dark glass with white ones. The red needles glow and leave four ghost needles, all drawn through SVG attributes by a spring in degrees, never a transform." },
-    glass: { tokens: ["--race-scanlines"], note: "Scanlines and a sheen over each dark face and the LCD; the yellow tach gets the sheen only." },
-    chip: { tokens: ["--race-yellow", "--race-yellow-ink", "--race-faint"], note: "The gear in yellow inside the tach, and the automation's mode on the strip, yellow in Touch." },
-    light: { name: "Shift lights", tokens: ["--race-led-off", "--race-green", "--race-yellow", "--race-red", "--race-glow-yellow", "--race-glow-red"], note: "Ten shift lights, four green, three yellow, three red, lit from 5,500 rpm and flashing together at the limiter, and a yellow light for Touch." },
+    face: { tokens: ["--race-glass", "--race-ink", "--race-red", "--race-red-deep"], note: "Black glass with white condensed italic figures; the tach adds a thin red ring and a red pointer at twelve. The red needles glow and leave four ghost needles, all drawn through SVG attributes by a spring in degrees, never a transform." },
+    glass: { tokens: ["--race-scanlines"], note: "Scanlines and a sheen over each face and the LCD." },
+    chip: { tokens: ["--race-red-deep", "--race-red-ink", "--race-red", "--race-faint"], note: "The gear in white on deep red inside the tach, and the automation's mode on the strip, lit red in Touch." },
+    light: { name: "Shift lights", tokens: ["--race-led-off", "--race-ink", "--race-red", "--race-glow-white", "--race-glow-red"], note: "Ten shift lights, four white then six red, lit from 5,500 rpm and all flashing red at the limiter, and a red light for Touch." },
     lcd: { tokens: ["--race-glass", "--race-scanlines"], note: "The mode and the throttle in race-face figures, on the strip under the cluster." },
     well: { tokens: ["--race-well", "--race-recess"], note: "The cluster's pocket in the plate." },
   },

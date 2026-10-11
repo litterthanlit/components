@@ -26,8 +26,8 @@ export const registry: RegistryEntry[] = [
     slug: "gauge-cluster",
     title: "Gauge Cluster",
     description:
-      "An instrument cluster for the night race: a yellow GT tach with a red needle that glows and trails light, a black readout of gear and speed, and a speedo and an oil gauge in dark glass tucked behind it, under ten shift lights that fill from green to red and flash at the limiter. Each needle is a spring and each face a meter. On power-up the needles sweep, then a recorded lap plays in Read, with a flat-six that follows it. Hold the cluster, or Space, to take the throttle in Touch.",
-    tagline: "Yellow tach, shift lights and a flat-six that follows the lap.",
+      "An instrument cluster for the night race: a black glass tach with white figures, a thin red ring and a red needle that glows and trails light, a deep red gear chip over the speed, and a speedo and an oil gauge in dark glass tucked behind it, under ten shift lights, four white then six red, that flash red at the limiter. On power-up the needles sweep, then a recorded lap plays in Read, with a flat-six that follows it. Hold the cluster, or Space, to take the throttle in Touch.",
+    tagline: "Black-glass tach, red shift lights and a flat-six that follows the lap.",
     tags: ["motion", "svg", "sound", "a11y"],
     date: "2026-10-09",
     status: "new",

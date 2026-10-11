@@ -19,12 +19,12 @@ import { engine, hostTransport, play } from "@/lib/sound";
 /*
  * An instrument cluster on the night-race line: three radial gauges in a
  * black well under a bar of shift lights, everything lit from within. The tach
- * is the hero, a GT car's yellow face with black figures in the race face
- * (condensed, italic, heavy), a red block at the end of the scale and a black
- * readout in its lower half that carries the gear in a yellow chip and the road
- * speed in huge glowing digits. The speedo and the oil temperature are dark
- * glass with scanlines and white figures, tucked partly behind it, lower and to
- * either side.
+ * is the hero: black glass with scanlines and white figures in the race face
+ * (condensed, italic, heavy), a thin red ring with a red pointer at twelve
+ * o'clock, a lit red block at the end of the scale and a black readout in its
+ * lower half that carries the gear in a deep red chip and the road speed in
+ * huge glowing digits. The speedo and the oil temperature are the same dark
+ * glass without the ring, tucked partly behind it, lower and to either side.
  *
  * A needle is a spring, in degrees, so it keeps its velocity when the value
  * jumps: stiff on the tach (260, 26: about 1.5% overshoot, settled in a third
@@ -41,9 +41,9 @@ import { engine, hostTransport, play } from "@/lib/sound";
  * it has moved in that time and a slow or settled one shows none. Reduced
  * motion draws none.
  *
- * The shift lights are ten LEDs: four green, three yellow, three red, lit one
- * by one from 5,500 rpm to 7,700 and all flashing together at the limiter
- * (steady under reduced motion). They are written, like the needles, from the
+ * The shift lights are ten LEDs: four white, then six red, lit one by one from
+ * 5,500 rpm to 7,700 and all flashing red together at the limiter (steady
+ * under reduced motion). They are written, like the needles, from the
  * rpm the cluster is given.
  *
  * Each face is a meter for screen readers (aria-valuemin, max, now and a
@@ -108,8 +108,8 @@ export type GaugeProps = {
   minorStep: number;
   /** Large faces carry big figures; small ones are set a size down and tuck behind. */
   size?: "large" | "small";
-  /** The face: dark glass with white figures and scanlines, or the tach's yellow with black ones. */
-  tone?: "glass" | "yellow";
+  /** The face: dark glass with white figures and scanlines, or the tach's, which wears a thin red ring and a red pointer at twelve o'clock. */
+  tone?: "glass" | "hero";
   /** Degrees from upright, clockwise, at the minimum and at the maximum. Default −135 to 135. */
   sweep?: readonly [number, number];
   /** What to print at a long tick. Default: the value. */
@@ -178,7 +178,7 @@ export function Gauge({
   const aria = useRef({ at: 0, text: "" }); // the last valuetext written by the handle, and when
   const [initial] = useState(value);
   const f = FACE[size];
-  const yellow = tone === "yellow";
+  const hero = tone === "hero";
   // What the spring and the handle read when they fire, rather than when they were made.
   const props = useRef({ min, max, sweep, majorStep, format, onMark, needle });
   useLayoutEffect(() => {
@@ -299,8 +299,6 @@ export function Gauge({
   const tip = polar(angleOf(initial, { min, max, sweep }), f.tip);
   const tail = polar(angleOf(initial, { min, max, sweep }) + 180, f.tail);
   const needleAt = { x1: tail.x, y1: tail.y, x2: tip.x, y2: tip.y };
-  const ink = yellow ? "var(--race-yellow-ink)" : "var(--race-ink)";
-  const quiet = yellow ? "var(--race-yellow-ink)" : "var(--race-dim)";
 
   return (
     <div
@@ -317,21 +315,21 @@ export function Gauge({
     >
       <div
         data-part="face"
-        className={cx(
-          "relative size-full overflow-hidden rounded-full",
-          yellow ? "[background:radial-gradient(circle_at_50%_44%,transparent_58%,rgb(0_0_0/0.22)_100%),var(--race-yellow)]" : "[background:var(--race-glass)]",
-        )}
+        className="relative size-full overflow-hidden rounded-full [background:var(--race-glass)]"
       >
         <svg aria-hidden viewBox="0 0 100 100" className="absolute inset-0 size-full" style={{ fontVariantNumeric: "tabular-nums" }}>
+          {/* The hero's red ring and the pointer at twelve o'clock. */}
+          {hero && <circle cx="50" cy="50" r="48.4" fill="none" stroke="var(--race-red-deep)" strokeWidth="0.8" />}
+          {hero && <polygon points="46.9,1.6 53.1,1.6 50,6.4" fill="var(--race-red)" />}
           {/* The red block at the end of the scale, outside the ticks. */}
           {redline !== undefined && <path d={arcPath(angle(redline), angle(max), 44.6)} fill="none" stroke="var(--race-red)" strokeWidth="4" />}
-          <path d={arcPath(angle(min), angle(redline ?? max), 41.8)} fill="none" stroke={ink} strokeOpacity={yellow ? 0.5 : 0.3} strokeWidth="0.5" />
+          <path d={arcPath(angle(min), angle(redline ?? max), 41.8)} fill="none" stroke="var(--race-ink)" strokeOpacity={0.3} strokeWidth="0.5" />
           {ticks.map(({ v, major }) => {
             const deg = angle(v);
             const a = polar(deg, TICK_OUT);
             const b = polar(deg, TICK_OUT - (major ? f.major : f.minor));
-            const hot = redline !== undefined && v >= redline && !yellow;
-            return <line key={v} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={hot ? "var(--race-red)" : ink} strokeOpacity={major ? 1 : 0.55} strokeWidth={major ? f.majorW : f.minorW} />;
+            const hot = redline !== undefined && v >= redline;
+            return <line key={v} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={hot ? "var(--race-red)" : "var(--race-ink)"} strokeOpacity={major ? 1 : 0.55} strokeWidth={major ? f.majorW : f.minorW} />;
           })}
           {figures.map((v) => {
             if (figure(v) === "") return null; // a long tick with no figure: the readout sits where it would be
@@ -345,7 +343,7 @@ export function Gauge({
                 dominantBaseline="central"
                 fontSize={font}
                 fontWeight={f.weight}
-                fill={ink}
+                fill="var(--race-ink)"
                 style={{ fontFamily: "var(--font-race)", fontStretch: "62%", fontStyle: "italic" }}
               >
                 {figure(v)}
@@ -353,7 +351,7 @@ export function Gauge({
             );
           })}
           {unit && (
-            <text x="50" y={f.unitY} textAnchor="middle" dominantBaseline="central" fontSize="4.4" letterSpacing="0.4" fill={quiet} fillOpacity={yellow ? 0.75 : 1} style={{ fontWeight: 600, textTransform: "uppercase" }}>
+            <text x="50" y={f.unitY} textAnchor="middle" dominantBaseline="central" fontSize="4.4" letterSpacing="0.4" fill="var(--race-dim)" style={{ fontWeight: 600, textTransform: "uppercase" }}>
               {unit}
             </text>
           )}
@@ -364,7 +362,6 @@ export function Gauge({
           ))}
           <line data-needle {...needleAt} stroke="var(--race-red)" strokeOpacity={0.14} strokeWidth={f.needleW * 4.2} strokeLinecap="round" />
           <line data-needle {...needleAt} stroke="var(--race-red)" strokeOpacity={0.3} strokeWidth={f.needleW * 2.3} strokeLinecap="round" />
-          {yellow && <line data-needle {...needleAt} stroke="var(--race-yellow-ink)" strokeOpacity={0.85} strokeWidth={f.needleW * 1.7} strokeLinecap="round" />}
           <line data-needle {...needleAt} stroke="var(--race-red)" strokeWidth={f.needleW} strokeLinecap="round" />
           {/* The cap the needle comes out of: black, with a red ring and a lit dot. */}
           <circle cx="50" cy="50" r={f.hub} fill="var(--race-well)" stroke="var(--race-red)" strokeWidth="0.7" />
@@ -373,16 +370,11 @@ export function Gauge({
         <div aria-hidden className="absolute inset-0">
           {children}
         </div>
-        {/* Glass over the face: scanlines on the dark ones, and a sheen breaking where the light catches it. */}
+        {/* Glass over the face: scanlines, and a sheen breaking where the light catches it. */}
         <div
           aria-hidden
           data-part="glass"
-          className={cx(
-            "pointer-events-none absolute inset-0 rounded-full",
-            yellow
-              ? "[background:linear-gradient(160deg,rgb(255_255_255/0.26)_0%,rgb(255_255_255/0.04)_34%,transparent_34.4%)]"
-              : "[background:var(--race-scanlines),linear-gradient(160deg,rgb(255_255_255/0.12)_0%,rgb(255_255_255/0.02)_36%,transparent_36.4%)]",
-          )}
+          className="pointer-events-none absolute inset-0 rounded-full [background:var(--race-scanlines),linear-gradient(160deg,rgb(255_255_255/0.12)_0%,rgb(255_255_255/0.02)_36%,transparent_36.4%)]"
         />
       </div>
     </div>
@@ -422,11 +414,10 @@ const fmtRpm = (v: number) => `${(Math.round(v / 100) * 100).toLocaleString("en-
 const fmtSpeed = (v: number) => `${Math.round(v)} km/h`;
 const fmtOil = (v: number) => `${Math.round(v)} °C`;
 
-/** The shift lights: four green, three yellow, three red; the first comes on at 5,500 rpm and the last at 7,700. */
+/** The shift lights: four white, then six red; the first comes on at 5,500 rpm and the last at 7,700. At the limiter they all turn red (see `data-limit`). */
 const LEDS = [
-  ...Array.from({ length: 4 }, () => ({ colour: "var(--race-green)", glow: "0 0 0.6em var(--race-green), 0 0 1.4em -0.2em var(--race-green)" })),
-  ...Array.from({ length: 3 }, () => ({ colour: "var(--race-yellow)", glow: "var(--race-glow-yellow)" })),
-  ...Array.from({ length: 3 }, () => ({ colour: "var(--race-red)", glow: "var(--race-glow-red)" })),
+  ...Array.from({ length: 4 }, () => "[--led:var(--race-ink)] [--glow:var(--race-glow-white)] [[data-limit]_&]:[--led:var(--race-red)] [[data-limit]_&]:[--glow:var(--race-glow-red)]"),
+  ...Array.from({ length: 6 }, () => "[--led:var(--race-red)] [--glow:var(--race-glow-red)]"),
 ];
 const LED_FROM = 5500;
 const LED_STEP = 244; // rpm between lights
@@ -462,6 +453,7 @@ export function GaugeCluster({ rpm, speed, oil, gear, onThrottle, onTick, handle
     if (!bar) return;
     const limiter = rpmNow >= LIMITER;
     const flashOn = limiter && (reducedMotion() || Math.floor(performance.now() / FLASH) % 2 === 0);
+    if (bar.hasAttribute("data-limit") !== limiter) bar.toggleAttribute("data-limit", limiter);
     [...bar.children].forEach((led, i) => {
       const on = limiter ? flashOn : rpmNow >= LED_FROM + i * LED_STEP;
       if (led.hasAttribute("data-on") !== on) led.toggleAttribute("data-on", on);
@@ -547,15 +539,14 @@ export function GaugeCluster({ rpm, speed, oil, gear, onThrottle, onTick, handle
         Hold Space to rev the engine. Pressing and holding the cluster does the same. The lap takes over again two and a half seconds after you let go.
       </span>
 
-      {/* The shift lights: ten LEDs, off until the revs come up, lit with their glow. */}
+      {/* The shift lights: ten LEDs, off until the revs come up, lit with their glow; all red at the limiter. */}
       <div ref={barRef} aria-hidden className="mb-[0.55em] flex gap-[0.3em]">
         {LEDS.map((led, i) => (
           <span
             key={i}
             data-part="light"
             data-on={i < initial.lit ? "" : undefined}
-            className="h-[0.5em] flex-1 rounded-[0.12em] bg-(--race-led-off) data-[on]:bg-(--led) data-[on]:[box-shadow:var(--glow)]"
-            style={{ "--led": led.colour, "--glow": led.glow } as CSSProperties}
+            className={cx("h-[0.5em] flex-1 rounded-[0.12em] bg-(--race-led-off) data-[on]:bg-(--led) data-[on]:[box-shadow:var(--glow)]", led)}
           />
         ))}
       </div>
@@ -607,7 +598,7 @@ export function GaugeCluster({ rpm, speed, oil, gear, onThrottle, onTick, handle
           majorStep={1000}
           minorStep={200}
           size="large"
-          tone="yellow"
+          tone="hero"
           figure={(v) => (v === 0 || v === TACH_MAX ? "" : String(v / 1000))}
           unit="×1000 rpm"
           needle={{ stiffness: 260, damping: 26 }}
@@ -615,10 +606,10 @@ export function GaugeCluster({ rpm, speed, oil, gear, onThrottle, onTick, handle
           className="absolute z-20"
           style={{ left: "26%", top: 0, width: "48%" }}
         >
-          {/* Inside the tach, under the needle's cap: a black readout with the gear in a yellow chip and the road speed in huge glowing digits. */}
+          {/* Inside the tach, under the needle's cap: a black readout with the gear in a deep red chip and the road speed in huge glowing digits. */}
           <div className="absolute inset-x-0 flex justify-center" style={{ top: "64%" }}>
             <div className="flex items-center gap-[0.4em] rounded-[0.5em] bg-(--race-well) py-[0.3em] pr-[0.5em] pl-[0.4em] [box-shadow:inset_0_0_0_1px_rgb(255_255_255/0.1)]">
-              <span data-part="chip" className="flex min-w-[1.3em] justify-center rounded-[0.3em] bg-(--race-yellow) px-[0.3em] py-[0.25em] text-(--race-yellow-ink)">
+              <span data-part="chip" className="flex min-w-[1.3em] justify-center rounded-[0.3em] bg-(--race-red-deep) px-[0.3em] py-[0.25em] text-(--race-red-ink)">
                 <span ref={gearRef} className={cx(RACE_FIGURES, "text-[1.15em] leading-none")}>
                   {initial.gear}
                 </span>
@@ -974,8 +965,8 @@ export default function Demo() {
     >
       <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[0.9em] p-[0.8em] pt-[1em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] [box-shadow:var(--race-edge),var(--race-shadow)] @[26rem]:p-[1em] @[26rem]:pt-[1.2em]">
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] [background:var(--race-weave)]" />
-        {/* Two rules along the top edge: yellow, then red. */}
-        <span aria-hidden className="absolute top-0 left-[1.2em] h-[2px] w-[4em] bg-(--race-yellow) [box-shadow:var(--race-glow-yellow)]" />
+        {/* Two rules along the top edge: deep red, then lit red. */}
+        <span aria-hidden className="absolute top-0 left-[1.2em] h-[2px] w-[4em] bg-(--race-red-deep)" />
         <span aria-hidden className="absolute top-0 left-[5.5em] h-[2px] w-[1.2em] bg-(--race-red) [box-shadow:var(--race-glow-red)]" />
 
         <div data-part="well" className="rounded-[0.6em] bg-(--race-well) px-[0.6em] pt-[0.6em] pb-[0.75em] [box-shadow:var(--race-recess)]">
@@ -989,7 +980,7 @@ export default function Demo() {
             aria-hidden
             className={cx(
               "size-[0.7em] shrink-0 rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)",
-              mode === "touch" ? "bg-(--race-yellow) [box-shadow:var(--race-glow-yellow)] duration-0" : mode === "read" ? "bg-(--race-dim)" : "bg-(--race-led-off)",
+              mode === "touch" ? "bg-(--race-red) [box-shadow:var(--race-glow-red)] duration-0" : mode === "read" ? "bg-(--race-dim)" : "bg-(--race-led-off)",
             )}
           />
           <span
@@ -997,11 +988,11 @@ export default function Demo() {
             data-part="lcd"
             className="relative flex h-[2.4em] min-w-0 flex-1 items-center justify-between gap-[0.5em] overflow-hidden rounded-[0.5em] px-[0.6em] text-(--race-ink) [background:var(--race-glass)] [box-shadow:inset_0_0_0_1px_rgb(255_255_255/0.08)]"
           >
-            <span data-part="chip" className={cx("relative inline-flex shrink-0 items-center gap-[0.35em] rounded-[0.3em] px-[0.5em] py-[0.26em]", mode === "touch" ? "bg-(--race-yellow) text-(--race-yellow-ink)" : "bg-(--race-faint) text-(--race-ink)")}>
+            <span data-part="chip" className={cx("relative inline-flex shrink-0 items-center gap-[0.35em] rounded-[0.3em] px-[0.5em] py-[0.26em]", mode === "touch" ? "bg-(--race-red) text-(--race-red-ink) [box-shadow:var(--race-glow-red)]" : "bg-(--race-faint) text-(--race-ink)")}>
               <span
                 className={cx(
                   "size-[0.5em] rounded-full",
-                  mode === "touch" ? "bg-(--race-yellow-ink)" : mode === "read" ? "animate-pulse bg-(--race-red) motion-reduce:animate-none" : "rounded-[1px] bg-current",
+                  mode === "touch" ? "bg-(--race-red-ink)" : mode === "read" ? "animate-pulse bg-(--race-red) motion-reduce:animate-none" : "rounded-[1px] bg-current",
                 )}
               />
               <span className="text-[0.62em] font-semibold uppercase leading-none tracking-[0.1em]">
