@@ -17,49 +17,48 @@ import { createSpring, focusQuietly, type Spring } from "@/design-system";
 import { engine, hostTransport, play } from "@/lib/sound";
 
 /*
- * An instrument cluster on the night-race line: three radial gauges in a
- * black well under a bar of shift lights, everything lit from within. The tach
- * is the hero: black glass with scanlines and white figures in the race face
- * (condensed, italic, heavy), a thin red ring with a red pointer at twelve
- * o'clock, a lit red block at the end of the scale and a black readout in its
- * lower half that carries the gear in a deep red chip and the road speed in
- * huge glowing digits. The speedo and the oil temperature are the same dark
- * glass without the ring, tucked partly behind it, lower and to either side.
+ * An instrument cluster on the night-race line, and as little of it as will
+ * do: three black dials on a black plate, lit by their figures and their
+ * needles alone. The tach is the hero, in the middle, with white condensed
+ * italic figures from 0 to 8, fine white ticks and a small red block at the
+ * end of the scale. Inside it, right of the hub, the gear in one large white
+ * letter ("P" at rest, then 1 to 6), and under the hub one outlined pill with
+ * the mode. The speedo is tucked behind it on the left and carries the road
+ * speed as a small quiet figure; the oil temperature sits behind it on the
+ * right. The gauges overlap, and the large one throws a hard shadow on the
+ * others.
  *
  * A needle is a spring, in degrees, so it keeps its velocity when the value
- * jumps: stiff on the tach (260, 26: about 1.5% overshoot, settled in a third
- * of a second), gentler on the road speed (150, 20) and slower still on the
- * oil (90, 16), which has no business being quick. It is drawn through SVG
- * attributes (x1 to y2), never a transform, and every frame writes the DOM,
- * not React. A value set through the `value` prop travels on the spring; a
- * demo that feeds a gauge sixty times a second uses the handle instead, which
- * is the same path without a render.
+ * jumps. The tach's is crisp and has some weight (230, 21.5: damping ratio
+ * 0.71, a 4.6% overshoot, one small bounce and it is still); the speedo's
+ * (140, 17.5) and the oil's (95, 14.5) are gentler and slower, with about 3%.
+ * It is drawn through SVG attributes (x1 to y2), never a transform, and every
+ * frame writes the DOM, not React. A value set through the `value` prop
+ * travels on the spring; a demo that feeds a gauge sixty times a second uses
+ * the handle instead, which is the same path without a render. The speed
+ * figure is read off the speedo's own spring, so it rolls with the needle.
  *
- * A red needle glows and leaves a light trail: four ghost needles behind it,
- * drawn in the same frame as the needle from the spring's own velocity. Each
- * lags it by a further 22 ms, so a fast needle smears over as many degrees as
- * it has moved in that time and a slow or settled one shows none. Reduced
- * motion draws none.
- *
- * The shift lights are ten LEDs: four white, then six red, lit one by one from
- * 5,500 rpm to 7,700 and all flashing red together at the limiter (steady
- * under reduced motion). They are written, like the needles, from the
- * rpm the cluster is given.
+ * The limiter has no light of its own. The needle hits the stop and bounces
+ * back on its spring as the engine cuts, and the red block at the end of the
+ * tach brightens with it: on at once, and a soft fade off over the exit
+ * duration (150 ms) once the limiter has let go for 300 ms, so even a short
+ * cut reads. Under reduced motion it simply changes.
  *
  * Each face is a meter for screen readers (aria-valuemin, max, now and a
  * valuetext with its unit), and the cluster is one tab stop: hold Space or
  * press and hold anywhere on it to rev.
  *
- * The demo drives it from a small car: five gear ratios and a limiter, so the
+ * The demo drives it from a small car: six gear ratios and a limiter, so the
  * tach, the road speed and the gear always agree. On power-up the three
- * needles swing to full scale and back, 120 ms apart, and then a recorded
- * lap plays back as automation in READ: the launch to the limiter, an
- * upshift (the tach drops) in each gear, then the brakes, with a blip of
- * throttle on every downshift. A hand on the cluster takes the throttle in
- * TOUCH, from wherever the lap had got to, and two and a half seconds after
- * it lets go the lap takes the needles back. The engine is heard: one flat-six
- * voice follows the same rpm and throttle that draw the tach, cuts at the
- * limiter, and stays silent under a paused tape until a hand works it.
+ * needles rise together, 70 ms apart and the tach first, past full scale and
+ * back, and fall to rest with a bounce; then a recorded lap plays back as
+ * automation: the launch to the limiter, an upshift (the tach drops) in each
+ * gear, then the brakes, with a blip of throttle on every downshift. A hand on
+ * the cluster takes the throttle ("Touch" in the pill), from wherever the lap
+ * had got to, and two and a half seconds after it lets go the lap takes the
+ * needles back. The engine is heard: one flat-six voice follows the same rpm
+ * and throttle that draw the tach, cuts at the limiter, and stays silent under
+ * a paused tape until a hand works it.
  */
 
 const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(" ");
@@ -88,6 +87,8 @@ const RACE_FIGURES = "font-[family-name:var(--font-race)] [font-stretch:62%] ita
 export type GaugeHandle = {
   /** Sends the needle to a value on its spring, or `jump` puts it there at once. Writes the DOM, never React state. */
   set: (value: number, jump?: boolean) => void;
+  /** Lights the red block at the end of the scale: on at once, a soft fade off. */
+  hot: (on: boolean) => void;
 };
 
 export type GaugeProps = {
@@ -108,21 +109,19 @@ export type GaugeProps = {
   minorStep: number;
   /** Large faces carry big figures; small ones are set a size down and tuck behind. */
   size?: "large" | "small";
-  /** The face: dark glass with white figures and scanlines, or the tach's, which wears a thin red ring and a red pointer at twelve o'clock. */
-  tone?: "glass" | "hero";
   /** Degrees from upright, clockwise, at the minimum and at the maximum. Default −135 to 135. */
   sweep?: readonly [number, number];
   /** What to print at a long tick. Default: the value. */
   figure?: (value: number) => string;
-  /** The unit, printed on the face. */
-  unit?: string;
   /** The needle's spring. */
   needle?: { stiffness: number; damping: number };
   /** The needle passed a long tick, going up (`rising`) or down. Called from the spring, not from React. */
   onMark?: (mark: number, rising: boolean) => void;
+  /** The value under the needle, every frame it moves: a readout that rolls with it. Called from the spring, not from React. */
+  onValue?: (value: number) => void;
   /** Drive the needle without rendering. */
   handle?: Ref<GaugeHandle>;
-  /** Printed on the face, under the needle's cap: a gear, a digital readout. */
+  /** Printed on the face, under the scale and the needle: a gear, a readout. */
   children?: ReactNode;
   className?: string;
   style?: CSSProperties;
@@ -130,24 +129,16 @@ export type GaugeProps = {
 
 /** Each size's measurements, in viewBox units. */
 const FACE = {
-  large: { major: 6.8, minor: 3.4, majorW: 2, minorW: 0.9, label: 26, font: 15.5, weight: 800, tip: 40, tail: 9, needleW: 1.9, hub: 6, unitY: 35 },
-  small: { major: 5.5, minor: 2.8, majorW: 1.7, minorW: 0.9, label: 29, font: 11.5, weight: 700, tip: 39, tail: 7, needleW: 1.5, hub: 4.8, unitY: 70 },
+  large: { major: 6, minor: 3, majorW: 1.5, minorW: 0.7, font: 17, weight: 700, tip: 40, tail: 8, needleW: 1.5, hub: 5.6 },
+  small: { major: 5, minor: 2.6, majorW: 1.3, minorW: 0.7, font: 11.5, weight: 700, tip: 38, tail: 6, needleW: 1.2, hub: 4.4 },
 } as const;
 const TICK_OUT = 41;
 const PIN = 1.04; // the needle may press a little past the end stop
 const CHAR_W = 0.46; // a condensed italic figure's width, in ems
-/** The light trail: four ghosts, each this many seconds behind the needle, and how bright each starts. */
-const TRAIL = [
-  { lag: 0.022, alpha: 0.4 },
-  { lag: 0.044, alpha: 0.26 },
-  { lag: 0.066, alpha: 0.15 },
-  { lag: 0.088, alpha: 0.07 },
-] as const;
-const MAX_SMEAR = 32; // degrees
 
-const bezel = "[box-shadow:0_0_0_1px_rgb(255_255_255/0.1),inset_0_1px_2px_rgb(0_0_0/0.8),0_0.12em_0.4em_rgb(0_0_0/0.8)]";
+const bezel = "[box-shadow:0_0_0_1px_rgb(255_255_255/0.09),0_0.1em_0.5em_rgb(0_0_0/0.7)]";
 /** The large face stands proud of the two behind it: a hard shadow falls on them. */
-const bezelLarge = "[box-shadow:0_0_0_1px_rgb(255_255_255/0.16),inset_0_1px_2px_rgb(0_0_0/0.8),0_0.2em_1em_0.1em_rgb(0_0_0/0.9)]";
+const bezelLarge = "[box-shadow:0_0_0_1px_rgb(255_255_255/0.14),0_0.2em_1.2em_0.1em_rgb(0_0_0/0.9)]";
 
 export function Gauge({
   value,
@@ -160,12 +151,11 @@ export function Gauge({
   figureStep = majorStep,
   minorStep,
   size = "small",
-  tone = "glass",
   sweep = [-135, 135],
   figure = (v) => String(v),
-  unit,
   needle = { stiffness: 170, damping: 22 },
   onMark,
+  onValue,
   handle,
   children,
   className,
@@ -176,32 +166,28 @@ export function Gauge({
   const placed = useRef(false);
   const silent = useRef(false); // a jump passes no marks
   const aria = useRef({ at: 0, text: "" }); // the last valuetext written by the handle, and when
+  const hubId = useId().replace(/:/g, "");
   const [initial] = useState(value);
   const f = FACE[size];
-  const hero = tone === "hero";
   // What the spring and the handle read when they fire, rather than when they were made.
-  const props = useRef({ min, max, sweep, majorStep, format, onMark, needle });
+  const props = useRef({ min, max, sweep, majorStep, format, onMark, onValue, needle });
   useLayoutEffect(() => {
-    props.current = { min, max, sweep, majorStep, format, onMark, needle };
+    props.current = { min, max, sweep, majorStep, format, onMark, onValue, needle };
   });
 
   const angleOf = (v: number, p: { min: number; max: number; sweep: readonly [number, number] }) =>
     p.sweep[0] + clamp((v - p.min) / (p.max - p.min), 0, PIN) * (p.sweep[1] - p.sweep[0]);
 
-  // The spring runs in degrees and draws the needle and its trail; a long tick passing under it is reported from here.
+  // The spring runs in degrees and draws the needle; a long tick passing under it is reported from here, and so is the value under it.
   useLayoutEffect(() => {
     const root = rootRef.current!;
     const lines = [...root.querySelectorAll<SVGLineElement>("[data-needle]")];
-    const ghosts = [...root.querySelectorAll<SVGLineElement>("[data-ghost]")];
-    const trails = !reducedMotion();
     const start = props.current;
     const marks = Math.floor((start.max - start.min) / start.majorStep + 1e-6);
     const bandOf = (deg: number, p: typeof start) =>
       clamp(Math.floor(((deg - p.sweep[0]) / (p.sweep[1] - p.sweep[0])) * ((p.max - p.min) / p.majorStep) + 1e-6), 0, marks - 1);
     let band = bandOf(angleOf(initial, start), start);
-    let lastDeg = angleOf(initial, start);
-    let lastAt = 0;
-    const s = createSpring(lastDeg, props.current.needle, (deg) => {
+    const s = createSpring(angleOf(initial, start), props.current.needle, (deg) => {
       const tip = polar(deg, f.tip);
       const tail = polar(deg + 180, f.tail);
       for (const line of lines) {
@@ -210,25 +196,8 @@ export function Gauge({
         line.setAttribute("x2", String(tip.x));
         line.setAttribute("y2", String(tip.y));
       }
-      if (trails) {
-        // The needle's speed from this frame and the last, which a jump (a long gap) does not count.
-        const at = performance.now();
-        const dt = (at - lastAt) / 1000;
-        const speed = lastAt && dt > 0.004 && dt < 0.08 ? (deg - lastDeg) / dt : 0;
-        lastAt = at;
-        lastDeg = deg;
-        ghosts.forEach((ghost, i) => {
-          const smear = clamp(speed * TRAIL[i].lag, -MAX_SMEAR, MAX_SMEAR);
-          const a = polar(deg - smear, f.tip);
-          const b = polar(deg - smear + 180, f.tail);
-          ghost.setAttribute("x1", String(b.x));
-          ghost.setAttribute("y1", String(b.y));
-          ghost.setAttribute("x2", String(a.x));
-          ghost.setAttribute("y2", String(a.y));
-          ghost.setAttribute("opacity", String(round2(TRAIL[i].alpha * clamp(Math.abs(smear) / 3, 0, 1))));
-        });
-      }
       const p = props.current;
+      p.onValue?.(p.min + ((deg - p.sweep[0]) / (p.sweep[1] - p.sweep[0])) * (p.max - p.min));
       const now = bandOf(deg, p);
       if (now !== band) {
         const rising = now > band;
@@ -273,6 +242,10 @@ export function Gauge({
           el.setAttribute("aria-valuetext", text);
         }
       },
+      hot(on) {
+        const el = rootRef.current;
+        if (el && el.hasAttribute("data-hot") !== on) el.toggleAttribute("data-hot", on);
+      },
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -299,6 +272,8 @@ export function Gauge({
   const tip = polar(angleOf(initial, { min, max, sweep }), f.tip);
   const tail = polar(angleOf(initial, { min, max, sweep }) + 180, f.tail);
   const needleAt = { x1: tail.x, y1: tail.y, x2: tip.x, y2: tip.y };
+  /** The red block lights at once and fades out softly; under reduced motion it just changes. */
+  const block = "transition-opacity duration-(--duration-exit) motion-reduce:transition-none [[data-hot]_&]:duration-0";
 
   return (
     <div
@@ -310,29 +285,37 @@ export function Gauge({
       aria-valuenow={value}
       aria-valuetext={format(value)}
       data-part="bezel"
-      className={cx("aspect-square overflow-hidden rounded-full bg-(--race-well) p-[4.5%]", size === "large" ? bezelLarge : bezel, className)}
+      className={cx("aspect-square overflow-hidden rounded-full bg-(--race-well) p-[4%]", size === "large" ? bezelLarge : bezel, className)}
       style={style}
     >
-      <div
-        data-part="face"
-        className="relative size-full overflow-hidden rounded-full [background:var(--race-glass)]"
-      >
+      <div data-part="face" className="relative size-full overflow-hidden rounded-full [background:var(--race-glass)]">
+        {/* Under the scale and the needle: a gear, a readout. */}
+        <div aria-hidden className="absolute inset-0">
+          {children}
+        </div>
         <svg aria-hidden viewBox="0 0 100 100" className="absolute inset-0 size-full" style={{ fontVariantNumeric: "tabular-nums" }}>
-          {/* The hero's red ring and the pointer at twelve o'clock. */}
-          {hero && <circle cx="50" cy="50" r="48.4" fill="none" stroke="var(--race-red-deep)" strokeWidth="0.8" />}
-          {hero && <polygon points="46.9,1.6 53.1,1.6 50,6.4" fill="var(--race-red)" />}
-          {/* The red block at the end of the scale, outside the ticks. */}
-          {redline !== undefined && <path d={arcPath(angle(redline), angle(max), 44.6)} fill="none" stroke="var(--race-red)" strokeWidth="4" />}
-          <path d={arcPath(angle(min), angle(redline ?? max), 41.8)} fill="none" stroke="var(--race-ink)" strokeOpacity={0.3} strokeWidth="0.5" />
+          <defs>
+            <radialGradient id={hubId} cx="0.36" cy="0.3" r="0.85">
+              <stop offset="0" stopColor="white" stopOpacity="0.55" />
+              <stop offset="0.6" stopColor="white" stopOpacity="0.16" />
+              <stop offset="1" stopColor="white" stopOpacity="0.04" />
+            </radialGradient>
+          </defs>
+          {/* The red block at the end of the scale, outside the ticks; its halo comes up with it at the limiter. */}
+          {redline !== undefined && (
+            <>
+              <path d={arcPath(angle(redline), angle(max), 44.2)} fill="none" stroke="var(--race-red)" strokeWidth="6" className={cx("opacity-0 [[data-hot]_&]:opacity-30", block)} />
+              <path d={arcPath(angle(redline), angle(max), 44.2)} fill="none" stroke="var(--race-red)" strokeWidth="3.2" className={cx("opacity-80 [[data-hot]_&]:opacity-100", block)} />
+            </>
+          )}
           {ticks.map(({ v, major }) => {
             const deg = angle(v);
             const a = polar(deg, TICK_OUT);
             const b = polar(deg, TICK_OUT - (major ? f.major : f.minor));
-            const hot = redline !== undefined && v >= redline;
-            return <line key={v} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={hot ? "var(--race-red)" : "var(--race-ink)"} strokeOpacity={major ? 1 : 0.55} strokeWidth={major ? f.majorW : f.minorW} />;
+            return <line key={v} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="var(--race-ink)" strokeOpacity={major ? 1 : 0.5} strokeWidth={major ? f.majorW : f.minorW} />;
           })}
           {figures.map((v) => {
-            if (figure(v) === "") return null; // a long tick with no figure: the readout sits where it would be
+            if (figure(v) === "") return null;
             const t = labelAt(v);
             return (
               <text
@@ -350,32 +333,14 @@ export function Gauge({
               </text>
             );
           })}
-          {unit && (
-            <text x="50" y={f.unitY} textAnchor="middle" dominantBaseline="central" fontSize="4.4" letterSpacing="0.4" fill="var(--race-dim)" style={{ fontWeight: 600, textTransform: "uppercase" }}>
-              {unit}
-            </text>
-          )}
 
-          {/* The needle, written by the spring every frame: its trail of ghosts, a glow, the needle itself. */}
-          {TRAIL.map((_, i) => (
-            <line key={i} data-ghost {...needleAt} opacity={0} stroke="var(--race-red)" strokeWidth={f.needleW * 0.9} strokeLinecap="round" />
-          ))}
-          <line data-needle {...needleAt} stroke="var(--race-red)" strokeOpacity={0.14} strokeWidth={f.needleW * 4.2} strokeLinecap="round" />
-          <line data-needle {...needleAt} stroke="var(--race-red)" strokeOpacity={0.3} strokeWidth={f.needleW * 2.3} strokeLinecap="round" />
+          {/* The needle, written by the spring every frame: a very faint halo, then the needle. */}
+          <line data-needle {...needleAt} stroke="var(--race-red)" strokeOpacity={0.12} strokeWidth={f.needleW * 3.2} strokeLinecap="round" />
           <line data-needle {...needleAt} stroke="var(--race-red)" strokeWidth={f.needleW} strokeLinecap="round" />
-          {/* The cap the needle comes out of: black, with a red ring and a lit dot. */}
-          <circle cx="50" cy="50" r={f.hub} fill="var(--race-well)" stroke="var(--race-red)" strokeWidth="0.7" />
-          <circle cx="50" cy="50" r={f.hub - 3} fill="var(--race-red)" />
+          {/* The hub it comes out of: a small metal disc, lit from the top left. */}
+          <circle cx="50" cy="50" r={f.hub} fill="var(--race-well)" />
+          <circle cx="50" cy="50" r={f.hub} fill={`url(#${hubId})`} stroke="white" strokeOpacity={0.2} strokeWidth="0.4" />
         </svg>
-        <div aria-hidden className="absolute inset-0">
-          {children}
-        </div>
-        {/* Glass over the face: scanlines, and a sheen breaking where the light catches it. */}
-        <div
-          aria-hidden
-          data-part="glass"
-          className="pointer-events-none absolute inset-0 rounded-full [background:var(--race-scanlines),linear-gradient(160deg,rgb(255_255_255/0.12)_0%,rgb(255_255_255/0.02)_36%,transparent_36.4%)]"
-        />
       </div>
     </div>
   );
@@ -390,16 +355,18 @@ export type ClusterReading = {
   speed: number;
   /** Oil temperature, °C. */
   oil: number;
-  /** The gear chip: "N", "1" to "6". */
+  /** The gear: "P" at rest, then "1" to "6". */
   gear: string;
 };
 
 export type ClusterHandle = {
-  /** Sends any of the readings to the needles, the shift lights and the digits; `jump` puts them there at once. Writes the DOM, never React state. */
+  /** Sends any of the readings to the needles, the red block and the gear; `jump` puts them there at once. Writes the DOM, never React state. */
   set: (reading: Partial<ClusterReading>, jump?: boolean) => void;
 };
 
 type GaugeClusterProps = ClusterReading & {
+  /** The word in the pill under the tach's hub. */
+  mode?: "normal" | "touch";
   /** A hand took the throttle (true) by pressing and holding the cluster, or Space when it is focused, or let go of it (false). */
   onThrottle?: (held: boolean) => void;
   /** The tach passed a 1,000 rpm mark. */
@@ -414,71 +381,56 @@ const fmtRpm = (v: number) => `${(Math.round(v / 100) * 100).toLocaleString("en-
 const fmtSpeed = (v: number) => `${Math.round(v)} km/h`;
 const fmtOil = (v: number) => `${Math.round(v)} °C`;
 
-/** The shift lights: four white, then six red; the first comes on at 5,500 rpm and the last at 7,700. At the limiter they all turn red (see `data-limit`). */
-const LEDS = [
-  ...Array.from({ length: 4 }, () => "[--led:var(--race-ink)] [--glow:var(--race-glow-white)] [[data-limit]_&]:[--led:var(--race-red)] [[data-limit]_&]:[--glow:var(--race-glow-red)]"),
-  ...Array.from({ length: 6 }, () => "[--led:var(--race-red)] [--glow:var(--race-glow-red)]"),
-];
-const LED_FROM = 5500;
-const LED_STEP = 244; // rpm between lights
 const LIMITER = 7980; // the model sits at 8,000 while the limiter holds it
-const FLASH = 70; // ms on, ms off
+const HOT_MS = 300; // the red block stays lit this long after the limiter lets go, so a short cut still reads
 
-export function GaugeCluster({ rpm, speed, oil, gear, onThrottle, onTick, handle, className }: GaugeClusterProps) {
+export function GaugeCluster({ rpm, speed, oil, gear, mode = "normal", onThrottle, onTick, handle, className }: GaugeClusterProps) {
   const descId = useId();
   const tach = useRef<GaugeHandle>(null);
   const speedo = useRef<GaugeHandle>(null);
   const oilGauge = useRef<GaugeHandle>(null);
   const gearRef = useRef<HTMLSpanElement>(null);
   const digitsRef = useRef<HTMLSpanElement>(null);
-  const barRef = useRef<HTMLDivElement>(null);
   const held = useRef({ pointer: null as number | null, key: false });
-  const [initial] = useState({ gear, speed, lit: LEDS.filter((_, i) => rpm >= LED_FROM + i * LED_STEP).length });
+  const hotUntil = useRef(0); // the red block is lit until then, on the frame clock
+  const [initial] = useState({ gear, speed });
   const props = useRef({ onThrottle });
   useLayoutEffect(() => {
     props.current = { onThrottle };
   });
 
-  const writeText = (r: Partial<ClusterReading>) => {
-    if (r.gear !== undefined && gearRef.current && gearRef.current.textContent !== r.gear) gearRef.current.textContent = r.gear;
-    if (r.speed !== undefined && digitsRef.current) {
-      const text = String(Math.round(r.speed));
-      if (digitsRef.current.textContent !== text) digitsRef.current.textContent = text;
-    }
+  const writeGear = (g: string) => {
+    if (gearRef.current && gearRef.current.textContent !== g) gearRef.current.textContent = g;
+  };
+  /** The road speed figure reads the speedo's own spring, so it rolls with the needle. */
+  const writeSpeed = (v: number) => {
+    const text = String(Math.max(0, Math.round(v)));
+    if (digitsRef.current && digitsRef.current.textContent !== text) digitsRef.current.textContent = text;
   };
 
-  /** Lights the shift LEDs for an rpm: one at a time from 5,500, and all together, flashing, at the limiter. */
-  const writeLights = (rpmNow: number) => {
-    const bar = barRef.current;
-    if (!bar) return;
-    const limiter = rpmNow >= LIMITER;
-    const flashOn = limiter && (reducedMotion() || Math.floor(performance.now() / FLASH) % 2 === 0);
-    if (bar.hasAttribute("data-limit") !== limiter) bar.toggleAttribute("data-limit", limiter);
-    [...bar.children].forEach((led, i) => {
-      const on = limiter ? flashOn : rpmNow >= LED_FROM + i * LED_STEP;
-      if (led.hasAttribute("data-on") !== on) led.toggleAttribute("data-on", on);
-    });
+  /** The tach's needle and the red block: lit at the limiter for as long as it holds, and a moment after. */
+  const writeTach = (rpmNow: number, jump: boolean) => {
+    const now = performance.now();
+    if (rpmNow >= LIMITER) hotUntil.current = now + HOT_MS;
+    tach.current?.hot(now < hotUntil.current);
+    tach.current?.set(rpmNow, jump);
   };
 
   useImperativeHandle(
     handle,
     () => ({
       set(r, jump = false) {
-        if (r.rpm !== undefined) {
-          tach.current?.set(r.rpm, jump);
-          writeLights(r.rpm);
-        }
+        if (r.rpm !== undefined) writeTach(r.rpm, jump);
         if (r.speed !== undefined) speedo.current?.set(r.speed, jump);
         if (r.oil !== undefined) oilGauge.current?.set(r.oil, jump);
-        writeText(r);
+        if (r.gear !== undefined) writeGear(r.gear);
       },
     }),
-     
     [],
   );
-  // Values set through the props reach the digits, the chip and the lights too (the needles take them through their own props).
-  useLayoutEffect(() => writeText({ gear, speed }), [gear, speed]);  
-  useLayoutEffect(() => writeLights(rpm), [rpm]);  
+  // Values set through the props reach the gear and the red block too (the needles take them through their own props).
+  useLayoutEffect(() => writeGear(gear), [gear]);
+  useLayoutEffect(() => tach.current?.hot(rpm >= LIMITER), [rpm]);
 
   /** The throttle is down while a pointer or the space bar is: tell the owner when that changes. */
   function hold(next: Partial<typeof held.current>) {
@@ -533,26 +485,14 @@ export function GaugeCluster({ rpm, speed, oil, gear, onThrottle, onTick, handle
       onKeyDown={onKeyDown}
       onKeyUp={onKeyUp}
       onBlur={onBlur}
-      className={cx("@container/cluster mx-auto w-[94%] touch-none select-none rounded-[0.6em] outline-offset-2", className)}
+      className={cx("@container/cluster mx-auto w-[96%] touch-none select-none rounded-[0.6em] outline-offset-2", className)}
     >
       <span id={descId} className="sr-only">
-        Hold Space to rev the engine. Pressing and holding the cluster does the same. The lap takes over again two and a half seconds after you let go.
+        Hold, or press Space, to rev the engine. Pressing and holding the cluster does the same. The lap takes over again two and a half seconds after you let go.
       </span>
 
-      {/* The shift lights: ten LEDs, off until the revs come up, lit with their glow; all red at the limiter. */}
-      <div ref={barRef} aria-hidden className="mb-[0.55em] flex gap-[0.3em]">
-        {LEDS.map((led, i) => (
-          <span
-            key={i}
-            data-part="light"
-            data-on={i < initial.lit ? "" : undefined}
-            className={cx("h-[0.5em] flex-1 rounded-[0.12em] bg-(--race-led-off) data-[on]:bg-(--led) data-[on]:[box-shadow:var(--glow)]", led)}
-          />
-        ))}
-      </div>
-
-      {/* The cluster's own size: its type is a share of its width, so the digits and the chip scale with the faces. */}
-      <div className="relative aspect-[100/46] text-[4.4cqw]">
+      {/* The cluster's own size: its type is a share of its width, so the gear and the pill scale with the faces. */}
+      <div className="relative aspect-[100/52] text-[4.4cqw]">
         <Gauge
           handle={speedo}
           value={speed}
@@ -562,30 +502,37 @@ export function GaugeCluster({ rpm, speed, oil, gear, onThrottle, onTick, handle
           format={fmtSpeed}
           majorStep={50}
           figureStep={100}
+          figure={(v) => (v === 0 ? "" : String(v))}
           minorStep={10}
           size="small"
           sweep={[-150, 30]}
-          unit="km/h"
-          needle={{ stiffness: 150, damping: 20 }}
+          needle={{ stiffness: 140, damping: 17.5 }}
+          onValue={writeSpeed}
           className="absolute z-10"
-          style={{ left: 0, top: "18.33%", width: "38.4%" }}
-        />
+          style={{ left: 0, top: "24%", width: "36%" }}
+        >
+          {/* The road speed, small and quiet, in the open part of the dial under the hub. */}
+          <div className="absolute inset-x-0 flex flex-col items-center gap-[0.35em]" style={{ top: "63%" }}>
+            <span data-part="lettering" ref={digitsRef} className={cx(RACE_FIGURES, "min-w-[3ch] text-center text-[1.35em] leading-none text-(--race-ink)")}>
+              {Math.round(initial.speed)}
+            </span>
+            <span className="text-[0.5em] font-semibold uppercase leading-none tracking-[0.12em] text-(--race-dim)">km/h</span>
+          </div>
+        </Gauge>
         <Gauge
           handle={oilGauge}
           value={oil}
           min={60}
           max={150}
-          redline={130}
           label="Oil temperature"
           format={fmtOil}
           majorStep={30}
           minorStep={10}
           size="small"
           sweep={[-30, 150]}
-          unit="°C"
-          needle={{ stiffness: 90, damping: 16 }}
+          needle={{ stiffness: 95, damping: 14.5 }}
           className="absolute z-10"
-          style={{ left: "61.6%", top: "18.33%", width: "38.4%" }}
+          style={{ left: "64%", top: "24%", width: "36%" }}
         />
         <Gauge
           handle={tach}
@@ -598,29 +545,29 @@ export function GaugeCluster({ rpm, speed, oil, gear, onThrottle, onTick, handle
           majorStep={1000}
           minorStep={200}
           size="large"
-          tone="hero"
-          figure={(v) => (v === 0 || v === TACH_MAX ? "" : String(v / 1000))}
-          unit="×1000 rpm"
-          needle={{ stiffness: 260, damping: 26 }}
+          figure={(v) => String(v / 1000)}
+          needle={{ stiffness: 230, damping: 21.5 }}
           onMark={(mark, rising) => onTick?.(mark, rising)}
           className="absolute z-20"
-          style={{ left: "26%", top: 0, width: "48%" }}
+          style={{ left: "24%", top: 0, width: "52%" }}
         >
-          {/* Inside the tach, under the needle's cap: a black readout with the gear in a deep red chip and the road speed in huge glowing digits. */}
-          <div className="absolute inset-x-0 flex justify-center" style={{ top: "64%" }}>
-            <div className="flex items-center gap-[0.4em] rounded-[0.5em] bg-(--race-well) py-[0.3em] pr-[0.5em] pl-[0.4em] [box-shadow:inset_0_0_0_1px_rgb(255_255_255/0.1)]">
-              <span data-part="chip" className="flex min-w-[1.3em] justify-center rounded-[0.3em] bg-(--race-red-deep) px-[0.3em] py-[0.25em] text-(--race-red-ink)">
-                <span ref={gearRef} className={cx(RACE_FIGURES, "text-[1.15em] leading-none")}>
-                  {initial.gear}
-                </span>
-              </span>
-              <span className="flex items-baseline gap-[0.25em]">
-                <span ref={digitsRef} className={cx(RACE_FIGURES, "min-w-[2.1ch] text-right text-[2.3em] leading-[0.9] text-(--race-ink) [text-shadow:var(--race-glow-white)]")}>
-                  {Math.round(initial.speed)}
-                </span>
-                <span className="text-[0.42em] font-semibold uppercase leading-none tracking-[0.08em] text-(--race-dim)">km/h</span>
-              </span>
-            </div>
+          {/* The gear, large, to the right of the hub... */}
+          <div className="absolute flex items-center justify-center" style={{ left: "54%", top: "36%", width: "16%", height: "28%" }}>
+            <span data-part="lettering" ref={gearRef} className={cx(RACE_FIGURES, "text-[2.7em] leading-none text-(--race-ink)")}>
+              {initial.gear}
+            </span>
+          </div>
+          {/* ...and one outlined pill under it with the mode, red while a hand has the throttle. */}
+          <div className="absolute inset-x-0 flex justify-center" style={{ top: "73%" }}>
+            <span
+              data-part="chip"
+              className={cx(
+                "rounded-full border border-solid px-[0.9em] py-[0.4em] text-[0.56em] font-semibold uppercase leading-none tracking-[0.14em] transition-colors duration-(--duration-exit) motion-reduce:transition-none",
+                mode === "touch" ? "border-(--race-red) text-(--race-ink) duration-0" : "border-(--race-faint) text-(--race-dim)",
+              )}
+            >
+              {mode === "touch" ? "Touch" : "Normal"}
+            </span>
           </div>
         </Gauge>
       </div>
@@ -755,28 +702,28 @@ function lapAt(t: number, out: Sample) {
   out.limit = LAP.limit[i] + LAP.limit[i + 1] > 0;
 }
 
+
 /* --- Demo: a cluster that runs a recorded lap and gives the throttle to a hand ---------- */
 
 type Mode = "read" | "touch" | "off";
 
 const HAND_BACK = 2500; // ms after the hand lets go before the lap takes the needles back
+/** Power-up: each needle rises to full scale (and past it, on its spring), the tach first, and falls back to rest, 70 ms behind the one before. */
 const POWER_UP = [
-  { key: "rpm", up: 0, down: 440, full: TACH_MAX, rest: IDLE },
-  { key: "speed", up: 120, down: 560, full: 300, rest: 0 },
-  { key: "oil", up: 240, down: 680, full: 150, rest: OIL_REST },
+  { key: "rpm", up: 0, down: 540, full: TACH_MAX, rest: IDLE },
+  { key: "speed", up: 70, down: 610, full: 300, rest: 0 },
+  { key: "oil", up: 140, down: 680, full: 150, rest: OIL_REST },
 ] as const;
-const LAP_STARTS = 1000; // ms after mount
+const LAP_STARTS = 1200; // ms after mount
 const THROTTLE_UP = 4; // per second under a hand
 const THROTTLE_DOWN = 6;
 const STEP = 1 / 120;
 
-const gearName = (g: number) => (g ? String(g) : "N");
-
+const gearName = (g: number) => (g ? String(g) : "P");
 
 export default function Demo() {
   const rootRef = useRef<HTMLDivElement>(null);
   const clusterRef = useRef<ClusterHandle>(null);
-  const throttleRef = useRef<HTMLSpanElement>(null);
   const touched = useRef(false); // a hand has worked it: it may sound while the host is paused
   const hand = useRef<(held: boolean) => void>(null);
   const [mode, setMode] = useState<Mode>("off");
@@ -808,7 +755,6 @@ export default function Demo() {
     let raf = 0;
     let last = 0;
     let onScreen = true;
-    let shownThrottle = -1;
     let lastGear = 0;
     let gearId: ReturnType<typeof setTimeout> | undefined;
     let cutNow: boolean | undefined;
@@ -833,11 +779,6 @@ export default function Demo() {
 
     const paint = (s: Sample) => {
       cluster.set({ rpm: s.rpm, speed: s.v, oil: s.oil, gear: gearName(s.gear) }, reduced);
-      const pct = Math.round(s.thr * 100);
-      if (pct !== shownThrottle && throttleRef.current) {
-        shownThrottle = pct;
-        throttleRef.current.textContent = String(pct);
-      }
       sound(s.rpm, s.thr, s.limit);
     };
 
@@ -859,7 +800,7 @@ export default function Demo() {
         if (live.gear !== lastGear) {
           lastGear = live.gear;
           clearTimeout(gearId);
-          gearId = later(() => setAnnouncement(lastGear ? `Gear ${lastGear}` : "Neutral"), 700);
+          gearId = later(() => setAnnouncement(lastGear ? `Gear ${lastGear}` : "Park"), 700);
         }
       } else if (lapStart >= 0) {
         lapAt((Math.max(0, now - lapStart) / 1000) % LAP_LENGTH, out);
@@ -902,7 +843,7 @@ export default function Demo() {
       } else if (touching) backId = later(handBack, HAND_BACK);
     };
 
-    // Power-up: each needle swings to the end stop and back, 120 ms behind the one before, and the engine blips with the tach; then the lap.
+    // Power-up: the needles rise together to the end stop, past it and back, the tach first, and fall to rest; the engine blips with the tach; then the lap.
     const begin = () => {
       if (began || hostTransport(root) === "stop") return;
       began = true;
@@ -963,55 +904,8 @@ export default function Demo() {
       onKeyDownCapture={() => (touched.current = true)}
       className="@container w-full max-w-[500px] select-none"
     >
-      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[0.9em] p-[0.8em] pt-[1em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] [box-shadow:var(--race-edge),var(--race-shadow)] @[26rem]:p-[1em] @[26rem]:pt-[1.2em]">
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] [background:var(--race-weave)]" />
-        {/* Two rules along the top edge: deep red, then lit red. */}
-        <span aria-hidden className="absolute top-0 left-[1.2em] h-[2px] w-[4em] bg-(--race-red-deep)" />
-        <span aria-hidden className="absolute top-0 left-[5.5em] h-[2px] w-[1.2em] bg-(--race-red) [box-shadow:var(--race-glow-red)]" />
-
-        <div data-part="well" className="rounded-[0.6em] bg-(--race-well) px-[0.6em] pt-[0.6em] pb-[0.75em] [box-shadow:var(--race-recess)]">
-          <GaugeCluster handle={clusterRef} rpm={IDLE} speed={0} oil={OIL_REST} gear="N" onThrottle={(held) => hand.current?.(held)} />
-        </div>
-
-        {/* The automation: a light for the hand, the mode and the throttle. */}
-        <div className="mt-[0.6em] flex items-center gap-[0.6em]">
-          <span
-            data-part="light"
-            aria-hidden
-            className={cx(
-              "size-[0.7em] shrink-0 rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)",
-              mode === "touch" ? "bg-(--race-red) [box-shadow:var(--race-glow-red)] duration-0" : mode === "read" ? "bg-(--race-dim)" : "bg-(--race-led-off)",
-            )}
-          />
-          <span
-            aria-hidden
-            data-part="lcd"
-            className="relative flex h-[2.4em] min-w-0 flex-1 items-center justify-between gap-[0.5em] overflow-hidden rounded-[0.5em] px-[0.6em] text-(--race-ink) [background:var(--race-glass)] [box-shadow:inset_0_0_0_1px_rgb(255_255_255/0.08)]"
-          >
-            <span data-part="chip" className={cx("relative inline-flex shrink-0 items-center gap-[0.35em] rounded-[0.3em] px-[0.5em] py-[0.26em]", mode === "touch" ? "bg-(--race-red) text-(--race-red-ink) [box-shadow:var(--race-glow-red)]" : "bg-(--race-faint) text-(--race-ink)")}>
-              <span
-                className={cx(
-                  "size-[0.5em] rounded-full",
-                  mode === "touch" ? "bg-(--race-red-ink)" : mode === "read" ? "animate-pulse bg-(--race-red) motion-reduce:animate-none" : "rounded-[1px] bg-current",
-                )}
-              />
-              <span className="text-[0.62em] font-semibold uppercase leading-none tracking-[0.1em]">
-                {mode === "touch" ? "Touch" : mode === "read" ? "Auto · Read" : "Auto · Off"}
-              </span>
-            </span>
-            <span className="relative flex min-w-0 items-baseline gap-[0.35em] truncate leading-none">
-              <span className="hidden text-[0.58em] font-semibold uppercase tracking-[0.12em] text-(--race-dim) @[26rem]:inline">Throttle</span>
-              <span ref={throttleRef} className={cx(RACE_FIGURES, "text-[1.35em] text-(--race-ink)")}>
-                0
-              </span>
-              <span className="text-[0.58em] font-semibold text-(--race-dim)">%</span>
-            </span>
-            <span aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 [background:var(--race-scanlines)]" />
-          </span>
-          <span data-part="lettering" className="shrink-0 whitespace-nowrap text-[0.62em] font-semibold uppercase leading-none tracking-[0.14em] text-(--race-dim)">
-            Hold to rev
-          </span>
-        </div>
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[0.9em] px-[0.9em] py-[1.5em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] [box-shadow:var(--race-edge),var(--race-shadow)] @[26rem]:px-[1.1em] @[26rem]:py-[1.9em]">
+        <GaugeCluster handle={clusterRef} rpm={IDLE} speed={0} oil={OIL_REST} gear="P" mode={mode === "touch" ? "touch" : "normal"} onThrottle={(held) => hand.current?.(held)} />
       </div>
       <p role="status" aria-live="polite" className="sr-only">
         {announcement}

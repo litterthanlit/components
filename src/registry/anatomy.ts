@@ -7,13 +7,10 @@ import { parts, type PartInfo } from "@/components/anatomy/parts";
  */
 export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>> = {
   "gauge-cluster": {
-    bezel: { tokens: ["--race-well"], note: "Black, with a hairline lit edge, round each face. The large one stands proud of the two behind it and throws a hard shadow on them." },
-    face: { tokens: ["--race-glass", "--race-ink", "--race-red", "--race-red-deep"], note: "Black glass with white condensed italic figures; the tach adds a thin red ring and a red pointer at twelve. The red needles glow and leave four ghost needles, all drawn through SVG attributes by a spring in degrees, never a transform." },
-    glass: { tokens: ["--race-scanlines"], note: "Scanlines and a sheen over each face and the LCD." },
-    chip: { tokens: ["--race-red-deep", "--race-red-ink", "--race-red", "--race-faint"], note: "The gear in white on deep red inside the tach, and the automation's mode on the strip, lit red in Touch." },
-    light: { name: "Shift lights", tokens: ["--race-led-off", "--race-ink", "--race-red", "--race-glow-white", "--race-glow-red"], note: "Ten shift lights, four white then six red, lit from 5,500 rpm and all flashing red at the limiter, and a red light for Touch." },
-    lcd: { tokens: ["--race-glass", "--race-scanlines"], note: "The mode and the throttle in race-face figures, on the strip under the cluster." },
-    well: { tokens: ["--race-well", "--race-recess"], note: "The cluster's pocket in the plate." },
+    bezel: { tokens: ["--race-well"], note: "Black, with a hairline lit edge, round each dial. The tach stands proud of the other two and throws a hard shadow on them." },
+    face: { tokens: ["--race-glass", "--race-ink", "--race-red"], note: "Black glass with fine white ticks and white condensed italic figures, a small red block at the end of the tach scale, and one red needle with a faint halo and a metal hub. The needles are drawn through SVG attributes by springs in degrees, never a transform." },
+    chip: { tokens: ["--race-faint", "--race-dim", "--race-red", "--race-ink"], note: "The mode pill under the tach's hub: Normal at rest, Touch while a hand has the throttle, its outline red then." },
+    lettering: { tokens: ["--race-ink"], note: "The gear in one large white letter right of the tach's hub, and the road speed as a small figure in the speedo." },
   },
   throttle: {
     key: { name: "Pedal", tokens: ["--race-metal", "--race-key-shadow", "--race-faint", "--race-red"], note: "Dark machined metal with six fine ribs; the toe rib turns red with travel. It tilts back from its hinge on the rotate property inside a clipping well." },
