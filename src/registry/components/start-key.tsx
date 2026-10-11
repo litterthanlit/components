@@ -6,10 +6,10 @@ import { engine as engineVoice, hostTransport, play, type PlayOptions, type Soun
 
 /*
  * An ignition barrel on the night-race line, for the one action that has to be
- * armed before it is confirmed: a metal key bow with a lit red pointer
- * turning in a knurled black collar, three engraved stops round it (Off,
- * On, Start, the spring-loaded run to Start in red dashes) and a strip of
- * six warning lights above, glowing on black.
+ * armed before it is confirmed: a dark key bow with one thin red pointer
+ * turning in a black collar, three engraved stops round it (Off, On, Start,
+ * the spring-loaded run to Start in a fine red arc) and a row of three
+ * warning glyphs above, nearly invisible until they light.
  *
  * The key's position and the engine's state are different things. Off and On
  * are detents: the key drops into each with a click, and the state follows
@@ -25,7 +25,7 @@ import { engine as engineVoice, hostTransport, play, type PlayOptions, type Soun
  * outside) pulls it on a stiff spring, against a sawtooth detent between Off
  * and On, the return spring past On and the hard stops. It writes --a, the
  * bow's angle, every frame; React only hears about the three states. The bow
- * turns by CSS `rotate`, its shine counter-turning so the light stays above.
+ * turns by CSS `rotate`, its sheen counter-turning so the light stays above.
  *
  * Drag round the barrel (from its centre, drag sideways), or use the arrow
  * keys: → steps one stop, and held at On (as are Space and Enter) it cranks
@@ -33,9 +33,9 @@ import { engine as engineVoice, hostTransport, play, type PlayOptions, type Soun
  * jumps between its stops and the light check is instant.
  *
  * The demo owns the voice: one engine() that grinds while the key is held at
- * Start, fires on the catch (a flare at 2,500 rpm that settles to an 850 rpm
- * idle, driven by the same spring as the readout) and runs until the key goes
- * back to Off.
+ * Start, fires on the catch and runs until the key goes back to Off. The rpm
+ * figure above the barrel is the state: 0, cranking, then a sweep up to 2,500
+ * and a settle to an 850 idle on one spring, which drives the engine too.
  */
 
 export type StartKeyValue = "off" | "on" | "running";
@@ -66,13 +66,10 @@ const RUN_OUT = [120, 360]; // ms after the catch: battery, then oil pressure
 const GHOST = { start: 400, crank: 900, letGo: 350 };
 
 type Light = { name: string; hot: boolean; tone: "red" | "white"; d: string };
-/** Six lights as simple strokes in a 16-unit box. Hot ones are red when lit; the rest are white. */
+/** Three lights as simple strokes in a 16-unit box. Hot ones are red when lit and stay on until the engine runs. */
 const LIGHTS: Light[] = [
   { name: "Battery", hot: true, tone: "red", d: "M2.5 5.2h11v7.3h-11zM4.8 5.2V3.6M11.2 5.2V3.6M4.6 8.8h2.2M5.7 7.7v2.2M9.2 8.8h2.2" },
   { name: "Oil pressure", hot: true, tone: "red", d: "M8 2.4C6 5 3.6 7.4 3.6 10a4.4 4.4 0 0 0 8.8 0C12.4 7.4 10 5 8 2.4z" },
-  { name: "Coolant", hot: false, tone: "white", d: "M6.4 3.4a1.6 1.6 0 0 1 3.2 0v5.2a3 3 0 1 1-3.2 0zM8 6.2v4.2" },
-  { name: "Brake", hot: false, tone: "white", d: "M8 4.9a3.1 3.1 0 1 0 0 6.2 3.1 3.1 0 0 0 0-6.2zM8 6.4v2M8 9.7v.1M3.3 4.8a5.6 5.6 0 0 0 0 6.4M12.7 4.8a5.6 5.6 0 0 1 0 6.4" },
-  { name: "Seat belt", hot: false, tone: "white", d: "M8 2.4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM4.2 13.6v-3.5a3.8 3.8 0 0 1 7.6 0v3.5M4.6 7.3l6.8 4.9" },
   { name: "Engine", hot: false, tone: "white", d: "M2.2 6.6h1.8M4 6.6V5.4h2.1l.7-1.4h3l.7 1.4h1.5v1.5h1.8v3.4h-1.8v1.5H5.4L4 10.6V9H2.2z" },
 ];
 /** The lights the check leaves out one by one, in order. */
@@ -95,28 +92,23 @@ const polar = (deg: number, r: number) => {
 const BOX = { w: 16, h: 13.2 };
 const MIDDLE = { x: 8, y: 7.4 };
 const COLLAR = 11;
-/** The lit glyph of each tone: its colour and its bloom (a drop-shadow on the glyph, a leaf with nothing marked inside). */
+/** The lit glyph of each tone: its colour, nothing more. */
 const TONES = {
-  red: "data-on:text-(--race-red) data-on:[filter:drop-shadow(0_0_0.3em_var(--race-red))]",
-  white: "data-on:text-(--race-ink) data-on:[filter:drop-shadow(0_0_0.25em_var(--race-ink))]",
+  red: "data-on:text-(--race-red)",
+  white: "data-on:text-(--race-ink)",
 } as const;
 const STOPS: { key: StartKeyValue | "start"; label: string; deg: number }[] = [
   { key: "off", label: "Off", deg: OFF },
   { key: "on", label: "On", deg: ON },
   { key: "start", label: "Start", deg: START },
 ];
-/** The engraving: tick marks at the stops and an arc between them, dashed where the key is spring-loaded (user units are tenths of an em). */
-const engraving = (() => {
-  const at = (deg: number, r: number) => {
-    const p = polar(deg, r * 10);
+/** The engraving: one fine red arc for the spring-loaded run from On to Start (user units are tenths of an em). */
+const run = (() => {
+  const at = (deg: number) => {
+    const p = polar(deg, 59.5);
     return `${round2(MIDDLE.x * 10 + p.x)} ${round2(MIDDLE.y * 10 + p.y)}`;
   };
-  const arc = (from: number, to: number) => `M${at(from, 5.95)}A59.5 59.5 0 0 1 ${at(to, 5.95)}`;
-  return {
-    ticks: STOPS.map((s) => `M${at(s.deg, 5.75)}L${at(s.deg, 6.3)}`).join(""),
-    solid: arc(OFF, ON),
-    dashed: arc(ON, START),
-  };
+  return `M${at(ON + 4)}A59.5 59.5 0 0 1 ${at(START)}`;
 })();
 
 type StartKeyProps = {
@@ -513,34 +505,31 @@ export function StartKey({ value, onChange, onCrank, label = "Ignition", rehears
       className={cx("flex flex-col items-center gap-[0.7em]", className)}
       style={{ "--a": `${initial === "off" ? OFF : ON}deg` } as CSSProperties}
     >
-      {/* The warning lights, each in its pocket: unlit they are barely there, lit they glow. Battery and oil are red. */}
-      <div aria-hidden className="flex w-[16em] items-center justify-between">
+      {/* The warning lights: three small glyphs, nearly invisible until they light. Battery and oil are red. */}
+      <div aria-hidden className="flex items-center justify-center gap-[1.8em]">
         {LIGHTS.map((l, i) => (
-          <span key={l.name} data-part="well" className="grid size-[2em] place-items-center rounded-[0.5em] bg-(--race-well) shadow-(--race-recess)">
-            <svg
-              data-part="light"
-              data-light={l.name}
-              data-on={startLights[i] ? "" : undefined}
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={cx("block size-[1.15em] text-(--race-led-off) transition-[color,filter] duration-(--duration-exit) data-on:duration-0", TONES[l.tone])}
-            >
-              <path d={l.d} />
-            </svg>
-          </span>
+          <svg
+            key={l.name}
+            data-part="light"
+            data-light={l.name}
+            data-on={startLights[i] ? "" : undefined}
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={cx("block size-[1.3em] text-(--race-led-off) transition-colors duration-(--duration-exit) data-on:duration-0", TONES[l.tone])}
+          >
+            <path d={l.d} />
+          </svg>
         ))}
       </div>
 
       <div className="relative" style={{ width: `${BOX.w}em`, height: `${BOX.h}em` }}>
-        {/* The stops, engraved round the collar: white ticks, and the run to Start in red dashes. */}
+        {/* The stops, engraved round the collar; the run to Start is a fine red arc. */}
         <svg aria-hidden viewBox={`0 0 ${BOX.w * 10} ${BOX.h * 10}`} fill="none" strokeLinecap="round" className="absolute inset-0 size-full">
-          <path d={engraving.solid} strokeWidth="1" className="stroke-(--race-faint)" />
-          <path d={engraving.dashed} strokeWidth="1.6" strokeDasharray="3 3.5" className="stroke-(--race-red)" />
-          <path d={engraving.ticks} strokeWidth="1.4" className="stroke-(--race-dim)" />
+          <path d={run} strokeWidth="1.2" strokeDasharray="2.5 3.5" className="stroke-(--race-red)" />
         </svg>
         {STOPS.map((s, i) => {
           // Each legend sits where the key's tip points, anchored by its inner edge so it never runs over the arc.
@@ -553,7 +542,7 @@ export function StartKey({ value, onChange, onCrank, label = "Ignition", rehears
                 data-part="lettering"
                 data-stop={s.key}
                 data-on={i === startLit ? "" : undefined}
-                className="block whitespace-nowrap text-[0.62em] font-bold uppercase leading-none tracking-[0.18em] text-(--race-ink)/55 transition-[color,text-shadow] duration-(--duration-exit) data-on:text-(--race-red) data-on:duration-0 data-on:[text-shadow:var(--race-glow-red)]"
+                className="block whitespace-nowrap text-[0.62em] font-semibold uppercase leading-none tracking-[0.18em] text-(--race-dim) transition-colors duration-(--duration-exit) data-on:text-(--race-ink) data-on:duration-0"
               >
                 {s.label}
               </span>
@@ -581,26 +570,21 @@ export function StartKey({ value, onChange, onCrank, label = "Ignition", rehears
           className="group/s absolute cursor-grab touch-none rounded-full outline-offset-2 active:cursor-grabbing"
           style={{ left: `${MIDDLE.x - COLLAR / 2}em`, top: `${MIDDLE.y - COLLAR / 2}em`, width: `${COLLAR}em`, height: `${COLLAR}em` }}
         >
-          {/* The collar: black, knurled all round its rim. */}
+          {/* The collar: black, with a fine knurl round its rim. */}
           <div
             aria-hidden
             data-part="collar"
-            className="size-full rounded-full p-[0.95em] [background:repeating-conic-gradient(rgb(255_255_255/0.1)_0deg_1.4deg,transparent_1.4deg_4deg),var(--race-well)] shadow-[var(--race-recess),0_0_0_1px_rgb(255_255_255/0.05)]"
+            className="size-full rounded-full p-[0.95em] [background:repeating-conic-gradient(rgb(255_255_255/0.07)_0deg_0.9deg,transparent_0.9deg_3deg),var(--race-well)] shadow-[var(--race-recess),0_0_0_1px_rgb(255_255_255/0.05)]"
           >
-            {/* The barrel face, black glass with the lock cylinder let into it. */}
-            <div data-part="cap" className="relative size-full rounded-full [background:var(--race-glass)] shadow-[0_0_0_1px_rgb(0_0_0/0.9),0_0.25em_0.7em_rgb(0_0_0/0.8),inset_0_1px_0_rgb(255_255_255/0.1)]">
-              <div className="absolute inset-[7%] rounded-full shadow-[inset_0_0_0_1px_var(--race-faint)]" />
-              {/* The bow, the key's flat grip in dark metal, turned by rotate. Its shadows are even all round, since the key turns under a light that doesn't. */}
+            {/* The barrel face, black glass. */}
+            <div data-part="cap" className="relative size-full rounded-full [background:var(--race-glass)] shadow-[0_0_0_1px_rgb(0_0_0/0.9),0_0.25em_0.7em_rgb(0_0_0/0.8),inset_0_1px_0_rgb(255_255_255/0.08)]">
+              {/* The bow: a clean dark key, turned by rotate. Its sheen counter-turns, so the light stays above. */}
               <div
                 data-part="key"
-                className="absolute inset-0 m-auto h-[8.2em] w-[3.8em] rounded-[1em_1em_1.5em_1.5em] [--grip-hi:rgb(255_255_255/0.07)] [--grip:rgb(0_0_0/0.55)] [--sheen:rgb(255_255_255/0.13)] [background:var(--race-metal)] [rotate:var(--a)] shadow-[0_0_0_1px_rgb(0_0_0/0.9),0_0_0.8em_-0.1em_rgb(0_0_0/0.9),inset_0_1px_0_rgb(255_255_255/0.2),inset_0_0_0_1px_rgb(255_255_255/0.05)]"
+                className="absolute inset-0 m-auto h-[8.2em] w-[3.8em] rounded-[1em_1em_1.5em_1.5em] [background:linear-gradient(calc(180deg_-_var(--a)),rgb(255_255_255/0.09),transparent_55%),linear-gradient(#232327,#131315)] [rotate:var(--a)] shadow-[0_0_0_1px_rgb(0_0_0/0.9),0_0_0.8em_-0.1em_rgb(0_0_0/0.9),inset_0_1px_0_rgb(255_255_255/0.14)]"
               >
-                {/* The light on its face stays above as the key turns. */}
-                <div className="absolute inset-0 rounded-[inherit] [background:linear-gradient(calc(180deg_-_var(--a)),var(--sheen),transparent_60%)]" />
-                {/* The pointer: a red line in the bow's tip, lit once the ignition is on. */}
-                <div className="absolute left-1/2 top-[0.6em] h-[2.1em] w-[0.28em] -translate-x-1/2 rounded-full bg-(--race-red) transition-shadow duration-(--duration-exit) group-data-[state=on]/s:shadow-(--race-glow-red) group-data-[state=running]/s:shadow-(--race-glow-red)" />
-                <div className="absolute inset-x-[0.9em] bottom-[2.9em] top-[3.4em] rounded-[0.14em] [background:repeating-linear-gradient(to_bottom,var(--grip)_0_1px,var(--grip-hi)_1px_2px,transparent_2px_3.5px)]" />
-                <div className="absolute bottom-[0.8em] left-1/2 size-[1.1em] -translate-x-1/2 rounded-full bg-(--race-well) shadow-[inset_0_1px_2px_rgb(0_0_0/0.9),0_1px_0_rgb(255_255_255/0.12)]" />
+                {/* The pointer: one thin red line in the bow's tip, at full strength once the ignition is on. */}
+                <div className="absolute left-1/2 top-[0.7em] h-[2.4em] w-[0.18em] -translate-x-1/2 rounded-full bg-(--race-red) opacity-50 transition-opacity duration-(--duration-exit) group-data-[state=on]/s:opacity-100 group-data-[state=running]/s:opacity-100" />
               </div>
             </div>
           </div>
@@ -619,11 +603,10 @@ export function StartKey({ value, onChange, onCrank, label = "Ignition", rehears
 const IDLE = 850; // rpm
 const FLARE = 2500; // rpm: the engine catches high and drops back to idle
 const CRANKING = 240; // rpm: what the starter turns the engine at, on the readout only
-/** Revs ease on a spring a little under critical, so the flare undershoots idle slightly before it settles. */
-const REVS = { stiffness: 90, damping: 11 };
+const PEAK = 260; // ms the revs sweep up before they are let down to idle
+/** Revs ease on a spring a little under critical (ζ ≈ 0.8): a clean sweep, a hair of overshoot, no ringing. */
+const REVS = { stiffness: 100, damping: 16 };
 const thousands = (n: number) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
-const chips = { off: "Off", on: "Ready", running: "Running" } as const;
 
 export default function Demo() {
   const [value, setValue] = useState<StartKeyValue>("off");
@@ -665,14 +648,15 @@ export default function Demo() {
     return () => s.stop();
   }, []);
 
-  // The engine catching flares the revs, which drop to idle; the key back at Off cuts the engine.
+  // The engine catching sweeps the revs up to the flare and lets them down to idle; the key back at Off cuts the engine.
   useEffect(() => {
     const s = revs.current!;
     if (value === "running") {
       if (reducedMotion()) s.jump(IDLE);
       else {
-        s.jump(FLARE);
-        s.set(IDLE);
+        s.set(FLARE);
+        const down = setTimeout(() => s.set(IDLE), PEAK);
+        return () => clearTimeout(down);
       }
     } else {
       voice.current?.set(0, 0);
@@ -703,44 +687,21 @@ export default function Demo() {
 
   return (
     <div ref={rootRef} onPointerDownCapture={touch} onKeyDownCapture={touch} className="@container w-full max-w-[320px] select-none">
-      <div data-part="plate" className="relative isolate flex animate-enter flex-col gap-[0.9em] overflow-hidden rounded-[0.9em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)]">
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] [background:var(--race-weave)]" />
-
-        {/* The readout: the state as a chip, and the revs. */}
-        <div aria-hidden data-part="lcd" className="relative flex h-[4.2em] items-center justify-between overflow-hidden rounded-[0.6em] pl-[1em] pr-[0.9em] [background:var(--race-glass)] shadow-(--race-recess)">
-          <span className="absolute inset-y-[0.7em] left-0 w-[0.22em] rounded-r-full bg-(--race-red)" />
+      <div data-part="plate" className="relative isolate flex animate-enter flex-col items-center gap-[0.8em] overflow-hidden rounded-[0.9em] p-[0.9em] pt-[1.5em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)]">
+        {/* The revs, bare on the plate: the figure is the state (0, turning over, idling). */}
+        <span aria-hidden className="flex items-baseline gap-[0.5em] leading-none">
           <span
-            data-part="chip"
+            ref={rpmRef}
+            data-part="lettering"
             className={cx(
-              "inline-flex items-center gap-[0.4em] rounded-[0.25em] px-[0.5em] py-[0.3em] text-(--race-red-ink) transition-[background-color,box-shadow] duration-(--duration-exit)",
-              value === "running" ? "bg-(--race-red)" : "bg-(--race-red-deep)",
-              value !== "off" && "shadow-(--race-glow-red)",
+              "inline-block w-[4.6ch] text-right font-[family-name:var(--font-race)] text-[4.4em] font-bold italic tabular-nums [font-stretch:62%] transition-colors duration-(--duration-exit)",
+              value === "running" ? "text-(--race-ink)" : "text-(--race-dim)",
             )}
           >
-            {value === "running" ? (
-              <span className="size-[0.55em] animate-pulse rounded-full bg-(--race-red-ink) motion-reduce:animate-none" />
-            ) : value === "on" ? (
-              <span className="size-[0.55em] rounded-full bg-(--race-red-ink)" />
-            ) : (
-              <span className="size-[0.5em] rounded-[1px] bg-(--race-red-ink)" />
-            )}
-            <span className="text-[0.6em] font-bold uppercase leading-none tracking-[0.12em]">{chips[value]}</span>
+            0
           </span>
-          <span className="flex items-baseline gap-[0.35em] leading-none">
-            <span
-              ref={rpmRef}
-              className={cx(
-                "font-[family-name:var(--font-race)] text-[3em] font-bold italic tabular-nums [font-stretch:62%] transition-[color,text-shadow] duration-(--duration-exit)",
-                value === "running" ? "text-(--race-ink) [text-shadow:var(--race-glow-white)]" : "text-(--race-dim)",
-              )}
-            >
-              0
-            </span>
-            <span className="text-[0.62em] font-semibold uppercase tracking-[0.16em] text-(--race-dim)">rpm</span>
-          </span>
-          {/* Scanlines over the glass. */}
-          <span data-part="glass" className="pointer-events-none absolute inset-0 [background:var(--race-scanlines)]" />
-        </div>
+          <span className="text-[0.62em] font-semibold uppercase tracking-[0.16em] text-(--race-faint)">rpm</span>
+        </span>
 
         <StartKey rehearse value={value} onChange={onChange} onCrank={onCrank} />
       </div>

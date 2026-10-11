@@ -37,7 +37,7 @@ export const registry: RegistryEntry[] = [
     slug: "start-key",
     title: "Start Key",
     description:
-      "An ignition barrel for an action that is armed before it is confirmed, in black and red. A lit red key bow turns in a knurled collar between Off, On and a spring-loaded Start, on a small integrator: it drops into each detent with a click, and past On the resistance climbs and the key springs back. On runs the light check; held at Start the starter grinds, and after 700 ms the engine catches, flares and settles to idle. Drag round the barrel, or use the arrow keys.",
+      "An ignition barrel for an action that is armed before it is confirmed, in black and red. A dark key bow with one thin red pointer turns in a black collar between Off, On and a spring-loaded Start, on a small integrator: it drops into each detent with a click, and past On the resistance climbs and the key springs back. Held at Start the starter grinds, and after 700 ms the engine catches; the revs sweep to 2,500 and settle to an 850 idle.",
     tagline: "An ignition key: arm it at On, hold Start, hear it catch.",
     tags: ["input", "pointer", "sound", "a11y"],
     date: "2026-10-09",

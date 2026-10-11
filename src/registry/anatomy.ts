@@ -43,13 +43,11 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     lettering: { tokens: ["--race-ink", "--race-faint"], note: "Plain white capitals on the keys; dim when Reset has nothing to clear." },
   },
   "start-key": {
-    collar: { tokens: ["--race-well", "--race-recess"], note: "The barrel's well, knurled all round its rim. The three stops are engraved outside it: Off, On, and a red dashed run to Start, where the key is spring-loaded." },
+    collar: { tokens: ["--race-well", "--race-recess"], note: "The barrel's seat, black with a fine knurl round its rim. The stops are engraved outside it: Off, On, and a fine red dashed run to Start, where the key is spring-loaded." },
     cap: { tokens: ["--race-glass"], note: "The barrel face in black glass, fixed in place. The key turns on top of it." },
-    key: { name: "Bow", tokens: ["--race-metal", "--race-red", "--race-glow-red"], note: "The key's flat grip in dark metal with a lit red pointer, turned on the rotate property by an integrator: detents at Off and On, a stiffening return spring past On, hard stops at each end." },
-    light: { name: "Warning lights", tokens: ["--race-led-off", "--race-red", "--race-ink"], note: "Six glyphs in pockets, dark until the light check: all lit, then out one by one at 120 ms. Battery and oil stay red until the engine catches." },
-    lettering: { tokens: ["--race-ink", "--race-red", "--race-glow-red"], note: "The stops, white-dim until the key is at one: that stop lights red and glows." },
-    lcd: { tokens: ["--race-glass", "--race-recess"], note: "The state in a deep-red chip, lit red while it runs, and the revs in the race face. After the catch the revs flare to 2,500 and settle to 850 rpm on a spring that drives the readout and the engine." },
-    glass: { tokens: ["--race-scanlines"], note: "Scanlines over the readout." },
+    key: { name: "Bow", tokens: ["--race-red"], note: "A clean dark key bow with one thin red pointer, turned on the rotate property by an integrator: detents at Off and On, a stiffening return spring past On, hard stops at each end." },
+    light: { name: "Warning lights", tokens: ["--race-led-off", "--race-red", "--race-ink"], note: "Three small glyphs on the plate, nearly invisible until the light check. Battery and oil stay red until the engine catches." },
+    lettering: { name: "Stops and revs", tokens: ["--race-ink", "--race-dim", "--race-red"], note: "The stops, dim until the key is at one: that stop turns white. The revs, one large white figure on the plate, sweep to 2,500 and settle to 850 on a spring that also drives the engine." },
   },
   knob: {
     cap: { note: "Knurled round its skirt by a conic gradient from var(--a), so it turns without a transform." },
