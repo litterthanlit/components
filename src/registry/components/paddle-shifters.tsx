@@ -8,11 +8,11 @@ import { engine as createEngine, hostTransport, play } from "@/lib/sound";
  * A bounded number stepper after a wheel's pair of shift paddles, on the
  * night-race line: a lever on either side, − on the left and + on the right,
  * and between them a black glass readout with the gear in huge condensed
- * yellow figures on a drum, a chip and the revs above it and a strip of shift
- * lights under it.
+ * white figures blooming red on a drum, a chip and the revs above it and a
+ * strip of shift lights under it.
  *
  * Each paddle is a carbon-fibre blade hung from a pivot near its top, with a
- * hard swept tip and a yellow edge line down its inner side. Pulled, its face
+ * hard swept tip and a red edge line down its inner side. Pulled, its face
  * sinks 2px onto its base and tilts a few degrees about the pivot, by the CSS
  * `rotate` property inside the key's own overflow-hidden frame, so the lever
  * can swing without spilling. The drum is a column of figures translated by a
@@ -21,7 +21,7 @@ import { engine as createEngine, hostTransport, play } from "@/lib/sound";
  * drum bumps and shakes sideways on a loose spring, and nothing changes.
  *
  * The revs are a second spring, and the one loop that does everything with
- * them: it lights the ten shift lights (four green, three yellow, three red),
+ * them: it lights the ten shift lights (four white, six red),
  * writes the rpm figure and feeds the engine's voice. A downshift blips it up,
  * as a driver matches revs, with the throttle wide open; an upshift cuts the
  * ignition for 80ms and the revs drop; then they settle to the cruising level
@@ -44,9 +44,8 @@ const PULSE = 120; // ms a paddle stays down when it is pulled by a key or by th
 const REDLINE = 9000; // rpm at the end of the shift lights
 const CUT = 80; // ms of ignition cut on an upshift
 const LIGHTS = [
-  ...Array.from({ length: 4 }, () => "var(--race-green)"),
-  ...Array.from({ length: 3 }, () => "var(--race-yellow)"),
-  ...Array.from({ length: 3 }, () => "var(--race-red)"),
+  ...Array.from({ length: 4 }, () => "var(--race-ink)"),
+  ...Array.from({ length: 6 }, () => "var(--race-red)"),
 ];
 
 type Rehearsal = { value: number; at: number };
@@ -312,9 +311,9 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
   return (
     <div ref={rootRef} onPointerDownCapture={touch} onKeyDownCapture={touch} className={cx("@container w-full max-w-[400px] select-none", className)}>
       <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[0.9em] p-[0.8em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)]">
-        {/* The carbon twill, felt rather than seen, and a short yellow rule with a raked end along the top edge. */}
+        {/* The carbon twill, felt rather than seen, and a short red rule with a raked end along the top edge. */}
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] [background:var(--race-weave)]" />
-        <span aria-hidden className="pointer-events-none absolute left-[0.8em] top-0 h-[2px] w-[4.2em] [background:linear-gradient(100deg,var(--race-yellow)_0_82%,transparent_82%)]" />
+        <span aria-hidden className="pointer-events-none absolute left-[0.8em] top-0 h-[2px] w-[4.2em] [background:linear-gradient(100deg,var(--race-red)_0_82%,transparent_82%)]" />
 
         {/* The wheel's hub, pressed into the plate: a paddle either side of the readout. */}
         <div data-part="well" className="grid h-[15.5em] grid-cols-[4.7em_minmax(0,1fr)_4.7em] items-center gap-[0.35em] rounded-[0.6em] bg-(--race-well) p-[0.4em] shadow-(--race-recess)">
@@ -348,7 +347,7 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
               <span
                 className={cx(
                   "relative block size-full origin-[calc(50%+var(--s)*1.1em)_0.95em] rounded-[var(--r)] text-(--race-dim) [background:var(--race-weave),var(--race-metal)] shadow-(--race-key-shadow) [rotate:calc(var(--s)*2deg)] transition-[translate,rotate,box-shadow] duration-(--duration-exit) ease-out",
-                  "border-(--race-yellow)",
+                  "border-(--race-red)",
                   dir < 0 ? "border-r-2" : "border-l-2",
                   "group-active/key:translate-y-[2px] group-active/key:[rotate:calc(var(--s)*-3deg)] group-active/key:shadow-(--race-key-shadow-pressed) group-active/key:duration-75 group-data-pressed/key:translate-y-[2px] group-data-pressed/key:[rotate:calc(var(--s)*-3deg)] group-data-pressed/key:shadow-(--race-key-shadow-pressed) group-data-pressed/key:duration-75",
                 )}
@@ -357,10 +356,10 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
                 <span aria-hidden className="absolute top-[0.6em] size-[0.7em] -translate-x-1/2 rounded-full bg-(--race-well) shadow-(--race-recess) [left:calc(50%+var(--s)*1.1em)]" />
                 {/* Its cross-section: a hard highlight down the crown and a shade at the edges. */}
                 <span aria-hidden className="absolute inset-0 rounded-[inherit] [background:linear-gradient(90deg,rgb(0_0_0/0.35),rgb(255_255_255/0.07)_30%,transparent_55%,rgb(0_0_0/0.4))]" />
-                {/* The engraved sign, lit faintly from behind; yellow while the lever is pulled. */}
+                {/* The engraved sign, lit faintly from behind; red while the lever is pulled. */}
                 <span
                   aria-hidden
-                  className="absolute inset-x-0 top-[3.6em] text-center text-[2.3em] font-bold leading-none text-(--race-ink)/70 [text-shadow:var(--race-glow-white)] transition-[color,text-shadow] duration-(--duration-exit) group-active/key:text-(--race-yellow) group-active/key:[text-shadow:var(--race-glow-yellow)] group-active/key:duration-75 group-data-pressed/key:text-(--race-yellow) group-data-pressed/key:[text-shadow:var(--race-glow-yellow)] group-data-pressed/key:duration-75"
+                  className="absolute inset-x-0 top-[3.6em] text-center text-[2.3em] font-bold leading-none text-(--race-ink)/70 [text-shadow:var(--race-glow-white)] transition-[color,text-shadow] duration-(--duration-exit) group-active/key:text-(--race-red) group-active/key:[text-shadow:var(--race-glow-red)] group-active/key:duration-75 group-data-pressed/key:text-(--race-red) group-data-pressed/key:[text-shadow:var(--race-glow-red)] group-data-pressed/key:duration-75"
                 >
                   {dir > 0 ? "+" : "−"}
                 </span>
@@ -390,7 +389,7 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
             className="relative col-start-2 row-start-1 flex min-w-0 flex-col items-stretch justify-between gap-[0.5em] self-stretch rounded-[0.5em] px-[0.7em] pb-[0.75em] pt-[0.65em] text-(--race-ink) [background:var(--race-glass)] shadow-(--race-edge) outline-offset-2"
           >
             <div aria-hidden className="flex items-end justify-between gap-[0.4em]">
-              <span data-part="chip" className="inline-flex items-center rounded-[0.2em] bg-(--race-yellow) px-[0.5em] py-[0.26em] text-(--race-yellow-ink)">
+              <span data-part="chip" className="inline-flex items-center rounded-[0.2em] bg-(--race-red-deep) px-[0.5em] py-[0.26em] text-(--race-red-ink)">
                 <span className="text-[0.62em] font-bold uppercase leading-none tracking-[0.14em]">{label}</span>
               </span>
               <span className="flex items-baseline gap-[0.3em] leading-none">
@@ -407,7 +406,7 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
                 {figures.map((f, i) => (
                   <span
                     key={i}
-                    className="grid h-[1.08em] place-items-center pr-[0.06em] text-center font-[family-name:var(--font-race)] font-extrabold italic leading-none tabular-nums text-(--race-yellow) [font-stretch:62%] [text-shadow:0_0_0.08em_color-mix(in_srgb,var(--race-yellow)_55%,transparent),0_0_0.26em_color-mix(in_srgb,var(--race-yellow)_24%,transparent)]"
+                    className="grid h-[1.08em] place-items-center pr-[0.06em] text-center font-[family-name:var(--font-race)] font-extrabold italic leading-none tabular-nums text-(--race-ink) [font-stretch:62%] [text-shadow:0_0_0.08em_color-mix(in_srgb,var(--race-red)_70%,transparent),0_0_0.26em_color-mix(in_srgb,var(--race-red)_45%,transparent)]"
                   >
                     {f}
                   </span>
@@ -417,7 +416,7 @@ export function PaddleShifters({ value, onChange, min, max, labels, names, label
               <span aria-hidden className="pointer-events-none absolute inset-0 [background:linear-gradient(rgb(0_0_0/0.5),transparent_10%,transparent_90%,rgb(0_0_0/0.5))]" />
             </div>
 
-            {/* The shift lights: green, then yellow, then red, as the revs climb. Off is dark; on is lit, and fades out when it goes. */}
+            {/* The shift lights: white, then red, as the revs climb. Off is dark; on is lit, and fades out when it goes. */}
             <div aria-hidden data-part="light" className="flex items-center gap-[0.22em] px-[0.2em]">
               {LIGHTS.map((colour, i) => (
                 <span

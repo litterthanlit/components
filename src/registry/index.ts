@@ -81,7 +81,7 @@ export const registry: RegistryEntry[] = [
     slug: "paddle-shifters",
     title: "Paddle Shifters",
     description:
-      "A bounded number stepper built as a wheel's pair of shift paddles, on the night-race line. Carbon-fibre blades with a yellow edge hang from pivots either side of a black glass readout; pulled, each sinks 2px and leans. The gear is a huge yellow figure on a drum, with ten shift lights under it. A downshift blips the revs and the engine with them; an upshift cuts the ignition and drops. At either end the drum bumps and shakes. One spinbutton: arrows, Home and End.",
+      "A bounded number stepper built as a wheel's pair of shift paddles, on the night-race line. Carbon-fibre blades with a red edge hang from pivots either side of a black glass readout; pulled, each sinks 2px and leans, its sign lighting red. The gear is a huge white figure on a drum, blooming red, with ten shift lights under it, white then red. A downshift blips the revs and the engine with them; an upshift cuts the ignition and drops. At either end the drum bumps and shakes. One spinbutton: arrows, Home and End.",
     tagline: "Carbon paddles and a lit gear drum, with the engine on the throttle.",
     tags: ["input", "pointer", "sound", "a11y"],
     date: "2026-10-09",
