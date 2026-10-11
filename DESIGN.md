@@ -34,7 +34,7 @@ What a study does by itself asks the player first (the transport rule, under Sou
 
 Monochrome, plus red for REC and the playhead, orange for a hand on it, and one blue on the screen for selection. Figures are tabular, so a count never shuffles sideways. Grey text, hairlines and one weight change on the page. The work should be the loudest thing here, and when a colour only ever means one thing, it reads at once.
 
-The one exception is the race line, the six sports-car studies, which have a night cockpit of their own in black and red, with light that glows (see The race line).
+The one exception is the race line, the six sports-car studies, which have a night cockpit of their own in black, white and red, lit only by their figures and needles (see The race line).
 
 Restraint is also subtraction. The player lost its battery icon, timecodes, scanlines, a BACK key and a keyboard legend because each one repeated something the screen, the LCD or the hold switch already said. Later it lost the file name beside the LCD (the screen names the study), the captions under the transport (▶ and ■ need no words), a maker's window that stood the full height of the deck (it became a nameplate, and then the left end of the LCD: the maker stays quiet inside the readout), the LCD's running clock and level meters (the tape already shows where the playhead is, so the LCD says only the state, the study's name and the take, as a CD player's display does), a FIND key (Find is on Home, and on /), the HOLD switch (Options › Sound and M already muted), the STOP key (hold the dial's centre) and the deck's key row (Menu and Source sit at the screen's top corners, and Options is on Menu). The deck keeps only what plays the tape: the readout (the mark and the LCD on one strip of glass) and the dial. The mark animates only under a mouse: on the deck, nothing moves by itself but the tape and the lights.
 
@@ -418,9 +418,11 @@ It is the materials, shown working: plate, then well, then part. A knob's cap li
 
 Six studies are parts of a sports car, not of a field recorder: Gauge Cluster, Throttle, Drive Mode, Paddle Shifters, Chrono and Start Key. They are the exception to the rest of this file, and the exception is deliberate.
 
+The principle is to keep them simple, like the instrument cluster they come from: black dials on black, clean white figures, one red needle, a red redline and a great deal of negative space. Nothing is there to decorate. There is no carbon weave, no scanlines, no LED bars, no chevrons or stripes, no boxed readouts and no light trails. Light comes from the figures and the needle, and glows only softly. The polish comes from the motion: springs with a crisp attack and one small overshoot, figures that roll, lights that come on at once and fade off softly, pulses that are calm rather than strobes.
+
 ### Why it departs
 
-The brief for these six was sports-car parts with a design of their own, and a more aggressive one. A car's cockpit is a different object from the recorder: black, matte, lit from inside, with a hot colour for what matters and nothing silver. Dressed in the body's silver and graphite, a tachometer reads as a prop; in its own materials it reads as the thing. So the six share materials of their own, the `--race-*` tokens below, instead of `--device-*`.
+The brief for these six was sports-car parts with a design of their own. A car's cockpit is a different object from the recorder: black, matte, lit from inside, with a hot colour for what matters and nothing silver. Dressed in the body's silver and graphite, a tachometer reads as a prop; in its own materials it reads as the thing. So the six share materials of their own, the `--race-*` tokens below, instead of `--device-*`.
 
 Do not "fix" them back. A race study that takes the body's plate, key or LCD tokens is the mistake, and a body study that takes a `--race-*` token is the same one. The two sets never mix on a plate. Everything else in this file still holds (see What still holds).
 
@@ -433,22 +435,22 @@ The order is the same as the body's: **plate, then well, then part**.
 | Token | Value | For |
 | --- | --- | --- |
 | `--race-body` | `linear-gradient(180deg, #141416 0%, #0d0d0f 60%, #08080a 100%)` | The plate: matte black, a shade lighter at the top |
-| `--race-weave` | two `repeating-linear-gradient`s at 45° and −45°, 2px bands every 4px, at 2.2% white and 30% black | A carbon twill, on an overlay layer over the plate (`pointer-events-none`, behind the content). Very low contrast: it is felt, not seen |
+| `--race-weave` | two `repeating-linear-gradient`s at 45° and −45°, 2px bands every 4px, at 2.2% white and 30% black | Available, but out of the house style: the studies no longer use it. A plate is plain black, with no carbon twill |
 | `--race-edge` | `inset 0 1px 0 rgb(255 255 255 / 0.08), inset 0 0 0 1px rgb(255 255 255 / 0.04)` | The machined rim of the plate |
 | `--race-shadow` | `0 1px 2px rgb(0 0 0 / 0.6), 0 18px 36px -18px rgb(0 0 0 / 0.8), 0 40px 80px -40px rgb(0 0 0 / 0.9)` | The plate's drop shadow |
 | `--race-well` | `#050506` | Anything pressed into the plate: a dial's pocket, a slot |
 | `--race-recess` | `inset 0 1px 3px rgb(0 0 0 / 0.9), inset 0 0 0 1px rgb(0 0 0 / 0.6), 0 1px 0 rgb(255 255 255 / 0.06)` | The well's inset shadow and its lit lower lip |
-| `--race-glass` | `linear-gradient(112deg, #151517 0%, #0f0f11 47%, #08080a 47.2%, #050507 100%)` | Gauge faces and LCDs: near-black glass, with the sheen breaking hard at 47% as the body's LCD does |
-| `--race-scanlines` | `repeating-linear-gradient(0deg, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 3px)` | A 1px line every 3px over glass |
+| `--race-glass` | `linear-gradient(112deg, #151517 0%, #0f0f11 47%, #08080a 47.2%, #050507 100%)` | A near-black face, with a sheen breaking hard at 47%. Use it sparingly: a dial is as often plain `--race-well` |
+| `--race-scanlines` | `repeating-linear-gradient(0deg, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 3px)` | Available, but out of the house style: the studies no longer use it. Glass is clear |
 | `--race-ink` | `#f4f4f5` | Figures and lettering that matter |
 | `--race-dim` | `rgb(255 255 255 / 0.5)` | Units and quiet lettering |
 | `--race-faint` | `rgb(255 255 255 / 0.14)` | Hairlines, ticks, the unlit scale |
-| `--race-red` | `#ff1f1f` | Red lit: the redline, the needle, the limiter, the selected mode, what is on, the top shift lights |
-| `--race-red-deep` | `#a80000` | Red quiet: chip fills, rules, stripes, redline zones. It does not glow |
+| `--race-red` | `#ff1f1f` | Red lit: the redline, the needle, the limiter, the selected mode, what is on |
+| `--race-red-deep` | `#a80000` | Red quiet, used sparingly: a dim redline zone or a resting mark. It does not glow |
 | `--race-red-ink` | `#ffffff` | Lettering on red |
-| `--race-led-off` | `rgb(255 255 255 / 0.07)` | An unlit LED or segment |
-| `--race-glow-red` | `0 0 0.6em rgb(255 31 31 / 0.7), 0 0 1.6em rgb(255 31 31 / 0.28)` | Bloom round a lit red part |
-| `--race-glow-white` | `0 0 0.5em rgb(255 255 255 / 0.3), 0 0 1.2em rgb(255 255 255 / 0.1)` | Bloom round figures and the first shift lights, subtle |
+| `--race-led-off` | `rgb(255 255 255 / 0.07)` | An unlit light, such as the dot on a key |
+| `--race-glow-red` | `0 0 0.6em rgb(255 31 31 / 0.7), 0 0 1.6em rgb(255 31 31 / 0.28)` | A soft bloom round the needle or a lit red light |
+| `--race-glow-white` | `0 0 0.5em rgb(255 255 255 / 0.3), 0 0 1.2em rgb(255 255 255 / 0.1)` | Available for a lit white light; figures stay crisp and do not take it |
 | `--race-key-face` | `linear-gradient(#2b2b2f, #141416)` | A black anodized key |
 | `--race-key-shadow` | `inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.9), 0 2px 0 0 #020203, 0 5px 12px -4px rgb(0 0 0 / 0.8)` | The key at rest: lit edge, inner shade, ring, 2px base, drop |
 | `--race-key-shadow-pressed` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.8), 0 0 0 1px rgb(0 0 0 / 0.9), 0 0 0 0 #020203, 0 1px 1px -1px rgb(0 0 0 / 0.6)` | The key sunk onto its base. The same five layers as at rest, so press and release interpolate |
@@ -459,16 +461,16 @@ A key is a key: it sinks 2px onto its base in 75ms and comes back in `--duration
 
 ### What each colour means
 
-The race line is black and red, and nothing else, because the user asked for black and red.
+The race line is black, white and red, and nothing else, because the user asked for black and red.
 
-- **Black** is everything at rest: the plate, the well, the glass, an unlit LED.
-- **White** is figures, labels and the first shift lights. Lettering is `--race-ink`, `--race-dim` or `--race-faint`; the first shift lights are white and bloom with `--race-glow-white`.
-- **Red** is the only colour: the redline, the needle, the limiter, the selection and "on" (the chosen drive mode, a lit chrono segment, a key's glow when it is on), and the top shift lights. Lettering on red is `--race-red-ink`. When something in the race line is red, an engine is at its limit, a clock is running or a choice is made.
-- **Lit red and deep red.** `--race-red` is red lit; `--race-red-deep` is red quiet, for chip fills, rules, stripes and redline zones. Not everything red glows.
-- **Glow means lit, and only lit things glow, and only red or white glows.** An unlit LED is `--race-led-off` and casts nothing; deep red casts nothing.
+- **Black** is everything at rest: the plate, the well, the dial. A dial sits black on black, with generous space round its figures.
+- **White** is figures, ticks and labels. Figures are `--race-ink` and crisp; ticks and quiet lettering are `--race-dim` or `--race-faint`.
+- **Red** is the only colour: the needle, the redline, and the one thing that is on (the chosen drive mode, a running clock's dot, a lit light). Lettering on red is `--race-red-ink`. When something in the race line is red, an engine is at its limit, a clock is running or a choice is made.
+- **Lit red and deep red.** `--race-red` is red lit; `--race-red-deep` is red quiet, kept for the odd resting mark. Not everything red glows.
+- **Glow means lit, and only the needle and lit lights glow, and only softly.** An unlit light is `--race-led-off` and casts nothing; deep red casts nothing; figures do not bloom.
 - **Blue never appears.** It belongs to screens and pages.
 
-Colours that must be told apart differ in lightness and position, never in hue alone: the white and red shift lights are told apart by order (white first, red after) as well as colour, and lit red is told from deep red by brightness and by its bloom.
+Colours that must be told apart differ in lightness as well as hue.
 
 ### Type
 
@@ -482,10 +484,14 @@ The font is not preloaded (`preload: false`), so a page without a car study neve
 
 ### Light
 
-- **Bloom** comes from the glow tokens (`--race-glow-red`, `--race-glow-white`) on leaf parts only: an LED, a needle, a figure, a lit segment. The anatomy's flattening rule still holds, so a glow is never put on a container with marked parts inside it. A glow is a `box-shadow` or `text-shadow` on the part itself, and an SVG part uses its stroke or a filter on the leaf.
-- **A needle leaves a light trail.** A few fading ghost needles behind it, or a fading arc behind its tip, both drawn from the same spring that moves the needle and written as SVG attributes (angle, opacity), so the trail is exactly where the needle was, with no second animation to drift out of step.
-- **Scanlines** go over glass (`--race-scanlines`), as the last layer of a gauge face or LCD, under the sheen.
-- **Reduced motion** drops trails and anything that pulses. Lit state still shows; it just holds still.
+- **Only the needle and lit lights glow, and softly.** The glow tokens (`--race-glow-red`, `--race-glow-white`) go on leaf parts only: a needle, a light. The anatomy's flattening rule still holds, so a glow is never put on a container with marked parts inside it. It is a `box-shadow` on the part itself, and an SVG needle uses a filter on the leaf, kept faint. Figures are crisp white with no bloom.
+- **Nothing is decoration.** No carbon weave, scanlines, LED bars, chevrons, stripes, boxed readouts or light trails. A figure stands directly on black; if removing a thing loses no information, remove it.
+- **Lights are instant on, soft off.** A light comes on at once and fades out over `--duration-exit`. A limiter is a calm pulse of 2 to 3 Hz, never a strobe.
+- **Reduced motion** drops pulses and anything that sweeps. Lit state still shows; it just holds still.
+
+### Motion
+
+The polish is in the motion, since there is little else to look at. A needle, hand, cap or pedal runs on a spring tuned for a crisp attack, one small overshoot (about 3 to 6% of its travel) and a clean settle, with no jitter. Interruptions continue smoothly, because springs keep their velocity. A count (rpm, speed, a clock) is driven from the same spring or integrator as the needle, so its figures roll with it, tabular and never changing width. The ignition sweep is staggered and eased by the spring itself.
 
 ### Sound
 
@@ -505,10 +511,10 @@ It obeys everything the short sounds do: mute, the volume, the viewer's first ge
 
 ### What still holds
 
-The race line changes the materials, not the rules.
+The race line changes the materials and the restraint, not the rules.
 
 - **One file per study**, with the same imports rule: `react`, `@/lib/sound` and `@/design-system` only.
-- **Parts are marked** with `data-part`, and the anatomy rules hold: nothing flattens the path from the plate to a part, no part has its own `transform`, no filter, opacity, clip or blend above a marked part. Glow goes on leaves.
+- **Parts are marked** with `data-part`, and the anatomy rules hold: nothing flattens the path from the plate to a part, no part has its own `transform`, no filter, opacity, clip or blend above a marked part. Glow goes on leaves, and only on the needle and lit lights.
 - **Mechanisms are modelled** with `createSpring` or a small integrator: a needle with ballistics, a pedal on its return spring, a paddle with its click, a key with its base. Per-frame work writes variables and attributes, not state.
 - **Accessibility is native**: roles, one tab stop per composite, focus that follows the hand, a live region, reduced motion.
 - **It fits 282 × 332**, sized in em from the plate's font size, and fills the capture frame at 702 × 374.
