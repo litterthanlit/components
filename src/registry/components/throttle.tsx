@@ -7,7 +7,7 @@ import { engine as engineVoice, hostTransport, play, type PlayOptions, type Soun
 /*
  * A spring-return analogue input after an organ-hinged accelerator pedal: a
  * chamfered plate of black machined metal, its edge and chevron grip picked out
- * in yellow, standing in a well with its hinge at the foot and a light under it
+ * in red, standing in a well with its hinge at the foot and a light under it
  * that comes up as it goes down. Press it and it tilts back from the hinge; let
  * go and a return spring takes it home with a little rebound. Its value, 0 to 1, is
  * how far it is pressed: a scrub speed, a zoom rate, anything that should
@@ -260,14 +260,18 @@ export function Throttle({ value, onChange, onTravel, name, label, className }: 
       >
         <div aria-hidden className="absolute inset-0" style={{ perspective: DEPTH, perspectiveOrigin: `50% ${em(HINGE)}` }}>
           {/* The light under the pedal: it spills round the plate and across the floor, and grows with travel. */}
-          <div aria-hidden className="absolute inset-0" style={{ opacity: "calc(0.08 + var(--d) * 0.92)" }}>
+          <div
+            aria-hidden
+            className="absolute inset-0"
+            style={{ opacity: "calc(0.08 + var(--d) * 0.92)", "--lit": "color-mix(in srgb, var(--race-red) calc(var(--d) * 100%), var(--race-red-deep))" } as CSSProperties}
+          >
             <div
               className="absolute inset-0"
-              style={{ background: `radial-gradient(ellipse 58% 40% at 50% ${em(HINGE)}, color-mix(in srgb, var(--race-yellow) 74%, transparent), color-mix(in srgb, var(--race-yellow) 18%, transparent) 55%, transparent)` }}
+              style={{ background: `radial-gradient(ellipse 58% 40% at 50% ${em(HINGE)}, color-mix(in srgb, var(--lit) 74%, transparent), color-mix(in srgb, var(--lit) 18%, transparent) 55%, transparent)` }}
             />
             <div
               className="absolute inset-x-0 bottom-0"
-              style={{ top: `${em(HINGE)}`, background: "linear-gradient(to bottom, color-mix(in srgb, var(--race-yellow) 55%, transparent), color-mix(in srgb, var(--race-yellow) 6%, transparent))" }}
+              style={{ top: `${em(HINGE)}`, background: "linear-gradient(to bottom, color-mix(in srgb, var(--lit) 55%, transparent), color-mix(in srgb, var(--lit) 6%, transparent))" }}
             />
           </div>
 
@@ -283,12 +287,12 @@ export function Throttle({ value, onChange, onTravel, name, label, className }: 
             style={{
               width: em(PEDAL_W + 1.8),
               top: em(HINGE - 0.1),
-              backgroundColor: "color-mix(in srgb, var(--race-yellow) calc(var(--d) * 100%), var(--race-well))",
-              boxShadow: "inset 0 1px 2px rgb(0 0 0 / 0.8), 0 0 calc(var(--d) * 1.1em) calc(var(--d) * 0.12em) color-mix(in srgb, var(--race-yellow) calc(var(--d) * 70%), transparent)",
+              backgroundColor: "color-mix(in srgb, var(--race-red) calc(var(--d) * 100%), var(--race-well))",
+              boxShadow: "inset 0 1px 2px rgb(0 0 0 / 0.8), 0 0 calc(var(--d) * 1.1em) calc(var(--d) * 0.12em) color-mix(in srgb, var(--race-red) calc(var(--d) * 70%), transparent)",
             }}
           />
 
-          {/* The plate: black machined metal, chamfered at the toe, its edge and chevron grip in yellow, and a shade that deepens with travel. */}
+          {/* The plate: black machined metal, chamfered at the toe, its edge and chevron grip in red that brightens with travel, and a shade that deepens with travel. */}
           <div
             data-part="key"
             className="absolute [background:var(--race-metal)] shadow-(--race-key-shadow) [clip-path:polygon(1.1em_0,calc(100%-1.1em)_0,100%_1.1em,100%_100%,0_100%,0_1.1em)]"
@@ -302,9 +306,15 @@ export function Throttle({ value, onChange, onTravel, name, label, className }: 
             }}
           >
             <div className="absolute inset-0 bg-(--race-well)" style={{ opacity: "calc(var(--d) * 0.4)" }} />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, color-mix(in srgb, var(--race-yellow) calc(var(--d) * 42%), transparent), transparent 46%)" }} />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, color-mix(in srgb, var(--race-red) calc(var(--d) * 42%), transparent), transparent 46%)" }} />
             <div className="absolute inset-x-[1.2em] top-[2.1em] bottom-[1.1em] rounded-[0.2em] bg-(--race-well) shadow-[inset_0_1px_3px_rgb(0_0_0/0.9),0_1px_0_rgb(255_255_255/0.07)]" />
-            <svg aria-hidden viewBox="0 0 94 114" className="absolute inset-0 size-full" fill="none" stroke="var(--race-yellow)">
+            <svg
+              aria-hidden
+              viewBox="0 0 94 114"
+              className="absolute inset-0 size-full"
+              fill="none"
+              style={{ stroke: "color-mix(in srgb, var(--race-red) calc(var(--d) * 100%), var(--race-red-deep))" }}
+            >
               <polygon points="11.8,0.8 82.2,0.8 93.2,11.8 93.2,113.2 0.8,113.2 0.8,11.8" strokeWidth="1.6" strokeLinejoin="miter" />
               <line x1="14" y1="9" x2="80" y2="9" strokeWidth="1" strokeOpacity="0.5" />
               <g strokeWidth="3.2" strokeLinejoin="miter" style={{ opacity: "calc(0.6 + var(--d) * 0.4)" }}>
@@ -318,11 +328,11 @@ export function Throttle({ value, onChange, onTravel, name, label, className }: 
       </div>
 
       <span aria-hidden className="flex items-center gap-[0.7em]">
-        <span className="h-[0.7em] w-[0.5em] [transform:skewX(-24deg)] bg-(--race-yellow)" />
+        <span className="h-[0.7em] w-[0.5em] [transform:skewX(-24deg)] bg-(--race-red)" />
         <span data-part="lettering" className="text-[0.62em] font-semibold uppercase leading-none tracking-[0.2em] text-(--race-dim)">
           {label}
         </span>
-        <span className="h-[0.7em] w-[0.5em] [transform:skewX(-24deg)] bg-(--race-yellow)" />
+        <span className="h-[0.7em] w-[0.5em] [transform:skewX(-24deg)] bg-(--race-red)" />
       </span>
       {name && <input type="hidden" name={name} value={value} />}
     </div>
@@ -339,12 +349,11 @@ const FALL = { tau: 0.7, min: 700, max: 6000 }; // slower back to idle
 const CUT = 0.07; // s the fuel stays cut at the limiter
 const CUT_FALL = 3000; // rpm/s while it is cut: about 200 rpm of bounce
 const FLASH_HOLD = 0.4; // s the shift lights flash after the last cut
-const FLASH_HALF = 0.055; // s per half-cycle: all twelve flash together
+const FLASH_HALF = 0.055; // s per half-cycle: all twelve flash together, red
 const STEP = 1 / 240;
 
 const SHIFT = 12;
-const GREEN = 4; // the first four lights are green, then yellow, and the last three red
-const RED = 3;
+const WHITE = 4; // the first four lights are white, the rest red
 const SHIFT_FROM = 3000; // rpm of the first light; the twelfth is lit at 7,796
 const SHIFT_STEP = 436;
 const THRESHOLDS = Array.from({ length: SHIFT }, (_, i) => SHIFT_FROM + i * SHIFT_STEP);
@@ -359,13 +368,13 @@ const GHOST: [number, number][] = [
   [3700, 0],
 ];
 
-/* An LED is off until its light comes on, then it is the colour with a hot core and its bloom. */
+/* An LED is off until its light comes on, then it is lit with a hot core and its bloom. The white ones turn red while the strip flashes at the limiter. */
 const LED = {
-  green:
-    "data-on:bg-(--race-green) data-on:shadow-[inset_0_0_0.3em_color-mix(in_srgb,var(--race-ink)_55%,transparent),0_0_0.5em_var(--race-green),0_0_1.6em_color-mix(in_srgb,var(--race-green)_45%,transparent)]",
-  yellow: "data-on:bg-(--race-yellow) data-on:shadow-[inset_0_0_0.3em_color-mix(in_srgb,var(--race-ink)_55%,transparent),var(--race-glow-yellow)]",
-  red: "data-on:bg-(--race-red) data-on:shadow-[inset_0_0_0.3em_color-mix(in_srgb,var(--race-ink)_55%,transparent),var(--race-glow-red)]",
+  white:
+    "[--led:var(--race-ink)] [--glow:var(--race-glow-white)] [[data-flash]_&]:[--led:var(--race-red)] [[data-flash]_&]:[--glow:var(--race-glow-red)]",
+  red: "[--led:var(--race-red)] [--glow:var(--race-glow-red)]",
 };
+const LED_ON = "data-on:bg-(--led) data-on:shadow-[inset_0_0_0.3em_color-mix(in_srgb,var(--race-ink)_55%,transparent),var(--glow)]";
 
 const chipText = { idle: "Idle", rev: "Rev", limiter: "Limiter" } as const;
 type ChipState = keyof typeof chipText;
@@ -547,7 +556,7 @@ export default function Demo() {
       <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[0.9em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)]">
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 rounded-[inherit] [background:var(--race-weave)]" />
 
-        {/* The shift bar: twelve LEDs, four green, five yellow, three red. At the limiter they flash together. */}
+        {/* The shift bar: twelve LEDs, four white then eight red. At the limiter they flash red together. */}
         <div data-part="well" data-shift className="group/shift flex gap-[0.3em] rounded-[0.6em] bg-(--race-well) p-[0.5em] shadow-(--race-recess)">
           {Array.from({ length: SHIFT }, (_, i) => (
             <span
@@ -557,7 +566,8 @@ export default function Demo() {
               data-shift-light
               className={cx(
                 "h-[1.05em] min-w-0 flex-1 rounded-[0.12em] bg-(--race-led-off) transition-[background-color,box-shadow] duration-(--duration-exit) group-data-flash/shift:duration-0 data-on:duration-0",
-                i < GREEN ? LED.green : i >= SHIFT - RED ? LED.red : LED.yellow,
+                LED_ON,
+                i < WHITE ? LED.white : LED.red,
               )}
             />
           ))}
@@ -567,13 +577,13 @@ export default function Demo() {
         <div
           aria-hidden
           data-part="lcd"
-          className="relative mt-[0.55em] flex items-center justify-between gap-[0.6em] rounded-[0.4em] py-[0.5em] pr-[0.8em] pl-[1.1em] text-(--race-ink) [background:var(--race-glass)] shadow-[inset_0.2em_0_0_var(--race-yellow),inset_0_0_0_1px_var(--race-faint)]"
+          className="relative mt-[0.55em] flex items-center justify-between gap-[0.6em] rounded-[0.4em] py-[0.5em] pr-[0.8em] pl-[1.1em] text-(--race-ink) [background:var(--race-glass)] shadow-[inset_0.2em_0_0_var(--race-red-deep),inset_0_0_0_1px_var(--race-faint)]"
         >
           <span
             data-part="chip"
             data-chip
             data-state="idle"
-            className="group/chip inline-flex shrink-0 items-center gap-[0.4em] rounded-[0.25em] px-[0.55em] py-[0.3em] text-(--race-yellow) shadow-[inset_0_0_0_1px_var(--race-yellow)] transition-shadow duration-(--duration-exit) data-[state=limiter]:bg-(--race-yellow) data-[state=limiter]:text-(--race-yellow-ink) data-[state=limiter]:shadow-(--race-glow-yellow) data-[state=rev]:bg-(--race-yellow) data-[state=rev]:text-(--race-yellow-ink) data-[state=rev]:shadow-(--race-glow-yellow)"
+            className="group/chip inline-flex shrink-0 items-center gap-[0.4em] rounded-[0.25em] px-[0.55em] py-[0.3em] bg-(--race-red-deep) text-(--race-red-ink) transition-[background-color,box-shadow] duration-(--duration-exit) data-[state=limiter]:bg-(--race-red) data-[state=limiter]:shadow-(--race-glow-red) data-[state=rev]:bg-(--race-red) data-[state=rev]:shadow-(--race-glow-red)"
           >
             <span className="size-[0.5em] rounded-full bg-current group-data-[state=limiter]/chip:rounded-[1px] group-data-[state=rev]/chip:animate-pulse motion-reduce:group-data-[state=rev]/chip:animate-none" />
             <span data-chip-text className="text-[0.6em] font-bold uppercase leading-none tracking-[0.12em]">
