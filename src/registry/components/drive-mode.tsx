@@ -61,10 +61,10 @@ const FLARE = { rpm: 4.5, load: 1, ms: 400 }; // the boost starting: up to this 
 const REV_SPRING = { stiffness: 150, damping: 15 }; // in thousands of rpm: a little overshoot on the way up and down
 
 // The rotary's frame, in em of the plate: the collar's centre sits at (CX, CY).
-const W = 17.2;
-const H = 12.9;
+const W = 18.4;
+const H = 13.6;
 const CX = W / 2;
-const CY = 7.5;
+const CY = 8.2;
 
 const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(" ");
@@ -84,7 +84,7 @@ const indexOf = (value: DriveModeValue) => Math.max(0, MODES.findIndex((m) => m.
 
 /** Where each mode's engraving sits, a little outside the collar. */
 const labelAt = ANGLES.map((deg) => {
-  const p = polar(deg, 7.2, CX, CY);
+  const p = polar(deg, 7.8, CX, CY);
   return { left: em(p.x), top: em(p.y) };
 });
 
@@ -421,7 +421,7 @@ export function DriveMode({ value, onChange, name, boost, onBoostChange, onCount
           />
           <span
             data-part="lettering"
-            className="text-[0.66em] font-semibold uppercase leading-none tracking-[0.16em] text-(--race-dim) transition-colors duration-(--duration-exit) group-data-on/mode:text-(--race-ink) group-data-on/mode:duration-0"
+            className="text-[0.68em] font-semibold uppercase leading-none tracking-[0.16em] text-(--race-dim) transition-colors duration-(--duration-exit) group-data-on/mode:text-(--race-ink) group-data-on/mode:duration-0"
           >
             {m.label}
           </span>
@@ -566,23 +566,23 @@ export default function Demo() {
       ref={rootRef}
       onPointerDownCapture={() => (touched.current = true)}
       onKeyDownCapture={() => (touched.current = true)}
-      className="@container w-full max-w-[420px] select-none"
+      className="@container w-full max-w-[600px] select-none"
     >
-      <div data-part="plate" className="relative isolate flex animate-enter flex-col items-center gap-[0.5em] overflow-hidden rounded-[0.9em] p-[0.9em] pt-[1.3em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)] @[26rem]:p-[1.1em] @[26rem]:pt-[1.5em]">
+      <div data-part="plate" className="relative isolate flex animate-enter flex-col items-center gap-[0.8em] overflow-hidden rounded-[0.9em] p-[1.4em] pt-[1.8em] text-[clamp(11px,2.8cqw,18px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)]">
         {/* The one line of text: the mode, large and white. The four names are stacked and crossfade; the boost count hangs quietly beside it. */}
-        <div aria-hidden data-part="lettering" className="grid h-[1.1em] grid-cols-1 items-center text-[3.2em] leading-none text-(--race-ink)">
+        <div aria-hidden data-part="lettering" className="grid h-[1.1em] grid-cols-1 items-center text-[1.8em] leading-none text-(--race-ink)">
           {MODES.map((m) => (
             <span
               key={m.value}
               className={cx(
-                "relative col-start-1 row-start-1 justify-self-center whitespace-nowrap font-[family-name:var(--font-race)] font-bold uppercase italic [font-stretch:62%] opacity-0 transition-opacity duration-[120ms] ease-out",
+                "relative col-start-1 row-start-1 justify-self-center whitespace-nowrap font-[family-name:var(--font-race)] font-medium uppercase tracking-[0.06em] opacity-0 transition-opacity duration-[120ms] ease-out",
                 m.value === mode && "opacity-100",
               )}
             >
               {m.label}
               <span
                 className={cx(
-                  "absolute bottom-[0.14em] left-full ml-[0.45em] whitespace-nowrap font-[family-name:var(--font-sans)] text-[0.22em] font-semibold normal-case not-italic tracking-[0.04em] text-(--race-dim) tabular-nums [font-stretch:100%] transition-opacity duration-(--duration-exit)",
+                  "absolute bottom-[0.14em] left-full ml-[0.45em] whitespace-nowrap font-[family-name:var(--font-sans)] text-[0.36em] font-medium normal-case tracking-[0.04em] text-(--race-dim) tabular-nums transition-opacity duration-(--duration-exit)",
                   !boost && "opacity-0",
                 )}
               >
@@ -592,7 +592,7 @@ export default function Demo() {
           ))}
         </div>
 
-        <DriveMode className="mt-[0.6em] text-[1.2em]" value={mode} onChange={(v) => changeMode(v)} name="drive-mode" boost={boost} onBoostChange={changeBoost} onCount={setLeft} />
+        <DriveMode className="mt-[0.8em] text-[1.1em]" value={mode} onChange={(v) => changeMode(v)} name="drive-mode" boost={boost} onBoostChange={changeBoost} onCount={setLeft} />
       </div>
       <p role="status" aria-live="polite" className="sr-only">
         {said}
