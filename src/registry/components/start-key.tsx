@@ -88,10 +88,12 @@ const polar = (deg: number, r: number) => {
   return { x: round2(r * Math.sin(a)), y: round2(-r * Math.cos(a)) };
 };
 
-/* The dial, in em: a 16 × 13.2 box with the collar's centre in it. */
-const BOX = { w: 16, h: 13.2 };
-const MIDDLE = { x: 8, y: 7.4 };
-const COLLAR = 11;
+/* The dial, in em: a 19 × 13.4 box with the collar's centre in it. */
+const BOX = { w: 19, h: 13.4 };
+const MIDDLE = { x: 9.4, y: 7.6 };
+const COLLAR = 12;
+const ARC = 6.5; // the red run's radius, em
+const LEGEND = 7.7; // where each legend's inner edge sits, em: clear of the arc
 /** The lit glyph of each tone: its colour, nothing more. */
 const TONES = {
   red: "data-on:text-(--race-red)",
@@ -105,10 +107,10 @@ const STOPS: { key: StartKeyValue | "start"; label: string; deg: number }[] = [
 /** The engraving: one fine red arc for the spring-loaded run from On to Start (user units are tenths of an em). */
 const run = (() => {
   const at = (deg: number) => {
-    const p = polar(deg, 59.5);
+    const p = polar(deg, ARC * 10);
     return `${round2(MIDDLE.x * 10 + p.x)} ${round2(MIDDLE.y * 10 + p.y)}`;
   };
-  return `M${at(ON + 4)}A59.5 59.5 0 0 1 ${at(START)}`;
+  return `M${at(ON + 4)}A${ARC * 10} ${ARC * 10} 0 0 1 ${at(START)}`;
 })();
 
 type StartKeyProps = {
@@ -502,11 +504,11 @@ export function StartKey({ value, onChange, onCrank, label = "Ignition", rehears
       ref={rootRef}
       onPointerDownCapture={touch}
       onKeyDownCapture={touch}
-      className={cx("flex flex-col items-center gap-[0.7em]", className)}
+      className={cx("flex flex-col items-center gap-[1.8em]", className)}
       style={{ "--a": `${initial === "off" ? OFF : ON}deg` } as CSSProperties}
     >
       {/* The warning lights: three small glyphs, nearly invisible until they light. Battery and oil are red. */}
-      <div aria-hidden className="flex items-center justify-center gap-[1.8em]">
+      <div aria-hidden className="flex items-center justify-center gap-[2.4em]">
         {LIGHTS.map((l, i) => (
           <svg
             key={l.name}
@@ -519,7 +521,7 @@ export function StartKey({ value, onChange, onCrank, label = "Ignition", rehears
             strokeWidth="1.4"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className={cx("block size-[1.3em] text-(--race-led-off) transition-colors duration-(--duration-exit) data-on:duration-0", TONES[l.tone])}
+            className={cx("block size-[1.5em] text-(--race-led-off) transition-colors duration-(--duration-exit) data-on:duration-0", TONES[l.tone])}
           >
             <path d={l.d} />
           </svg>
@@ -533,7 +535,7 @@ export function StartKey({ value, onChange, onCrank, label = "Ignition", rehears
         </svg>
         {STOPS.map((s, i) => {
           // Each legend sits where the key's tip points, anchored by its inner edge so it never runs over the arc.
-          const p = polar(s.deg, 6.8);
+          const p = polar(s.deg, LEGEND);
           const anchor = s.deg < ON ? "-translate-x-full" : s.deg > ON ? "" : "-translate-x-1/2";
           return (
             <span key={s.key} className={cx("absolute -translate-y-1/2", anchor)} style={{ left: `${round2(MIDDLE.x + p.x)}em`, top: `${round2(MIDDLE.y + p.y)}em` }}>
@@ -581,7 +583,7 @@ export function StartKey({ value, onChange, onCrank, label = "Ignition", rehears
               {/* The bow: a clean dark key, turned by rotate. Its sheen counter-turns, so the light stays above. */}
               <div
                 data-part="key"
-                className="absolute inset-0 m-auto h-[8.2em] w-[3.8em] rounded-[1em_1em_1.5em_1.5em] [background:linear-gradient(calc(180deg_-_var(--a)),rgb(255_255_255/0.09),transparent_55%),linear-gradient(#232327,#131315)] [rotate:var(--a)] shadow-[0_0_0_1px_rgb(0_0_0/0.9),0_0_0.8em_-0.1em_rgb(0_0_0/0.9),inset_0_1px_0_rgb(255_255_255/0.14)]"
+                className="absolute inset-0 m-auto h-[8.9em] w-[4.1em] rounded-[1em_1em_1.5em_1.5em] [background:linear-gradient(calc(180deg_-_var(--a)),rgb(255_255_255/0.09),transparent_55%),linear-gradient(#232327,#131315)] [rotate:var(--a)] shadow-[0_0_0_1px_rgb(0_0_0/0.9),0_0_0.8em_-0.1em_rgb(0_0_0/0.9),inset_0_1px_0_rgb(255_255_255/0.14)]"
               >
                 {/* The pointer: one thin red line in the bow's tip, at full strength once the ignition is on. */}
                 <div className="absolute left-1/2 top-[0.7em] h-[2.4em] w-[0.18em] -translate-x-1/2 rounded-full bg-(--race-red) opacity-50 transition-opacity duration-(--duration-exit) group-data-[state=on]/s:opacity-100 group-data-[state=running]/s:opacity-100" />
@@ -686,15 +688,15 @@ export default function Demo() {
   }
 
   return (
-    <div ref={rootRef} onPointerDownCapture={touch} onKeyDownCapture={touch} className="@container w-full max-w-[320px] select-none">
-      <div data-part="plate" className="relative isolate flex animate-enter flex-col items-center gap-[0.8em] overflow-hidden rounded-[0.9em] p-[0.9em] pt-[1.5em] text-[clamp(11px,4cqw,14px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)]">
+    <div ref={rootRef} onPointerDownCapture={touch} onKeyDownCapture={touch} className="@container w-full max-w-[460px] select-none">
+      <div data-part="plate" className="relative isolate flex animate-enter flex-col items-center gap-[1.4em] overflow-hidden rounded-[0.9em] px-[1.4em] pt-[1.9em] pb-[1.2em] text-[clamp(11px,3.2cqw,18px)] [background:var(--race-body)] shadow-[var(--race-edge),var(--race-shadow)]">
         {/* The revs, bare on the plate: the figure is the state (0, turning over, idling). */}
-        <span aria-hidden className="flex items-baseline gap-[0.5em] leading-none">
+        <span aria-hidden className="flex items-baseline gap-[0.7em] leading-none">
           <span
             ref={rpmRef}
             data-part="lettering"
             className={cx(
-              "inline-block w-[4.6ch] text-right font-[family-name:var(--font-race)] text-[4.4em] font-bold italic tabular-nums [font-stretch:62%] transition-colors duration-(--duration-exit)",
+              "inline-block w-[4.6ch] text-right font-[family-name:var(--font-race)] text-[3.8em] font-medium tabular-nums transition-colors duration-(--duration-exit)",
               value === "running" ? "text-(--race-ink)" : "text-(--race-dim)",
             )}
           >
