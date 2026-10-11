@@ -6,8 +6,8 @@ import { engine as engineVoice, hostTransport, play, type PlayOptions, type Soun
 
 /*
  * An ignition barrel on the night-race line, for the one action that has to be
- * armed before it is confirmed: a metal key bow with a lit yellow pointer
- * turning in a knurled black collar, three yellow-lit stops round it (Off,
+ * armed before it is confirmed: a metal key bow with a lit red pointer
+ * turning in a knurled black collar, three engraved stops round it (Off,
  * On, Start, the spring-loaded run to Start in red dashes) and a strip of
  * six warning lights above, glowing on black.
  *
@@ -65,15 +65,15 @@ const RUN_OUT = [120, 360]; // ms after the catch: battery, then oil pressure
 /* The ghost (ms): On, then Start held until it catches. */
 const GHOST = { start: 400, crank: 900, letGo: 350 };
 
-type Light = { name: string; hot: boolean; tone: "red" | "yellow" | "white"; d: string };
-/** Six lights as simple strokes in a 16-unit box. Hot ones are red when lit; the rest are yellow or white. */
+type Light = { name: string; hot: boolean; tone: "red" | "white"; d: string };
+/** Six lights as simple strokes in a 16-unit box. Hot ones are red when lit; the rest are white. */
 const LIGHTS: Light[] = [
   { name: "Battery", hot: true, tone: "red", d: "M2.5 5.2h11v7.3h-11zM4.8 5.2V3.6M11.2 5.2V3.6M4.6 8.8h2.2M5.7 7.7v2.2M9.2 8.8h2.2" },
   { name: "Oil pressure", hot: true, tone: "red", d: "M8 2.4C6 5 3.6 7.4 3.6 10a4.4 4.4 0 0 0 8.8 0C12.4 7.4 10 5 8 2.4z" },
   { name: "Coolant", hot: false, tone: "white", d: "M6.4 3.4a1.6 1.6 0 0 1 3.2 0v5.2a3 3 0 1 1-3.2 0zM8 6.2v4.2" },
   { name: "Brake", hot: false, tone: "white", d: "M8 4.9a3.1 3.1 0 1 0 0 6.2 3.1 3.1 0 0 0 0-6.2zM8 6.4v2M8 9.7v.1M3.3 4.8a5.6 5.6 0 0 0 0 6.4M12.7 4.8a5.6 5.6 0 0 1 0 6.4" },
-  { name: "Seat belt", hot: false, tone: "yellow", d: "M8 2.4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM4.2 13.6v-3.5a3.8 3.8 0 0 1 7.6 0v3.5M4.6 7.3l6.8 4.9" },
-  { name: "Engine", hot: false, tone: "yellow", d: "M2.2 6.6h1.8M4 6.6V5.4h2.1l.7-1.4h3l.7 1.4h1.5v1.5h1.8v3.4h-1.8v1.5H5.4L4 10.6V9H2.2z" },
+  { name: "Seat belt", hot: false, tone: "white", d: "M8 2.4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM4.2 13.6v-3.5a3.8 3.8 0 0 1 7.6 0v3.5M4.6 7.3l6.8 4.9" },
+  { name: "Engine", hot: false, tone: "white", d: "M2.2 6.6h1.8M4 6.6V5.4h2.1l.7-1.4h3l.7 1.4h1.5v1.5h1.8v3.4h-1.8v1.5H5.4L4 10.6V9H2.2z" },
 ];
 /** The lights the check leaves out one by one, in order. */
 const CHECK_OUT = LIGHTS.flatMap((l, i) => (l.hot ? [] : [i]));
@@ -98,7 +98,6 @@ const COLLAR = 11;
 /** The lit glyph of each tone: its colour and its bloom (a drop-shadow on the glyph, a leaf with nothing marked inside). */
 const TONES = {
   red: "data-on:text-(--race-red) data-on:[filter:drop-shadow(0_0_0.3em_var(--race-red))]",
-  yellow: "data-on:text-(--race-yellow) data-on:[filter:drop-shadow(0_0_0.3em_var(--race-yellow))]",
   white: "data-on:text-(--race-ink) data-on:[filter:drop-shadow(0_0_0.25em_var(--race-ink))]",
 } as const;
 const STOPS: { key: StartKeyValue | "start"; label: string; deg: number }[] = [
@@ -537,11 +536,11 @@ export function StartKey({ value, onChange, onCrank, label = "Ignition", rehears
       </div>
 
       <div className="relative" style={{ width: `${BOX.w}em`, height: `${BOX.h}em` }}>
-        {/* The stops, engraved round the collar: yellow ticks, and the run to Start in red dashes. */}
+        {/* The stops, engraved round the collar: white ticks, and the run to Start in red dashes. */}
         <svg aria-hidden viewBox={`0 0 ${BOX.w * 10} ${BOX.h * 10}`} fill="none" strokeLinecap="round" className="absolute inset-0 size-full">
           <path d={engraving.solid} strokeWidth="1" className="stroke-(--race-faint)" />
           <path d={engraving.dashed} strokeWidth="1.6" strokeDasharray="3 3.5" className="stroke-(--race-red)" />
-          <path d={engraving.ticks} strokeWidth="1.4" className="stroke-(--race-yellow)" />
+          <path d={engraving.ticks} strokeWidth="1.4" className="stroke-(--race-dim)" />
         </svg>
         {STOPS.map((s, i) => {
           // Each legend sits where the key's tip points, anchored by its inner edge so it never runs over the arc.
@@ -554,7 +553,7 @@ export function StartKey({ value, onChange, onCrank, label = "Ignition", rehears
                 data-part="lettering"
                 data-stop={s.key}
                 data-on={i === startLit ? "" : undefined}
-                className="block whitespace-nowrap text-[0.62em] font-bold uppercase leading-none tracking-[0.18em] text-(--race-yellow)/55 transition-[color,text-shadow] duration-(--duration-exit) data-on:text-(--race-yellow) data-on:duration-0 data-on:[text-shadow:var(--race-glow-yellow)]"
+                className="block whitespace-nowrap text-[0.62em] font-bold uppercase leading-none tracking-[0.18em] text-(--race-ink)/55 transition-[color,text-shadow] duration-(--duration-exit) data-on:text-(--race-red) data-on:duration-0 data-on:[text-shadow:var(--race-glow-red)]"
               >
                 {s.label}
               </span>
@@ -598,8 +597,8 @@ export function StartKey({ value, onChange, onCrank, label = "Ignition", rehears
               >
                 {/* The light on its face stays above as the key turns. */}
                 <div className="absolute inset-0 rounded-[inherit] [background:linear-gradient(calc(180deg_-_var(--a)),var(--sheen),transparent_60%)]" />
-                {/* The pointer: a yellow line in the bow's tip, lit once the ignition is on. */}
-                <div className="absolute left-1/2 top-[0.6em] h-[2.1em] w-[0.28em] -translate-x-1/2 rounded-full bg-(--race-yellow) transition-shadow duration-(--duration-exit) group-data-[state=on]/s:shadow-(--race-glow-yellow) group-data-[state=running]/s:shadow-(--race-glow-yellow)" />
+                {/* The pointer: a red line in the bow's tip, lit once the ignition is on. */}
+                <div className="absolute left-1/2 top-[0.6em] h-[2.1em] w-[0.28em] -translate-x-1/2 rounded-full bg-(--race-red) transition-shadow duration-(--duration-exit) group-data-[state=on]/s:shadow-(--race-glow-red) group-data-[state=running]/s:shadow-(--race-glow-red)" />
                 <div className="absolute inset-x-[0.9em] bottom-[2.9em] top-[3.4em] rounded-[0.14em] [background:repeating-linear-gradient(to_bottom,var(--grip)_0_1px,var(--grip-hi)_1px_2px,transparent_2px_3.5px)]" />
                 <div className="absolute bottom-[0.8em] left-1/2 size-[1.1em] -translate-x-1/2 rounded-full bg-(--race-well) shadow-[inset_0_1px_2px_rgb(0_0_0/0.9),0_1px_0_rgb(255_255_255/0.12)]" />
               </div>
@@ -709,20 +708,21 @@ export default function Demo() {
 
         {/* The readout: the state as a chip, and the revs. */}
         <div aria-hidden data-part="lcd" className="relative flex h-[4.2em] items-center justify-between overflow-hidden rounded-[0.6em] pl-[1em] pr-[0.9em] [background:var(--race-glass)] shadow-(--race-recess)">
-          <span className="absolute inset-y-[0.7em] left-0 w-[0.22em] rounded-r-full bg-(--race-yellow)" />
+          <span className="absolute inset-y-[0.7em] left-0 w-[0.22em] rounded-r-full bg-(--race-red)" />
           <span
             data-part="chip"
             className={cx(
-              "inline-flex items-center gap-[0.4em] rounded-[0.25em] bg-(--race-yellow) px-[0.5em] py-[0.3em] text-(--race-yellow-ink) transition-shadow duration-(--duration-exit)",
-              value !== "off" && "shadow-(--race-glow-yellow)",
+              "inline-flex items-center gap-[0.4em] rounded-[0.25em] px-[0.5em] py-[0.3em] text-(--race-red-ink) transition-[background-color,box-shadow] duration-(--duration-exit)",
+              value === "running" ? "bg-(--race-red)" : "bg-(--race-red-deep)",
+              value !== "off" && "shadow-(--race-glow-red)",
             )}
           >
             {value === "running" ? (
-              <span className="size-[0.55em] animate-pulse rounded-full bg-(--race-yellow-ink) motion-reduce:animate-none" />
+              <span className="size-[0.55em] animate-pulse rounded-full bg-(--race-red-ink) motion-reduce:animate-none" />
             ) : value === "on" ? (
-              <span className="size-[0.55em] rounded-full bg-(--race-yellow-ink)" />
+              <span className="size-[0.55em] rounded-full bg-(--race-red-ink)" />
             ) : (
-              <span className="size-[0.5em] rounded-[1px] bg-(--race-yellow-ink)" />
+              <span className="size-[0.5em] rounded-[1px] bg-(--race-red-ink)" />
             )}
             <span className="text-[0.6em] font-bold uppercase leading-none tracking-[0.12em]">{chips[value]}</span>
           </span>
