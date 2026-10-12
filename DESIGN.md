@@ -2,19 +2,19 @@
 
 The design language of this gallery: the player on the home page, the studies it runs and the site around them. It is written for designers, engineers and the agents that build here, and it explains the reasons as well as the rules.
 
-The values live in code. `src/design-system/tokens.css` is the source of truth (mirrored for TypeScript in `tokens.ts`); springs are in `src/design-system/motion/spring.ts`, sound in `src/lib/sound.ts`, the player in `src/components/device/`, the studies in `src/registry/components/`. `/studies/system` renders all of it live, in both themes. If this file and the code disagree, the code is right and this file is out of date.
+The values live in code. `src/design-system/tokens.css` is the source of truth (mirrored for TypeScript in `tokens.ts`); springs are in `src/design-system/motion/spring.ts`, sound in `src/lib/sound.ts`, the player in `src/components/device/`, the studies in `src/registry/components/`, the anatomy that takes them apart in `src/components/anatomy/`. `/studies/system` renders all of it live, in both themes. If this file and the code disagree, the code is right and this file is out of date.
 
 ## Ethos
 
 ### The player is an object, not a page
 
-The home page is a player after a field recorder: a near-white body in a black bumper, a full-width screen, wells pressed into the body, keys that sink 2px onto their base, a dial, a tape of waveforms with a red playhead. It is something you could hold, and it runs the studies one at a time.
+The home page is a player after a field recorder: a cool silver body in a machined frame, a full-width screen, wells pressed into the body, keys that sink 2px onto their base, a dial in the body's opposite finish with PLAY at its centre, a tape of waveforms with a red playhead. It is something you could hold, and it runs the studies one at a time.
 
 An object gives every study the same frame and makes polish legible: a lit edge, a recess or a 2px base is either right or it isn't. So a study is a part of the same instrument, built from the same materials, never a card on a screen and never a second player. When a click-wheel player ran inside the player's screen, it competed with it, and it was taken out.
 
 ### It uses an instrument's vocabulary
 
-Takes, the tape, the transport (PLAY, pause, STOP), a slate, detents, HOLD, scenes, automation in READ and TOUCH, `take_04.wav`. An instrument's words arrive with behaviour people already know: STOP rewinds to the first frame, HOLD locks the controls (here, it mutes), a motorized fader lets go when you touch it. The interface needs fewer explanations because the vocabulary carries them.
+Takes, the tape, the transport (PLAY, pause, STOP), a slate, detents, scenes, automation in READ and TOUCH, `take_04.wav`. An instrument's words arrive with behaviour people already know: STOP rewinds to the first frame, a motorized fader lets go when you touch it. The interface needs fewer explanations because the vocabulary carries them.
 
 The vocabulary dresses the demo, not the component. A Fader is a range slider with a real API; its demo plays back a mix.
 
@@ -26,15 +26,17 @@ A hand always wins. A touch ends the ghost for good, a motor lets go of a cap th
 
 ### It makes sound
 
-Every press clicks: a key goes down with a low thock and comes up lighter, the dial ticks once per 15° detent, the end of a list bumps. Sound confirms a press faster than sight, and it makes the hardware believable. Everything is synthesized with Web Audio, so nothing loads; it is quiet and dry, silent until the viewer's first gesture, and the HOLD switch (or M) mutes it.
+Every press clicks: a key goes down with a low thock and comes up lighter, the dial ticks once per 15° detent, the end of a list bumps. Sound confirms a press faster than sight, and it makes the hardware believable. Everything is synthesized with Web Audio, so nothing loads; it is quiet and dry, silent until the viewer's first gesture, and Options › Sound (or M) mutes it.
 
 What a study does by itself asks the player first (the transport rule, under Sound). What the viewer does always sounds.
 
 ### It is restrained
 
-Monochrome, plus red for REC and the playhead, orange for HOLD, and one blue on the screen for selection. Figures are tabular, so a count never shuffles sideways. Grey text, hairlines and one weight change on the page. The work should be the loudest thing here, and when a colour only ever means one thing, it reads at once.
+Monochrome, plus red for REC and the playhead, orange for a hand on it, and one blue on the screen for selection. Figures are tabular, so a count never shuffles sideways. Grey text, hairlines and one weight change on the page. The work should be the loudest thing here, and when a colour only ever means one thing, it reads at once.
 
-Restraint is also subtraction. The player lost its battery icon, timecodes, scanlines, a BACK key and a keyboard legend because each one repeated something the screen, the LCD or the hold switch already said.
+Restraint is also subtraction. The player lost its battery icon, timecodes, scanlines, a BACK key and a keyboard legend because each one repeated something the screen, the LCD or the hold switch already said. Later it lost the file name beside the LCD (the screen names the study), the captions under the transport (▶ and ■ need no words), a maker's window that stood the full height of the deck (it became a nameplate, and then the left end of the LCD: the maker stays quiet inside the readout), the LCD's running clock and level meters (the tape already shows where the playhead is, so the LCD says only the state, the study's name and the take, as a CD player's display does), a FIND key (Find is on Home, and on /), the HOLD switch (Options › Sound and M already muted), the STOP key (hold the dial's centre) and the deck's key row (Menu and Source sit at the screen's top corners, and Options is on Menu). The deck keeps only what plays the tape: the readout (the mark and the LCD on one strip of glass) and the dial. The mark animates only under a mouse: on the deck, nothing moves by itself but the tape and the lights.
+
+It is after a field recorder, not a copy of one, and its finish is after a click-wheel player's: a cool, bead-blasted silver with the dial in black (in dark, graphite with the dial in silver), so the one part the hand works is the one that stands out. Its parts are arranged around what this player does: it runs studies by itself, so PLAY is the largest key on the deck, at the centre of the dial that steps through them. It is printed in the same grey as every other legend. On the body, colour is a signal (the LCD's play dot, the playhead, the window's light), never a way to make a key look important.
 
 ### Physics carry the feel
 
@@ -48,7 +50,7 @@ A hardware metaphor is no excuse for a div. The dial's ring, the tape, a knob an
 
 The audience is product teams and people on X. A study is something teams ship (a command palette, a settings toggle, a 2FA field, a progress bar, notifications, a destructive confirm) built to the player's standard. The hardware is the polish; the product pattern is the subject. These are not music toys.
 
-The craft speaks for itself: no debug overlays, no explanatory chrome, no labels that point at what to admire. Component pages were stripped down to the name for the same reason.
+The craft speaks for itself: no debug overlays, no explanatory chrome, no labels that point at what to admire. Component pages were stripped down to the name for the same reason. The one exception is a study's anatomy (see Anatomy), which names its parts because naming them is its job: it is documentation, on the documentation's pages, one part at a time, and never on the player.
 
 ### The house voice is plain, precise, British-spelled and quiet
 
@@ -56,9 +58,9 @@ Colour, centre, dialled; synthesized, motorized. Numbers carry units and real sy
 
 ## Materials
 
-The player is built from a few materials, each a small group of `--device-*` tokens with a light and a dark value. Studies use the same tokens, so a study reads as a part of the same object in either theme. The dark player is a charcoal body, not an inverted one: its keys are lighter than the plate, its engraving casts the other way.
+The player is built from a few materials, each a small group of `--device-*` tokens with a light and a dark value. Studies use the same tokens, so a study reads as a part of the same object in either theme. The greys are cool, a little blue, as anodized aluminium is. The dark player is a graphite body, not an inverted one: its keys are lighter than the plate, its engraving casts the other way, and its dial turns silver, so it still stands apart from the body.
 
-They combine in one order: **plate, then well, then part**. Wells are pressed into the plate; keys, LCDs, windows and collars sit in wells; caps sit in collars. Screens sit behind a bumper or a bezel. Everything on a plate is sized in em from the plate's one font size, so the object scales as one piece, and radii nest as they go in: plate 1.25em, well 1.05em, key or LCD 0.7em, chip 0.4em.
+They combine in one order: **plate, then well, then part**. Wells are pressed into the plate; keys, LCDs, windows and collars sit in wells; caps sit in collars. The player sits in a frame; a second screen, LCD cells and dot-matrix strips sit behind a black bezel. Everything on a plate is sized in em from the plate's one font size, so the object scales as one piece, and radii nest as they go in: plate 1.25em, well 1.05em, key or LCD 0.7em, chip 0.4em.
 
 ### Plate
 
@@ -66,9 +68,9 @@ The body's bead-blasted finish: a vertical gradient, a lit top edge, and fine no
 
 | Token | Light | Dark |
 | --- | --- | --- |
-| `--device-body` | `linear-gradient(180deg, #f7f7f6 0%, #f2f2f1 55%, #ecebea 100%)` | `linear-gradient(180deg, #262628 0%, #212123 55%, #1b1b1d 100%)` |
-| `--device-body-edge` | `inset 0 1px 0 rgb(255 255 255 / 0.95), inset 0 0 0 1px rgb(0 0 0 / 0.05)` | `inset 0 1px 0 rgb(255 255 255 / 0.08), inset 0 0 0 1px rgb(255 255 255 / 0.02)` |
-| `--device-body-shadow` | `0 1px 2px rgb(0 0 0 / 0.08), 0 18px 36px -18px rgb(0 0 0 / 0.24), 0 60px 100px -50px rgb(0 0 0 / 0.34)` | `0 1px 2px rgb(0 0 0 / 0.5), 0 18px 36px -18px rgb(0 0 0 / 0.7), 0 60px 100px -50px rgb(0 0 0 / 0.9)` |
+| `--device-body` | `linear-gradient(180deg, #d9dce0 0%, #cdd0d5 55%, #c0c3c9 100%)` | `linear-gradient(180deg, #36383d 0%, #2f3135 55%, #282a2e 100%)` |
+| `--device-body-edge` | `inset 0 1px 0 rgb(255 255 255 / 0.75), inset 0 0 0 1px rgb(0 0 0 / 0.06)` | `inset 0 1px 0 rgb(255 255 255 / 0.09), inset 0 0 0 1px rgb(255 255 255 / 0.02)` |
+| `--device-body-shadow` | `0 1px 2px rgb(0 0 0 / 0.1), 0 18px 36px -18px rgb(0 0 0 / 0.28), 0 60px 100px -50px rgb(0 0 0 / 0.38)` | `0 1px 2px rgb(0 0 0 / 0.5), 0 18px 36px -18px rgb(0 0 0 / 0.7), 0 60px 100px -50px rgb(0 0 0 / 0.9)` |
 | `--device-grain` | `0.3` | `0.3` |
 
 Grain is `.device-grain` (in `globals.css`): a 160px tile of SVG `feTurbulence` noise (`baseFrequency 0.9`, two octaves, desaturated), blended `soft-light` at `--device-grain`. It goes on the plate only, as an absolutely positioned layer behind the content. `--device-body-shadow` is the player's own deep shadow; a study's plate takes a lighter one, the same in both themes.
@@ -84,9 +86,16 @@ Every study starts here:
 </div>
 ```
 
-### Bumper and bezel
+### Frame and bezel
 
-Black, with a polished edge catching the light. The bumper frames the player (`rounded-[34px] p-[5px]`, 46px and 8px on wide decks) and, at `rounded-[1.5em] p-[0.4em]`, a second screen such as the Command Menu, which shows the site's own ground under glass. A bezel is the same black around LCD cells and dot-matrix strips, set into the plate: `bg-(--device-rim) p-[0.3em]` with `shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)]` (the highlight drops to 0.06 in dark).
+The frame is machined: a band a shade darker than the body in light (lighter in dark, so it still catches the light), lit along its top edge. It holds the player (`rounded-[34px] p-[5px]`, 46px and 8px on wide decks). The player is as tall as the window and 80% of its width, between 864px and 1200px (`max-w-[min(1200px,max(864px,80vw))]`), so narrower windows give it their whole width and a wide monitor leaves it an object on the desk, not a wall. It replaced a black bumper, whose stark outline round a white body was the most recognisable thing about the recorder it came from.
+
+| Token | Light | Dark |
+| --- | --- | --- |
+| `--device-frame` | `linear-gradient(180deg, #c6c9ce 0%, #b9bcc2 55%, #adb0b6 100%)` | `linear-gradient(180deg, #484a4f 0%, #3d3f44 55%, #34363a 100%)` |
+| `--device-frame-edge` | `inset 0 1px 0 rgb(255 255 255 / 0.7), inset 0 0 0 1px rgb(0 0 0 / 0.08), 0 0 0 0.5px rgb(0 0 0 / 0.16)` | `inset 0 1px 0 rgb(255 255 255 / 0.14), inset 0 0 0 1px rgb(0 0 0 / 0.5), 0 0 0 0.5px rgb(0 0 0 / 0.8)` |
+
+A bezel is black, with a polished edge catching the light: round a second screen such as the Command Menu (`rounded-[1.5em] p-[0.4em]`), which shows the site's own ground under glass, and round LCD cells and dot-matrix strips set into the plate: `bg-(--device-rim) p-[0.3em]` with `shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)]` (the highlight drops to 0.06 in dark).
 
 | Token | Light | Dark |
 | --- | --- | --- |
@@ -95,12 +104,12 @@ Black, with a polished edge catching the light. The bumper frames the player (`r
 
 ### Well
 
-Anything pressed into the plate: the readout, the key row, a fader's slot, the window's recess. `rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess)`. A collar is a round well, `bg-black/[0.035]` (`dark:bg-black/30`) with the same recess.
+Anything pressed into the plate: the readout, a fader's slot, the window's recess. `rounded-[1.05em] bg-(--device-well) p-[0.4em] shadow-(--device-recess)`. A collar is a round well, `bg-black/[0.035]` (`dark:bg-black/30`) with the same recess.
 
 | Token | Light | Dark |
 | --- | --- | --- |
-| `--device-well` | `#e9e9e8` | `#18181a` |
-| `--device-recess` | `inset 0 1px 2px rgb(0 0 0 / 0.08), inset 0 0 0 1px rgb(0 0 0 / 0.035), 0 1px 0 rgb(255 255 255 / 0.9)` | `inset 0 1px 2px rgb(0 0 0 / 0.6), inset 0 0 0 1px rgb(0 0 0 / 0.35), 0 1px 0 rgb(255 255 255 / 0.05)` |
+| `--device-well` | `#c2c5cb` | `#1d1e22` |
+| `--device-recess` | `inset 0 1px 2px rgb(0 0 0 / 0.12), inset 0 0 0 1px rgb(0 0 0 / 0.05), 0 1px 0 rgb(255 255 255 / 0.55)` | `inset 0 1px 2px rgb(0 0 0 / 0.6), inset 0 0 0 1px rgb(0 0 0 / 0.35), 0 1px 0 rgb(255 255 255 / 0.05)` |
 
 ### Key
 
@@ -108,10 +117,10 @@ A raised key on a 2px base. Pressed, the face moves down 2px and the base collap
 
 | Token | Light | Dark |
 | --- | --- | --- |
-| `--device-key-face` | `linear-gradient(#ffffff, #f3f3f2)` | `linear-gradient(#3d3d3f, #323234)` |
-| `--device-key-ink` | `#2e2e2d` (12.2:1 on the face) | `#e2e2e4` (8.4:1) |
-| `--device-key-shadow` | `inset 0 1px 0 #ffffff, inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.1), 0 2px 0 0 #cbcbc8, 0 5px 12px -4px rgb(0 0 0 / 0.16)` | `inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.75), 0 2px 0 0 #0d0d0e, 0 5px 12px -4px rgb(0 0 0 / 0.7)` |
-| `--device-key-shadow-pressed` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.1), 0 0 0 1px rgb(0 0 0 / 0.12), 0 0 0 0 #cbcbc8, 0 1px 2px -1px rgb(0 0 0 / 0.12)` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(0 0 0 / 0.75), 0 0 0 0 #0d0d0e, 0 1px 1px -1px rgb(0 0 0 / 0.5)` |
+| `--device-key-face` | `linear-gradient(#fbfbfc, #eceef1)` | `linear-gradient(#45474c, #3a3c41)` |
+| `--device-key-ink` | `#2a2c31` (12:1 on the face) | `#e3e5e9` (8.8:1) |
+| `--device-key-shadow` | `inset 0 1px 0 #ffffff, inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.14), 0 2px 0 0 #a3a7ae, 0 5px 12px -4px rgb(0 0 0 / 0.2)` | `inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.75), 0 2px 0 0 #0d0d0e, 0 5px 12px -4px rgb(0 0 0 / 0.7)` |
+| `--device-key-shadow-pressed` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.12), 0 0 0 1px rgb(0 0 0 / 0.16), 0 0 0 0 #a3a7ae, 0 1px 2px -1px rgb(0 0 0 / 0.14)` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(0 0 0 / 0.75), 0 0 0 0 #0d0d0e, 0 1px 1px -1px rgb(0 0 0 / 0.5)` |
 
 ```tsx
 <button type="button" data-sound="key" className="group/key rounded-[0.7em] outline-offset-2">
@@ -127,13 +136,29 @@ The site's own buttons are keys too, from the `--key-*` tokens: 2px corners, a l
 
 ### Cap and collar
 
-Round caps and the dial, lit from above. A transport key is a cap seated in a collar (`size-[5.4em] p-[0.32em]`), its caption printed underneath. The cap uses `--device-wheel-face` with the key shadows, so it sinks like a key. The dial uses the wheel shadows and rocks 5° toward the side pressed (`perspective(600px) translateY(1.5px) rotateX(±5deg)`), its centre a key of its own dropping 2px into a well. A knob's cap carries knurling, `repeating-conic-gradient(from var(--a), …)`, so it turns without a transform.
+Round caps, lit from above. A cap seated in a collar (`size-[5.4em] p-[0.32em]`) uses `--device-wheel-face` with the key shadows, so it sinks like a key; a caption, when it has one, is printed underneath. The player's dial is the one round part in the body's opposite finish (its tokens are below). It is a D-pad in a collar, that also turns, and rocks 5° toward the side pressed (`perspective(600px) translateY(1.5px) rotateX(±5deg)`). Its arrows are four small solid triangles, the size of a legend, pointing the way the arrow keys they stand for do. Its centre is the deck's main key, dropping 2px into a well cut through the dial: PLAY or pause on a take, OK on a list, printed in the dial's grey. Held for 600ms on a take, the centre is STOP: a ring in its well fills over those 600ms (a press's timing, so a linear duration, not a spring), STOP fires while the finger is still down, and letting go does nothing more. Letting go sooner is an ordinary press. S stops from the keyboard. A knob's cap carries knurling, `repeating-conic-gradient(from var(--a), …)`, so it turns without a transform.
 
 | Token | Light | Dark |
 | --- | --- | --- |
-| `--device-wheel-face` | `radial-gradient(120% 120% at 50% 0%, #ffffff 0%, #f7f7f6 55%, #eeeeed 100%)` | `radial-gradient(120% 120% at 50% 0%, #3f3f41 0%, #363638 55%, #2e2e30 100%)` |
-| `--device-wheel-shadow` | `inset 0 1.5px 0 #ffffff, inset 0 -3px 8px rgb(0 0 0 / 0.03), 0 0 0 1px rgb(0 0 0 / 0.09), 0 2px 0 0 #d2d2cf, 0 12px 28px -12px rgb(0 0 0 / 0.26)` | `inset 0 1.5px 0 rgb(255 255 255 / 0.12), inset 0 -3px 8px rgb(0 0 0 / 0.2), 0 0 0 1px rgb(0 0 0 / 0.75), 0 2px 0 0 #0d0d0e, 0 12px 28px -12px rgb(0 0 0 / 0.8)` |
-| `--device-wheel-shadow-pressed` | `inset 0 1.5px 0 rgb(255 255 255 / 0.7), inset 0 -3px 8px rgb(0 0 0 / 0.05), 0 0 0 1px rgb(0 0 0 / 0.11), 0 0.5px 0 0 #d2d2cf, 0 4px 10px -6px rgb(0 0 0 / 0.22)` | `inset 0 1.5px 0 rgb(255 255 255 / 0.06), inset 0 -3px 8px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.75), 0 0.5px 0 0 #0d0d0e, 0 4px 10px -6px rgb(0 0 0 / 0.7)` |
+| `--device-wheel-face` | `radial-gradient(120% 120% at 50% 0%, #ffffff 0%, #f3f4f6 55%, #e6e8ec 100%)` | `radial-gradient(120% 120% at 50% 0%, #46484d 0%, #3c3e43 55%, #34363a 100%)` |
+| `--device-wheel-shadow` | `inset 0 1.5px 0 #ffffff, inset 0 -3px 8px rgb(0 0 0 / 0.04), 0 0 0 1px rgb(0 0 0 / 0.12), 0 2px 0 0 #a8acb3, 0 12px 28px -12px rgb(0 0 0 / 0.3)` | `inset 0 1.5px 0 rgb(255 255 255 / 0.12), inset 0 -3px 8px rgb(0 0 0 / 0.2), 0 0 0 1px rgb(0 0 0 / 0.75), 0 2px 0 0 #0d0d0e, 0 12px 28px -12px rgb(0 0 0 / 0.8)` |
+| `--device-wheel-shadow-pressed` | `inset 0 1.5px 0 rgb(255 255 255 / 0.7), inset 0 -3px 8px rgb(0 0 0 / 0.06), 0 0 0 1px rgb(0 0 0 / 0.14), 0 0.5px 0 0 #a8acb3, 0 4px 10px -6px rgb(0 0 0 / 0.26)` | `inset 0 1.5px 0 rgb(255 255 255 / 0.06), inset 0 -3px 8px rgb(0 0 0 / 0.25), 0 0 0 1px rgb(0 0 0 / 0.75), 0 0.5px 0 0 #0d0d0e, 0 4px 10px -6px rgb(0 0 0 / 0.7)` |
+
+The dial: the body's opposite, as a click wheel is: black on the silver body, a near-white silver on the graphite one. It keeps its own recess, engraving and the light that trails the finger, because the body's would light it the wrong way (a white lip under black glass, a black one on silver), and studies' caps keep `--device-wheel-*`.
+
+| Token | Light | Dark |
+| --- | --- | --- |
+| `--device-dial-face` | `radial-gradient(120% 120% at 50% 0%, #2c2e33 0%, #1b1c20 55%, #111215 100%)` | `radial-gradient(120% 120% at 50% 0%, #fafbfc 0%, #e6e8eb 55%, #d6d9dd 100%)` |
+| `--device-dial-shadow` | `inset 0 1.5px 0 rgb(255 255 255 / 0.14), inset 0 -3px 8px rgb(0 0 0 / 0.4), 0 0 0 1px rgb(0 0 0 / 0.6), 0 2px 0 0 #08090a, 0 12px 28px -12px rgb(0 0 0 / 0.5)` | `inset 0 1.5px 0 #ffffff, inset 0 -3px 8px rgb(0 0 0 / 0.1), 0 0 0 1px rgb(0 0 0 / 0.6), 0 2px 0 0 #0f1012, 0 12px 28px -12px rgb(0 0 0 / 0.85)` |
+| `--device-dial-shadow-pressed` | `inset 0 1.5px 0 rgb(255 255 255 / 0.08), inset 0 -3px 8px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(0 0 0 / 0.6), 0 0.5px 0 0 #08090a, 0 4px 10px -6px rgb(0 0 0 / 0.45)` | `inset 0 1.5px 0 rgb(255 255 255 / 0.6), inset 0 -3px 8px rgb(0 0 0 / 0.14), 0 0 0 1px rgb(0 0 0 / 0.6), 0 0.5px 0 0 #0f1012, 0 4px 10px -6px rgb(0 0 0 / 0.75)` |
+| `--device-dial-recess` | `inset 0 1px 3px rgb(0 0 0 / 0.75), inset 0 0 0 1px rgb(0 0 0 / 0.5), 0 1px 0 rgb(255 255 255 / 0.08)` | `inset 0 1px 2px rgb(0 0 0 / 0.2), inset 0 0 0 1px rgb(0 0 0 / 0.07), 0 1px 0 rgb(255 255 255 / 0.75)` |
+| `--device-dial-key-face` | `radial-gradient(120% 120% at 50% 0%, #26282c 0%, #1a1b1f 60%, #141518 100%)` | `radial-gradient(120% 120% at 50% 0%, #ffffff 0%, #f3f4f6 60%, #e7e9ec 100%)` |
+| `--device-dial-key-shadow` | `inset 0 1px 0 rgb(255 255 255 / 0.12), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.8), 0 2px 0 0 #050506, 0 5px 12px -4px rgb(0 0 0 / 0.6)` | `inset 0 1px 0 #ffffff, inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.16), 0 2px 0 0 #a2a6ad, 0 5px 12px -4px rgb(0 0 0 / 0.3)` |
+| `--device-dial-key-shadow-pressed` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.7), 0 0 0 1px rgb(0 0 0 / 0.8), 0 0 0 0 #050506, 0 1px 1px -1px rgb(0 0 0 / 0.5)` | `inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.14), 0 0 0 1px rgb(0 0 0 / 0.18), 0 0 0 0 #a2a6ad, 0 1px 2px -1px rgb(0 0 0 / 0.18)` |
+| `--device-dial-ink` | `#d4d6db` (11.7:1 on the face) | `#2a2c31` (11.4:1) |
+| `--device-dial-trail` | `rgb(255 255 255 / 0.1)` | `rgb(0 0 0 / 0.07)` |
+| `--device-dial-engrave` | `0 -1px 0 rgb(0 0 0 / 0.85)` | `0 1px 0 rgb(255 255 255 / 0.8)` |
+| `--device-dial-engrave-glyph` | `drop-shadow(0 -1px 0 rgb(0 0 0 / 0.85))` | `drop-shadow(0 1px 0 rgb(255 255 255 / 0.8))` |
 
 ### LCD
 
@@ -147,12 +172,13 @@ Black glass with a diagonal sheen: the gradient breaks hard at 47%, where the li
 | `--device-lcd-dim` | `rgb(255 255 255 / 0.64)` (6.6:1) | `rgb(255 255 255 / 0.62)` (7.5:1) |
 
 - **The chip** is `bg-white text-black rounded-[0.4em] px-[0.42em] py-[0.24em]`, a glyph and a word at 0.58 to 0.6em, semibold capitals tracked 0.02em. The glyph says the state before the word does: a red dot that pulses for play, record or recall; two bars for pause; a square for stop; a black dot for ready or loaded; an orange dot for a hand on it (TOUCH, edited) or a hand needed (an agent waiting for your OK); a red square for a fault (an agent's error), the stop's shape so it never reads as a run.
-- **Figures** are light (300), tabular, tracked −0.03em; units at 0.3em in `--device-lcd-dim`. The player's clock reads minutes, seconds and frames at 25 fps (`00M 14S 06F`).
+- **Figures** are light (300), tabular, tracked −0.03em; units at 0.3em in `--device-lcd-dim`. The player's LCD shows the study's name at 1.05em under the chip and the take as a track number (`05 / 22`); a clock, where a study has one, reads minutes, seconds and frames at 25 fps (`00M 14S 06F`).
 - **Other faces of the same glass:** seven-segment cells over the faint 8 of their unlit segments (One-Time Code), and a dot matrix with ghost dots at 8% (Ticker).
+- **A cover** is a study's artwork: its take's waveform, the same seeded signature the tape prints, at nine bold bars in `--device-lcd-ink` on a 6px tile of the glass. Levels are lifted by their square root so quiet bars still draw at 34px. Covers start the rows in Find and head the info sheet; on Home, the cover of the take on the tape stands behind the menu at about 6%, fading out towards the words.
 
 ### Window
 
-Smoked glass set deeper than the LCD: the maker's window where the Litt mark glows, and the Tape Reels' transport. A fine grille behind the glass (`radial-gradient(rgb(255 255 255/0.07) 0.7px, transparent 0.9px)` at 5px), a lamp's falloff, and a sheen over the top. Artwork that is black on white is inverted and screened onto it (`invert(1) contrast(1.25)`, `mix-blend-screen`), so the ink glows and the paper disappears.
+Smoked glass set deeper than the LCD: the Tape Reels' transport. The player's Litt mark glows on the same terms at the left end of its readout's LCD, divided from the chip and the take by a hairline (`border-white/[0.08]`); on phones the readout is only the mark, with a red light that comes on while the tape plays. It rests on the brush-drawn poster and plays the mark's film only while a mouse or pen is over the readout, from the top each time; touch and reduced motion keep it still. A fine grille behind the glass (`radial-gradient(rgb(255 255 255/0.07) 0.7px, transparent 0.9px)` at 5px), a lamp's falloff, and a sheen over the top. Artwork that is black on white is inverted and screened onto it (`invert(1) contrast(1.25)`, `mix-blend-screen`), so the ink glows and the paper disappears.
 
 | Token | Light | Dark |
 | --- | --- | --- |
@@ -163,10 +189,10 @@ Smoked glass set deeper than the LCD: the maker's window where the Litt mark glo
 
 | Token | Light | Dark | Means |
 | --- | --- | --- | --- |
-| `--device-meter-off` | `rgb(0 0 0 / 0.13)` | `rgb(255 255 255 / 0.13)` | Unlit: a segment, a step, a light that's off |
-| `--device-meter-on` | `#262625` | `#e8e8ea` | Lit, without a signal: meter bars, a knob's ring, a step that's set |
+| `--device-meter-off` | `rgb(0 0 0 / 0.15)` | `rgb(255 255 255 / 0.13)` |
+| `--device-meter-on` | `#25272b` | `#e6e8ec` | Lit, without a signal: meter bars, a knob's ring, a step that's set |
 | `--device-rec` | `#e5484d` | `#ff5c62` | REC, PLAY, the playhead, a light that fires, a wrong code |
-| `--device-hold` | `#ff7a1a` | `#ff8a33` | HOLD, a hand on a motor, an edited scene, a switch that's on |
+| `--device-hold` | `#ff7a1a` | `#ff8a33` | A hand on a motor, an edited scene, a switch that's on |
 
 A signal light glows in its own colour (`shadow-[0_0_0.45em_var(--device-rec)]`); a lit segment does not. A light sits in a small recess, `bg-black/[0.05] shadow-(--device-recess)`. It comes on at once (`duration-0`) and fades out at `--duration-exit`. The meters are `.meter-ticks` (1px bars every 3px) clipped to the level, with a 2px peak mark that holds 900ms before it falls. Orange on the light plate is 2.3:1: it is a light beside a word, never text.
 
@@ -176,10 +202,10 @@ Tiny tracked capitals printed on the body, with a 1px highlight on the side away
 
 | Token | Light | Dark |
 | --- | --- | --- |
-| `--device-label` | `#3b3b3a` (10:1 on the plate) | `#c6c6c8` (9.4:1) |
-| `--device-label-quiet` | `#8b8b89` (3:1) | `#7a7a7c` (3.7:1) |
-| `--device-engrave` | `0 1px 0 rgb(255 255 255 / 0.9)` | `0 -1px 0 rgb(0 0 0 / 0.8)` |
-| `--device-engrave-glyph` | `drop-shadow(0 1px 0 rgb(255 255 255 / 0.9))` | `drop-shadow(0 -1px 0 rgb(0 0 0 / 0.8))` |
+| `--device-label` | `#2e3035` (8.5:1 on the plate) | `#c8cbd0` (8:1) |
+| `--device-label-quiet` | `#676a70` (3.5:1) | `#7e8187` (3.3:1) |
+| `--device-engrave` | `0 1px 0 rgb(255 255 255 / 0.55)` | `0 -1px 0 rgb(0 0 0 / 0.8)` |
+| `--device-engrave-glyph` | `drop-shadow(0 1px 0 rgb(255 255 255 / 0.55))` | `drop-shadow(0 -1px 0 rgb(0 0 0 / 0.8))` |
 
 Engraved captions are 0.6em, semibold, uppercase, tracked 0.16em (0.14em on longer rows); 9px on the player's deck. Use `--device-label` for anything someone needs to read and `--device-label-quiet` for legends that repeat what is said elsewhere (it is about 3:1). The `-glyph` form is a filter, for SVG icons, which `text-shadow` skips.
 
@@ -216,6 +242,8 @@ Neutral grounds, three text greys, one accent. Every token has a light and a dar
 
 Colour is never decoration. On the body the signals are red (`--device-rec`) and orange (`--device-hold`); everything else that lights is monochrome. Blue belongs to screens and pages: the highlight bar, a caret, a status dot. Colours that must be told apart differ in lightness as well as hue.
 
+Artwork behind a screen's glass is the one exception: a project's cover (Gradient Keys) carries its own palette, the same in both themes, kept clear of red, orange and the accent so it never reads as a signal. It is the work, not the interface, so it may be the loudest thing on the plate.
+
 ### Type
 
 Geist for everything and Geist Mono for code and the page's figures, loaded through `next/font/google` as variable fonts (`--font-geist-sans`, `--font-geist-mono`). OG images use the static `src/assets/fonts/Geist-400.ttf` and `Geist-500.ttf`.
@@ -235,7 +263,7 @@ Small sizes, tight tracking, weights 400 and 500 on the page. The hardware adds 
 | Engraved caption | 0.6em (9px on the deck) | 600 | Capitals, 0.16em |
 | Key lettering | 0.8em | 500 | Capitals, 0.03em |
 | LCD chip | 0.58 to 0.6em | 600 | Capitals, 0.02em |
-| LCD figures | 1.05em for a name, 2.35em for the clock | 300 | Tabular, −0.01 to −0.03em |
+| LCD figures | 1.05em for a name, 1.9em for the take number, 2.35em for a clock | 300 | Tabular, −0.01 to −0.03em |
 
 Every figure that changes is `tabular-nums`, on the screen and on the hardware.
 
@@ -256,7 +284,7 @@ On the page, objects get a ring, not a box: `shadow-sm`, `shadow-md` and `shadow
 | `--ease-out` | `cubic-bezier(0.23, 1, 0.32, 1)` | Default for anything entering or responding to input |
 | `--ease-in-out` | `cubic-bezier(0.77, 0, 0.175, 1)` | Things moving on screen from A to B |
 | `--ease-drawer` | `cubic-bezier(0.32, 0.72, 0, 1)` | Sheets and drawers |
-| `--ease-spring` | `cubic-bezier(0.34, 1.36, 0.64, 1)` | A small overshoot for playful returns (the HOLD switch's cap) |
+| `--ease-spring` | `cubic-bezier(0.34, 1.36, 0.64, 1)` | A small overshoot for playful returns |
 | `--duration-exit` | 150ms | Leaving, closing, hover-out, a key coming back up |
 | `--duration-enter` | 210ms | Appearing, opening, hover-in |
 | `--duration-move` | 400ms | Layout and position changes |
@@ -295,6 +323,7 @@ A study may tune its own spring for its mechanism, as below, and run it in the u
 - **VU ballistics** (VU Meter). 99% of a steady tone in about 300ms with about 1.5% overshoot (stiffness 166, damping 20.2). A detector with a 60ms release ahead of the spring lets a key press swing the needle toward 0 without pinning it, as a real VU under-reads transients; the peak light holds 600ms past +3 VU. The scale is linear in voltage, 0 VU seven tenths of the way across, calibrated to the slate tone leaving the bus.
 - **Counter drums** (Number Ticker). Each drum turns on its own spring (150, 21) and clicks for each figure that passes. Counting up, drums roll forward through 9 to 0 as a mechanical counter carries; counting down, they roll back. They mount at 0 and roll on the first frame.
 - **The highlight bar** (the player's lists, Command Menu). A second copy of the rows in accent and white, clipped to the selection by a `springs.snappy` spring, so it glides between rows and the text changes colour exactly where the bar is.
+- **The menu dot** (Home). Home is a player's top menu: tracked capitals in grey, the chosen row in ink, and a blue dot hung in the margin beside it, riding the same spring as the bar. The words line up with the text above; the dot sits outside them.
 - **Meters.** Bars fall at 26 dB a second; the peak mark holds 900ms, then falls at 12 dB a second.
 
 ## Sound
@@ -357,12 +386,51 @@ const sound = (name: SoundName) => {
 
 A study that runs a long show (automation, a sequencer) can watch the host's attribute with a `MutationObserver` and start when the tape does.
 
+## Anatomy
+
+A study's page can take it apart. The Anatomy key, beside Replay, latches down; the study restarts, and comes apart while it runs, in floors, one for each kind of part it is built from: the plate at the bottom, then its wells and collars, its LCDs, keys and caps, its lights and chips, and the lettering on top. Pointing at a floor picks it. It rises a little above the rest, takes the hand's orange, stands on dashed risers down to what each piece sits on, and one line under the stage names it, the tokens that draw it and why it looks the way it does. Untouched, it walks down the stack once, 1.6 s a floor.
+
+It is the materials, shown working: plate, then well, then part. A knob's cap lifts out of its collar with the knurling still turning, a one-time code's cells rise off the bezel while the ghost is still typing, and Gradient Keys' long exposures keep streaming under glass that floats above them.
+
+### Two finishes
+
+It opens as a **technical drawing** of the live study, and a Finish switch beside Spread shows it in its **materials**. Closing, it comes back together in its materials, whichever finish it was in.
+
+The drawing is a drafter's view of the same object, and the same markup, so it still turns, types and clicks:
+
+- Every part is an opaque plane of the canvas, so upper floors hide lower ones, with a 1px hairline in `--device-draw-line` round it and its lettering in `--device-draw-ink`. No gradients, glows, shadows, grain or engraving.
+- Glass stays clear, its edge dashed, as a drafter marks a transparent surface. Canvases and screens keep their motion, quietened.
+- The picked floor is washed in the hand's orange, on its orange risers. Orange means nothing else in the drawing: where a study's own state is orange (a switch that is on, a fader in Touch), it is drawn in ink.
+- A lit light is filled with ink and an unlit one is a hairline ring; red stays only for a light that fires, records or errs.
+- Whatever a part paints inside itself is cleared, and each study draws back what carries its mechanism with the `drawn:` variant, as it would with `dark:`: a knob's pointer and knurling, a fader's scale, lit segments, a needle, a drum's figures. The drawing's own rules are `!important`, so a study's win with Tailwind's `!`: `drawn:bg-(--device-draw-ink)!`. Whatever moves in the materials moves in the drawing.
+
+### How it works
+
+- **The page's structure is the anatomy.** A study marks each part with `data-part="<kind>"`, and nothing is drawn twice. The kinds are the materials (`plate`, `well`, `collar`, `key`, `cap`, `lcd`, `window`, `bezel`, `slot`, `chip`, `light`, `lettering`) and a few particular ones (`face`, `glass`, `drum`, `reel`, `tape`, `matrix`, `screen`); each has its name, its tokens and its one line in `src/components/anatomy/parts.ts`. A study's entry in `src/registry/anatomy.ts` says what is particular to its own parts, and is what gives its page the key. The attribute does nothing anywhere else, so a study stays one file anyone can copy.
+- **Real 3D.** The camera tilts the scene isometric (54.74° back and 45° round, the angles Agent Shapes uses) and each part lifts by `translateZ`, by the floors between it and the part it sits on. The transforms nest, so heights add up, and the browser sorts the parts by their true depth: a cap lifted above an LCD paints over it wherever the two cross, which no stacking order in 2D can do.
+- **Nothing on the path may flatten.** Overflow, isolation, filters, opacity, clips and blends turn everything under them into one plane, silently. While a study is apart, `globals.css` opens overflow and isolation along the path from the scene down to each part (one `:has()` rule) and nowhere else, and takes the animations and blends off it: the plate's entrance holds `blur(0)` after it ends, and the grain's `soft-light` isolates the plate. Both flattened the first attempt. A part with nothing marked inside it still clips, as one plane.
+- **The anatomy owns `transform`.** A part that moves rides on `translate`, `rotate` or `scale`, which compose with the anatomy's lift: the Switch's and the Fader's caps do.
+- **Springs.** The camera's tilt and the spread run on `springs.gentle`, the picked floor's lift on `springs.snappy`, all written to CSS variables. The spread clicks every 5%, as a detent does.
+- **A parallel projection needs cues.** A plane lifted straight up, with no shadow, looks much like one lying further back. So the floors stand far enough apart to read, and the picked one has its risers and its orange.
+- **The hand works the anatomy, not the study.** While apart the study is inert: its drags read on-screen boxes that a tilted camera would get wrong. Pointing picks a floor, a sideways drag spreads them, and the keys are a listbox (↑ ↓ pick, ← → spread in 5% steps, Escape closes and hands focus back to the key). Reduced motion jumps, and never walks.
+
+### Marking a study's parts
+
+- Mark the element that draws the material: the key's button (its face sinks inside it), the collar, the cap seated in it, the LCD, the chip on the LCD, the light, the lettering.
+- A part is never `display: inline` (transforms skip it) and never moves by its own `transform`.
+- Taken apart, a wrapper on the path to a part keeps its 3D, and that makes it the containing block of whatever is absolutely positioned inside it. Give such a wrapper the box its children are placed in (`absolute inset-0`, or `relative`), or a slot stretched top to bottom inside a wrapper with no height of its own collapses, as the Fader's did.
+- Keep filters, opacity, clips and blends off the path from the plate to a part. A part with nothing marked inside it may use them: it is one plane already.
+- An SVG part is picked by what it draws and lit along its strokes, so a ring of lights can be one part.
+- A canvas that reads its colour from the page once, at mount, reads a token (`--device-lcd-ink`), not its computed `color`: the study may mount already taken apart and drawn, and would keep the drawing's ink after it closes. Dither Card pins its canvas's colour with `drawn:` for this reason.
+- Draw it back in the drawing with `drawn:` classes in the study's own file: the mechanism as line work, lit lights in ink, unlit ones as hairlines. Look at it in both finishes, both themes.
+- `npm run check:anatomy` takes every listed study apart at 375 and 1280 px, spread all the way, drawn and in its materials, and fails on anything that would flatten it, a part with its own transform or an unknown kind, anything whose layout moves when it comes apart, or a part that spills off the stage.
+
 ## Writing
 
 Plain, precise, British-spelled and quiet. Write it the way you would say it to someone at the next desk.
 
 - **Sentence case everywhere.** "Selected work", not "SELECTED WORK" or "Selected Work".
-- **Capitals belong to the hardware.** Lettering on the body is set in capitals by CSS (`uppercase`, tracked); the source, the accessible name and the screen reader keep sentence case: `Hold to erase`.
+- **Capitals belong to the hardware.** Lettering on the body is set in capitals by CSS (`uppercase`, tracked); the source, the accessible name and the screen reader keep sentence case: `Hold to erase`. On the screen, capitals are kept to a firmware's menu (Home) and to small eyebrows and counts (`02 / 22 · ai`, `22 studies`); the status line and everything you read along stay in the page's sentence case.
 - **Labels say what happens.** "Copy command", then "Copied". Not "Submit" or "OK".
 - **British spelling, with -ize.** Colour, centre, dialled, travelling, favouring; but synthesized, motorized, organizing (Oxford spelling). A meter is the instrument; CSS keeps its own `color` and `center`.
 - **Say it once.** If the screen already says it, the LCD doesn't. Repeats are taken out, not restyled.
@@ -378,7 +446,7 @@ What every study meets before it goes on the player. The player gives it a few s
 
 1. **It moves in its first four seconds, untouched.** A rehearsal, a recall, a ghost typing, automation playing back, a self-test, drums rolling from 0. The starting state is never still for more than about half a second. Then it rewards the hand.
 2. **It fits a 282 × 332 box.** That is the smallest stage it gets (the player's floor zoom on a phone, less the stage's padding); the capture frame is 702 × 374. Size to the container, never the viewport: a root `@container w-full max-w-[…px]`, a `cqw`-clamped font size on its child (`text-[clamp(11px,4cqw,14px)]`), everything else in em, `@[26rem]:` for wider containers. Touch targets 24px or more. `npm run check:fit` loads every component page, the player's screen and the capture frame at six widths and fails if anything spills.
-3. **It is built from the materials.** A plate of the body's finish with wells, keys, caps, an LCD and lights. Never a second player, never a flat `shadow-md` card. Both themes look intentional.
+3. **It is built from the materials, and marks them.** A plate of the body's finish with wells, keys, caps, an LCD and lights. Never a second player, never a flat `shadow-md` card. Both themes look intentional. Each part carries `data-part` with its kind, so its page can take it apart (see Anatomy).
 4. **It sounds through `play()`.** Existing sounds only, varied with pitch and gain. Its own sounds follow the transport rule; the viewer's input always sounds. Keys can carry `data-sound="key"` for press and release.
 5. **It turns without transforms.** A rotating part spills its stage when its corners turn, so rotation is `conic-gradient(from var(--a))` or SVG attributes, or a transform inside an `overflow-hidden` wrapper.
 6. **It rounds its trigonometry.** Coordinates rendered on the server are rounded to two decimals (`Math.round(v * 100) / 100` or `toFixed(2)`), so the browser's `Math` agrees when it hydrates.
@@ -397,5 +465,5 @@ What every study meets before it goes on the player. The player gives it a few s
 6. Give it sound: `play()` for the viewer's input; the transport rule for everything it does by itself.
 7. Make it accessible: native roles, one tab stop, focus that follows the hand, a live region, reduced motion.
 8. Size it to its container in em and check it at 282 × 332, on a 360px phone and in the 702 × 374 capture frame, in light and dark.
-9. Register it: an entry at the top of `src/registry/index.ts` (title, a plain description of 70 words or so, a one-line tagline, tags, the date, `status: "new"`, `background: "plain"`) and one line in `src/registry/previews.tsx`.
-10. Run `npx tsc --noEmit`, `npx eslint src` and `npm run check:fit`. Find it on the player (`/`, type, Enter), with the tape playing, paused and stopped, and look at it before you commit. Write the commit message in the house voice.
+9. Register it: an entry at the top of `src/registry/index.ts` (title, a plain description of 70 words or so, a one-line tagline, tags, the date, `status: "new"`, `background: "plain"`) and one line in `src/registry/previews.tsx`. Mark its parts with `data-part` and give it an entry in `src/registry/anatomy.ts`, with a line for any part that is particular to it.
+10. Run `npx tsc --noEmit`, `npx eslint src`, `npm run check:fit` and `npm run check:anatomy`. Find it on the player (`/`, type, Enter), with the tape playing, paused and stopped, and look at it before you commit. Write the commit message in the house voice.

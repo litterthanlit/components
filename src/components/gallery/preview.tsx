@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Anatomy, type AnatomyProps } from "@/components/anatomy/anatomy";
 import { cn } from "@/design-system";
 import type { StageBackground } from "@/registry";
 import { previews } from "@/registry/previews";
@@ -16,9 +17,11 @@ type PreviewProps = {
   className?: string;
   /** Applied with CSS zoom — enlarges demos for capture frames. */
   zoom?: number;
+  /** Lets the demo be taken apart (components/anatomy). */
+  anatomy?: Omit<AnatomyProps, "children" | "zoom">;
 };
 
-export function Preview({ slug, background, align = "center", lazy = false, className, zoom }: PreviewProps) {
+export function Preview({ slug, background, align = "center", lazy = false, className, zoom, anatomy }: PreviewProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(!lazy);
   const Demo = previews[slug];
@@ -59,7 +62,15 @@ export function Preview({ slug, background, align = "center", lazy = false, clas
         className={cn("flex w-full items-center justify-center", align === "bottom" ? "px-6 pb-3 pt-6" : "p-6")}
         style={zoom ? { zoom } : undefined}
       >
-        {visible && Demo ? <Demo /> : null}
+        {visible && Demo ? (
+          anatomy ? (
+            <Anatomy {...anatomy} zoom={zoom}>
+              <Demo />
+            </Anatomy>
+          ) : (
+            <Demo />
+          )
+        ) : null}
       </div>
     </div>
   );

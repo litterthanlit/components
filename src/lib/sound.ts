@@ -43,7 +43,7 @@ export type SoundName =
   | "open"
   /** Leaving a prototype. */
   | "close"
-  /** A switch flipping (the hold / mute switch, theme). */
+  /** A switch flipping (sound on or off, theme). */
   | "toggle"
   /** Hitting the end of a list: a duller tick. */
   | "bump"

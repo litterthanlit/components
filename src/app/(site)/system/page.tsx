@@ -17,11 +17,11 @@ const code = "rounded-sm bg-panel px-1 py-0.5 font-mono text-[12px] text-ink";
 const principles = [
   {
     title: "An object, not a page",
-    body: "The home page is a player you could hold: a body in a bumper, wells pressed into it, keys that sink 2px. A study is a part of the same instrument, never a card on a screen.",
+    body: "The home page is a player you could hold: a body in a machined frame, wells pressed into it, keys that sink 2px. A study is a part of the same instrument, never a card on a screen.",
   },
   {
     title: "An instrument's vocabulary",
-    body: "Takes, the tape, transport, slate, detents, HOLD. Name things the way a field recorder would, and the interface explains itself.",
+    body: "Takes, the tape, transport, slate, detents, scenes. Name things the way a field recorder would, and the interface explains itself.",
   },
   {
     title: "It runs by itself, and rewards the hand",
@@ -65,7 +65,7 @@ const sections = [
 /** The signal colours, and what each one is allowed to mean. */
 const signals = [
   { token: "--device-rec", name: "Rec", use: "REC, PLAY, the playhead, a light that fires, a wrong code. The only red on the body." },
-  { token: "--device-hold", name: "Hold", use: "HOLD, a hand on a motor (TOUCH), an edited scene, a switched-on stripe." },
+  { token: "--device-hold", name: "Hold", use: "A hand on a motor (TOUCH), an edited scene, a switched-on stripe." },
   { token: "--accent", name: "Accent", use: "Screens and pages, never the body: the highlight bar, the caret, a status dot." },
   { token: "--device-meter-on", name: "Lit", use: "Everything else that lights: meter segments, step keys, a knob's ring." },
 ];
@@ -120,11 +120,12 @@ const studyBar: { title: string; body: ReactNode }[] = [
     ),
   },
   {
-    title: "Built from the materials",
+    title: "Built from the materials, and marks them",
     body: (
       <>
         A plate of the body&apos;s finish with wells, keys, caps, an LCD and lights. Never a second player, never a flat{" "}
-        <code className={code}>shadow-md</code> card. Both themes look intentional.
+        <code className={code}>shadow-md</code> card. Both themes look intentional. Each part carries <code className={code}>data-part</code>, so its
+        page can take it apart.
       </>
     ),
   },
@@ -582,7 +583,8 @@ export default function SystemPage() {
           </ol>
           <p className="mt-8 max-w-[640px] text-body text-muted">
             Run <code className={code}>npm run check:fit</code> before pushing: it loads every component page, the player&apos;s screen and the
-            capture frame at six widths and fails if anything spills its stage.
+            capture frame at six widths and fails if anything spills its stage. <code className={code}>npm run check:anatomy</code> takes every
+            study apart on its page and fails if anything flattens the 3D or spills.
           </p>
         </Section>
 

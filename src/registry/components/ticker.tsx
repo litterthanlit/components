@@ -231,9 +231,10 @@ function paginate({ cols, words }: Bitmap, width: number): [number, number][] {
 const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(" ");
 const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const TONES: Record<Tone, { name: string; light: string; said: string }> = {
-  info: { name: "Info", light: "bg-(--device-lcd-ink) shadow-[0_0_0.5em_rgb(255_255_255/0.7)]", said: "" },
-  warn: { name: "Warn", light: "bg-(--device-hold) shadow-[0_0_0.5em_var(--device-hold)]", said: "Warning: " },
-  alert: { name: "Alert", light: "animate-pulse bg-(--device-rec) shadow-[0_0_0.5em_var(--device-rec)] motion-reduce:animate-none", said: "Alert: " },
+  // Drawn, a lit light is filled ink (orange is the picked layer's, so warn goes to ink too) and an alert stays red; idle is a hairline ring.
+  info: { name: "Info", light: "bg-(--device-lcd-ink) shadow-[0_0_0.5em_rgb(255_255_255/0.7)] drawn:bg-(--device-draw-ink)!", said: "" },
+  warn: { name: "Warn", light: "bg-(--device-hold) shadow-[0_0_0.5em_var(--device-hold)] drawn:bg-(--device-draw-ink)!", said: "Warning: " },
+  alert: { name: "Alert", light: "animate-pulse bg-(--device-rec) shadow-[0_0_0.5em_var(--device-rec)] motion-reduce:animate-none drawn:bg-(--device-rec)!", said: "Alert: " },
 };
 
 type TickerProps = {
@@ -617,19 +618,19 @@ export function Ticker({ controller, label = "Notifications", speed = 72, classN
   const held = hand.hover || hand.focus;
 
   return (
-    <div className={cx("@container/ticker rounded-[0.9em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]", className)}>
-      <div className="relative overflow-hidden rounded-[0.65em] px-[0.6em] pb-[0.6em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)">
+    <div data-part="bezel" className={cx("@container/ticker rounded-[0.9em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]", className)}>
+      <div data-part="lcd" className="relative overflow-hidden rounded-[0.65em] px-[0.6em] pb-[0.6em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)">
         <div aria-hidden className="flex items-center gap-[0.45em]">
-          <span className={cx("size-[0.5em] shrink-0 rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)", tone ? tone.light : "bg-white/15")} />
-          <span key={current?.id} className="animate-enter text-[0.58em] font-semibold uppercase leading-none tracking-[0.14em] text-(--device-lcd-dim)">
+          <span data-part="light" className={cx("size-[0.5em] shrink-0 rounded-full transition-[background-color,box-shadow] duration-(--duration-exit)", tone ? tone.light : "bg-white/15")} />
+          <span key={current?.id} className="animate-enter text-[0.58em] font-semibold uppercase leading-none tracking-[0.14em] text-(--device-lcd-dim) drawn:opacity-60">
             {tone ? tone.name : "Idle"}
           </span>
           {held && current && (
-            <svg viewBox="0 0 8 8" className="size-[0.5em] fill-(--device-lcd-dim)">
+            <svg viewBox="0 0 8 8" className="size-[0.5em] fill-(--device-lcd-dim) drawn:fill-(--device-draw-ink)! drawn:opacity-60">
               <path d="M1.2 1h1.9v6H1.2zM4.9 1h1.9v6H4.9z" />
             </svg>
           )}
-          <span className="ml-auto inline-flex items-center rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
+          <span data-part="chip" className="ml-auto inline-flex items-center rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
             <span className="text-[0.58em] font-semibold uppercase leading-none tabular-nums tracking-[0.02em]">
               Msg {messages.length ? `${index + 1}/${messages.length}` : "—"}
             </span>
@@ -649,13 +650,15 @@ export function Ticker({ controller, label = "Notifications", speed = 72, classN
           onFocus={() => setHand((h) => ({ ...h, focus: true }))}
           onBlur={() => setHand((h) => ({ ...h, focus: false }))}
           onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
+          data-part="matrix"
           className="relative mt-[0.45em] h-(--fine) rounded-[0.2em] font-semibold outline-offset-4 @[19.5rem]/ticker:h-(--pitch)"
           style={{ "--pitch": `${ROWS * PITCH}em`, "--fine": `${ROWS * FINE_PITCH}em` } as CSSProperties}
         >
-          <canvas ref={canvasRef} aria-hidden className="absolute inset-0 size-full" />
+          {/* Drawn, the dots are the matrix's content: the LCD's light ink inverted to dark on the light canvas, as it is on the dark one. */}
+          <canvas ref={canvasRef} aria-hidden className="absolute inset-0 size-full drawn:[--draw-invert:1] drawn:dark:[--draw-invert:0] drawn:[filter:grayscale(1)_invert(var(--draw-invert))]! drawn:opacity-80!" />
         </div>
         {/* Glass. */}
-        <div aria-hidden className="pointer-events-none absolute inset-0 [background:var(--screen-glass)]" />
+        <div aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 [background:var(--screen-glass)]" />
       </div>
 
       <p id={`${ids}-now`} className="sr-only">
@@ -778,7 +781,7 @@ export default function Demo() {
       onKeyDownCapture={() => (auto.current = false)}
       className="@container w-full max-w-[440px] select-none"
     >
-      <div className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4.4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4.4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
         <Ticker controller={ticker} />
@@ -793,15 +796,16 @@ export default function Demo() {
               aria-label={k.label ? undefined : k.name}
               onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
               onClick={() => onKey(k.id)}
+              data-part="key"
               className={cx("group/key rounded-[0.7em] outline-offset-2", k.label ? "@[20rem]:flex-1" : "@[20rem]:w-[2.6em] @[20rem]:shrink-0")}
             >
               <span className="grid h-[2.75em] place-items-center rounded-[0.7em] text-(--device-key-ink) @[20rem]:h-[2.5em] [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
                 {k.glyph ? (
-                  <svg aria-hidden viewBox="0 0 16 16" className="size-[1.1em] fill-none stroke-current [filter:var(--device-engrave-glyph)]" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <svg aria-hidden data-part="lettering" viewBox="0 0 16 16" className="size-[1.1em] fill-none stroke-current [filter:var(--device-engrave-glyph)] drawn:[filter:none]!" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                     <path d={k.glyph} />
                   </svg>
                 ) : (
-                  <span className="text-[0.8em] font-medium uppercase leading-none tracking-[0.03em] [text-shadow:var(--device-engrave)]">{k.label}</span>
+                  <span data-part="lettering" className="text-[0.8em] font-medium uppercase leading-none tracking-[0.03em] [text-shadow:var(--device-engrave)]">{k.label}</span>
                 )}
               </span>
             </button>

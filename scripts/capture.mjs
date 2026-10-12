@@ -5,6 +5,9 @@
  *   npm run capture                         # all components, dark + light
  *   npm run capture -- spotlight-card       # one component
  *   npm run capture -- --theme=dark --bg=glow --video
+ *   npm run capture -- knob --anatomy            # taken apart, at 60%
+ *   npm run capture -- knob --anatomy=90 --layer=cap
+ *   npm run capture -- knob --anatomy --finish=materials
  *
  * Needs the app running (npm run dev / npm start). Set BASE_URL (the app root,
  * including /studies) to point
@@ -45,6 +48,11 @@ const height = Number(flag("h", 675));
 const bg = flag("bg", "");
 const video = Boolean(flag("video", false));
 const wait = Number(flag("wait", 1600));
+// Taken apart: --anatomy alone opens it to 60%; --layer rests on one floor instead of walking the stack.
+const anatomy = flag("anatomy", false);
+const layer = flag("layer", "");
+const finish = flag("finish", "");
+const WALK = 9000; // ms a recording runs while the anatomy walks down the stack
 
 await mkdir(OUT, { recursive: true });
 
@@ -69,14 +77,18 @@ for (const slug of slugs) {
     const page = await context.newPage();
     const query = new URLSearchParams({ theme, w: String(width), h: String(height) });
     if (bg) query.set("bg", bg);
+    if (anatomy) query.set("anatomy", anatomy === true ? "60" : String(anatomy));
+    if (anatomy && layer) query.set("layer", layer);
+    if (anatomy && finish) query.set("finish", finish);
     const url = `${BASE_URL}/capture/${slug}?${query}`;
 
     await page.goto(url, { waitUntil: "networkidle" });
-    await page.waitForTimeout(wait); // let entrance animations settle
+    // Let entrance animations settle; taken apart, let the first floor be named too.
+    await page.waitForTimeout(anatomy ? Math.max(wait, 2600) : wait);
 
-    // Nudge pointer-driven demos so stills show them "alive".
+    // Nudge pointer-driven demos so stills show them "alive". Not a study taken apart: a hand would end its walk.
     const frame = page.locator("#capture-frame");
-    const box = await frame.boundingBox();
+    const box = anatomy ? null : await frame.boundingBox();
     if (box) {
       await page.mouse.move(box.x + box.width * 0.42, box.y + box.height * 0.4, { steps: 12 });
       await page.waitForTimeout(500);
@@ -87,7 +99,8 @@ for (const slug of slugs) {
     console.log(`✓ ${path.relative(process.cwd(), file)}`);
 
     if (video) {
-      // A short, gentle cursor path so recordings have motion.
+      // A short, gentle cursor path so recordings have motion; taken apart, the walk down the stack is the motion.
+      if (anatomy && !layer) await page.waitForTimeout(WALK);
       if (box) {
         for (let i = 0; i <= 60; i++) {
           const t = i / 60;

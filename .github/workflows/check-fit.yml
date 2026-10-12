@@ -41,3 +41,6 @@ jobs:
           exit 1
 
       - run: npm run check:fit
+
+      # The studies that come apart on their pages stay three-dimensional and on their stages.
+      - run: npm run check:anatomy
