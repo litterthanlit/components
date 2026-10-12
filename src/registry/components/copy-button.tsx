@@ -249,13 +249,17 @@ export function CopyButton({ value, label = "Copy", onCopiedChange, rehearse = f
     };
   }, [rehearse]);
 
-  const icon = "absolute inset-0 m-auto size-[1.15em] transition-[opacity,transform,filter] duration-(--duration-enter) ease-out";
+  // Printed into the face like its lettering; the anatomy owns `transform`, so they cross-fade on `scale`.
+  const glyph = "absolute inset-0 m-auto size-[1.15em] transition-[opacity,scale,filter] duration-(--duration-enter) ease-out drawn:filter-none";
+  const on = "scale-100 opacity-100 [filter:var(--device-engrave-glyph)_blur(0px)]";
+  const off = "scale-95 opacity-0 [filter:var(--device-engrave-glyph)_blur(2px)]";
 
   return (
     <>
       <button
         ref={rootRef}
         type="button"
+        data-part="key"
         data-sound="key"
         data-pressed={pressed || undefined}
         aria-label={label}
@@ -265,33 +269,13 @@ export function CopyButton({ value, label = "Copy", onCopiedChange, rehearse = f
         onClick={copy}
         className={`group/key size-[2.9em] shrink-0 rounded-[0.7em] outline-offset-2 ${className}`}
       >
-        <span className="relative grid size-full place-items-center rounded-[0.7em] text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75 group-data-pressed/key:translate-y-[2px] group-data-pressed/key:shadow-(--device-key-shadow-pressed) group-data-pressed/key:duration-75">
-          {/* The two glyphs share the face and cross-fade, printed into it like its lettering. */}
-          <svg
-            aria-hidden
-            viewBox="0 0 16 16"
-            fill="none"
-            className={icon}
-            style={{
-              opacity: copied ? 0 : 1,
-              transform: copied ? "scale(0.95)" : "none",
-              filter: `var(--device-engrave-glyph) blur(${copied ? 2 : 0}px)`,
-            }}
-          >
+        <span className="relative grid size-full place-items-center rounded-[0.7em] text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[translate,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75 group-data-pressed/key:translate-y-[2px] group-data-pressed/key:shadow-(--device-key-shadow-pressed) group-data-pressed/key:duration-75">
+          {/* The two glyphs share the face and cross-fade. */}
+          <svg aria-hidden data-part="lettering" viewBox="0 0 16 16" fill="none" className={`${glyph} ${copied ? off : on}`}>
             <rect x="5.5" y="5.5" width="8" height="8" rx="2" stroke="currentColor" strokeWidth="1.3" />
             <path d="M10.5 3.5v-.25A1.75 1.75 0 0 0 8.75 1.5h-5.5A1.75 1.75 0 0 0 1.5 3.25v5.5c0 .97.78 1.75 1.75 1.75h.25" stroke="currentColor" strokeWidth="1.3" />
           </svg>
-          <svg
-            aria-hidden
-            viewBox="0 0 16 16"
-            fill="none"
-            className={icon}
-            style={{
-              opacity: copied ? 1 : 0,
-              transform: copied ? "none" : "scale(0.95)",
-              filter: `var(--device-engrave-glyph) blur(${copied ? 0 : 2}px)`,
-            }}
-          >
+          <svg aria-hidden data-part="lettering" viewBox="0 0 16 16" fill="none" className={`${glyph} ${copied ? on : off}`}>
             <path
               d="m3 8.5 3.2 3L13 4.5"
               stroke="currentColor"
@@ -332,12 +316,12 @@ export default function Demo() {
       onKeyDownCapture={() => (touched.current = true)}
       className="@container w-full max-w-[360px] select-none"
     >
-      <div className="relative isolate flex animate-enter items-stretch gap-[0.55em] overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
+      <div data-part="plate" className="relative isolate flex animate-enter items-stretch gap-[0.55em] overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
         {/* The LCD: a prompt and the command, in light figures on black glass. */}
-        <div className="flex min-w-0 flex-1 items-center gap-[0.6em] overflow-hidden rounded-[0.7em] px-[0.85em] font-mono text-[0.9em] font-light tracking-[-0.01em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)">
-          <span aria-hidden className="text-(--device-lcd-dim)">
+        <div data-part="lcd" className="flex min-w-0 flex-1 items-center gap-[0.6em] overflow-hidden rounded-[0.7em] px-[0.85em] font-mono text-[0.9em] font-light tracking-[-0.01em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)">
+          <span aria-hidden className="text-(--device-lcd-dim) drawn:text-[color-mix(in_oklab,var(--device-draw-ink)_70%,transparent)]!">
             $
           </span>
           <code className="min-w-0 flex-1 truncate">
