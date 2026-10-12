@@ -76,6 +76,10 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     screen: { name: "Screen", note: "The site's own ground under glass: its canvas and type, and the accent bar gliding on a spring between rows." },
     glass: { note: "The screen's sheen, and the backlight's bloom as it wakes." },
   },
+  "copy-button": {
+    lcd: { note: "A character LCD. Copied, the command leaves in a wave from right to left, each character scrambling through the half-width katakana in an HD44780's ROM; it decodes back in from the left." },
+    lettering: { name: "Glyphs", tokens: ["--device-key-ink", "--device-engrave-glyph"], note: "The copy mark and the check share the key's face and cross-fade; the check draws itself in over 400 ms." },
+  },
 };
 
 /** What the anatomy says about one of a study's parts. */

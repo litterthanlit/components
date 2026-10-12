@@ -1,5 +1,5 @@
 import { codeToHtml } from "shiki";
-import { CopyButton } from "@/registry/components/copy-button";
+import { CopyButton } from "@/components/gallery/copy-button";
 
 /** Server-rendered, dual-theme syntax highlighting. Zero client JS beyond the copy button. */
 export async function CodeBlock({ code, filename }: { code: string; filename: string }) {

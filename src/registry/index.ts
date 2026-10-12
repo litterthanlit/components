@@ -264,11 +264,11 @@ export const registry: RegistryEntry[] = [
     slug: "copy-button",
     title: "Copy Button",
     description:
-      "Icons cross-fade with scale and blur, and the checkmark draws itself in. A live region announces the result for screen readers.",
-    tagline: "The smallest delight: a check that draws itself.",
-    tags: ["button", "feedback", "svg"],
+      "A key that copies a command and comes up with a check that draws itself, beside a character LCD that lets the command go: a wave runs through it from right to left, each character scrambling through the display's katakana before it clears, then decodes back in from the left. Every character clicks as it settles, nothing on the line moves, and a second copy turns the wave round mid-flight.",
+    tagline: "Copy, and the LCD scrambles the command away.",
+    tags: ["button", "feedback", "sound", "a11y"],
     date: "2026-09-01",
-    background: "dots",
+    background: "plain",
   },
 ];
 
