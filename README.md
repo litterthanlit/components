@@ -98,12 +98,12 @@ ffmpeg -i captures/spotlight-card-dark.webm -c:v libx264 -pix_fmt yuv420p -crf 1
 
 **Symbiote Field, rendered offline**
 
-Symbiote Field's frames are a pure function of time, progress, pointer and mode, so it renders to video a frame at a time instead of being screen-recorded: the same run makes the same film at any resolution, on any machine. Its preview page is `/lab/symbiote-field`.
+Symbiote Field grows under the pointer, and each frame depends only on its time and the pointer's path, so it renders to video a frame at a time with a scripted hand instead of being screen-recorded: the same run makes the same film at any resolution, on any machine. Its preview page is `/lab/symbiote-field`.
 
 ```bash
-npm run record:symbiote                                   # captures/symbiote-field.mp4, 1280 × 720, 30 fps, 13 s
+npm run record:symbiote                                   # captures/symbiote-field.mp4, 1280 × 720, 30 fps, 15 s
 npm run record:symbiote -- --w=1920 --h=1080 --fps=60
-npm run record:symbiote -- --seconds=7 --still            # the awakening alone, no pointer
+npm run record:symbiote -- --seconds=6                    # just the creature the ghost draws
 ```
 
 Capture params: `theme`, `bg`, `w`, `h`, `zoom` (default 1.6), `label=0` to hide the title/handle watermark, `anatomy=60` to take the study apart that far (the watermark names the floor on show), `layer=cap` to rest on one floor and `finish=materials` to show it in its materials rather than drawn.
