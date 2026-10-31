@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "needle-field",
+    title: "Needle Field",
+    description:
+      "A sphere of a thousand thin needles, placed evenly (Fibonacci), as a magnetic field would. Needles near the pointer tilt toward it or away, on a damped ease, and the whole group leans a little. Attract and repel are two keys; a ghost orbits until a hand takes over, flipping the mode so both read in the first four seconds. One draw call for all the needles. Reduced motion snaps, and the loop stops off-screen.",
+    tagline: "A bristle sphere that leans toward the cursor, or away.",
+    tags: ["surface", "pointer", "webgl", "motion"],
+    date: "2026-10-31",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "gradient-keys",
     title: "Gradient Keys",
     description:
