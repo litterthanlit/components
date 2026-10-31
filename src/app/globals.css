@@ -321,7 +321,7 @@ h3 {
 }
 
 /* The Slab (a spike): the player as one sheet of black glass in a graphite
-   rim. Wide viewports get the object at its own proportions, 160 × 110,
+   rim. Wide viewports get the object at its own proportions, 160 × 116,
    as large as the window allows; phones give it the whole space. */
 .slab {
   width: 100%;
@@ -330,8 +330,8 @@ h3 {
 @media (min-width: 720px) and (min-height: 521px) {
   .slab {
     height: auto;
-    width: min(100%, 880px, calc((100dvh - 44px - 2 * var(--m, 24px)) * 160 / 110));
-    aspect-ratio: 160 / 110;
+    width: min(100%, 880px, calc((100dvh - 44px - 2 * var(--m, 24px)) * 160 / 116));
+    aspect-ratio: 160 / 116;
   }
 }
 /* Graphite, brushed along its width, lit from the upper left, with the side wall showing below. */

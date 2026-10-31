@@ -29,10 +29,12 @@ const floor2 = (z: number) => Math.floor(z * 100) / 100;
 /**
  * How much to zoom a running study. Demos are made for stages from a phone's
  * (about 330 × 380) up to a desktop's, so a smaller screen shrinks them
- * uniformly instead of clipping, and a big one grows them a little.
+ * uniformly instead of clipping, and a big one grows them a little. A short
+ * screen counts 420 px of height, not 380: on a wide stage a demo grows to its
+ * full width, and with it as much as 40 px taller than at a phone's.
  */
 export function appZoom({ w, h }: { w: number; h: number }) {
-  return floor2(w >= 680 && h >= 480 ? Math.min(1.3, w / 680, h / 480) : Math.min(1, w / 330, h / 380));
+  return floor2(w >= 680 && h >= 480 ? Math.min(1.3, w / 680, h / 480) : Math.min(1, w / 330, h / 420));
 }
 
 /* --- Status line ---------------------------------------------------------- */
