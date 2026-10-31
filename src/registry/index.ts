@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "symbiote-field",
+    title: "Symbiote Field",
+    description:
+      "Needle Field, alive. An empty floor in true isometric until a dark, glossy mass seeps up through it, breathing as it grows. Veins crawl out across the grid, needles break out of its skin in waves from the centre, and the camera eases out of the drawing into an orbiting perspective. Then it senses the pointer: the mass reaches for it and the needles lean in, or both recoil. Each frame is a pure function of time, progress and the pointer, all on the GPU.",
+    tagline: "A needle field that wakes up and notices you.",
+    tags: ["surface", "pointer", "motion", "webgl"],
+    date: "2026-10-31",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "gradient-keys",
     title: "Gradient Keys",
     description:

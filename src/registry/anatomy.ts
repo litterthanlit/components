@@ -6,6 +6,12 @@ import { parts, type PartInfo } from "@/components/anatomy/parts";
  * enough. A study is listed here once its parts carry `data-part`.
  */
 export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>> = {
+  "symbiote-field": {
+    screen: { tokens: [], note: "The creature on a WebGL canvas: a displaced plane for the body, 24,000 instanced needles, every frame a pure function of its time, its awakening and the pointer." },
+    glass: { tokens: ["--screen-glass", "--device-lcd-edge"], note: "A sheen over the screen, breaking at 38%, and its edge." },
+    light: { tokens: ["--device-meter-off", "--device-meter-on", "--device-rec"], note: "The mode's key lit in grey; Wake's in red while the awakening plays." },
+    lcd: { note: "The state, and the awakening's clock in seconds and frames at 25 fps, written by the frame loop." },
+  },
   knob: {
     cap: { note: "Knurled round its skirt by a conic gradient from var(--a), so it turns without a transform." },
     light: { tokens: ["--device-meter-off", "--device-meter-on"], note: "Fifteen strokes round the collar, lit by the same spring that turns the cap and clicks the detents." },
