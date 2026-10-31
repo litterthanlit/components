@@ -85,15 +85,15 @@ export function Readout({ at, n, title, transport, className }: { at: number; n:
 }
 
 /**
- * The readout on the Slab: lit straight into the glass, with no well and no
- * LCD of its own. The chip says the state, then the study's name (the one
+ * The readout on the Slab: printed straight into the glass in the page's ink,
+ * with no well and no LCD of its own; its chip is the ink inverted. The chip says the state, then the study's name (the one
  * place it is written on the player) and the take in large figures.
  */
 export function GlassReadout({ at, n, title, transport, className }: { at: number; n: number; title: string; transport: Transport; className?: string }) {
   return (
-    <div aria-hidden className={cn("flex items-end justify-between gap-[1em] text-(--device-lcd-ink)", className)}>
+    <div aria-hidden className={cn("flex items-end justify-between gap-[1em] text-ink", className)}>
       <div className="flex min-w-0 flex-col items-start gap-[0.6em]">
-        <span className="inline-flex items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
+        <span className="inline-flex items-center gap-[0.35em] rounded-[0.4em] bg-ink px-[0.42em] py-[0.24em] text-canvas">
           <ChipGlyph transport={transport} />
           <span className="text-[0.6em] font-semibold uppercase leading-none tracking-[0.02em]">{chip[transport]}</span>
         </span>
@@ -105,7 +105,7 @@ export function GlassReadout({ at, n, title, transport, className }: { at: numbe
         <span key={at} className="animate-enter text-[2.2em] font-light tracking-[-0.03em]">
           {String(at + 1).padStart(2, "0")}
         </span>
-        <span className="text-[0.7em] text-(--device-lcd-dim)">/ {n}</span>
+        <span className="text-[0.7em] text-muted">/ {n}</span>
       </p>
     </div>
   );

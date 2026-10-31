@@ -599,8 +599,8 @@ export function Device({ studies }: { studies: Study[] }) {
       </header>
 
       <div className="grid min-h-0 w-full flex-1 place-items-center">
-        {/* The Slab: a graphite rim round one sheet of black glass. It is always graphite with a silver dial, whatever the page's theme. */}
-        <div data-theme="dark" className="slab slab-rim relative flex rounded-[30px] p-[10px] wide:rounded-[36px] wide:p-[12px]">
+        {/* The Slab: a metal rim round one sheet of glass. Silver with pale glass in light, graphite with black glass in dark (globals.css). */}
+        <div className="slab slab-rim relative flex rounded-[30px] p-[10px] wide:rounded-[36px] wide:p-[12px]">
           <div className="slab-glass relative isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[22px] wide:rounded-[26px]">
             {/* The screen: the study runs straight on the glass, its own plate dissolved (globals.css, data-slab-screen). */}
             <div data-slab-screen className="@container/display relative isolate flex min-h-0 flex-1 animate-wake flex-col overflow-hidden">
@@ -762,7 +762,7 @@ export function Device({ studies }: { studies: Study[] }) {
             </div>
 
             {/* One sheen across the whole sheet of glass, and the backlight's bloom as it wakes. */}
-            <div aria-hidden className="pointer-events-none absolute inset-0 z-40 [background:linear-gradient(160deg,rgb(255_255_255/0.08)_0%,rgb(255_255_255/0.02)_40%,transparent_40.4%)]" />
+            <div aria-hidden className="slab-sheen pointer-events-none absolute inset-0 z-40" />
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0 z-40 animate-bloom [background:radial-gradient(50%_50%_at_50%_40%,var(--screen-glow),transparent)]"
