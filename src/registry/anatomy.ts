@@ -7,7 +7,7 @@ import { parts, type PartInfo } from "@/components/anatomy/parts";
  */
 export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>> = {
   spool: {
-    screen: { tokens: ["--device-window"], note: "A roll of frames in raw WebGL2 over smoked glass. Spooling fast, the strip pinches through the middle and flares at the ends, a waist the frames rush through." },
+    screen: { tokens: ["--device-window"], note: "A roll of frames in raw WebGL2 over smoked glass. Spooling fast, the strip bends in an even arc, narrow through the middle and wide at the ends, as if round a drum." },
     glass: { note: "A sheen over the screen and its edge, where the light catches the glass." },
     key: { note: "A second place to hold the reel: the face stays down as long as the hand does." },
     light: { tokens: ["--device-meter-off", "--device-meter-on", "--device-rec"], note: "A speed meter on a log scale, as the motor ramps: one light as the reel starts, the last, red, at the redline." },

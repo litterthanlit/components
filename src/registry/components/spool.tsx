@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ComponentProps, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import { focusQuietly } from "@/design-system";
 import { hostTransport, play, type PlayOptions, type SoundName } from "@/lib/sound";
 
@@ -10,22 +10,22 @@ import { hostTransport, play, type PlayOptions, type SoundName } from "@/lib/sou
  * gate at one a second; the longer the hold, the faster the motor turns,
  * doubling every 0.8 s to a redline of 16 a second at 3.2 s. Past 2.5 a
  * second the strip starts to bend. The frames shrink to about a third of
- * their height, so more of them pass at once, and the strip pinches through
- * the middle of the screen to 30% of its width and flares at the ends to
- * 150%: they rush through a waist as if pulled through the gate, darkening
- * as they turn away from the light. Each pixel streaks over 1/90 s of
- * travel, and the gaps between frames open from 12% to 38% so the streak
- * never closes them. Let go and the reel coasts on to the next frame on a
+ * their height, so more of them pass at once, and the strip curves in an
+ * even arc, a parabola, to 60% of its width through the middle and 135% at
+ * the ends, as if bent round a drum, darkening as it turns away from the
+ * light. Each pixel streaks over 1/90 s of travel, and the gaps between
+ * frames open from 12% to 38% so the streak never closes them. Let go and the reel coasts on to the next frame on a
  * critically damped spring, the bend relaxing as it slows.
  *
  * One frame loop is the mechanism: a small integrator for the motor and the
  * detent, raw WebGL2 for the screen, the speed lights, the LCD, and a click
  * for every frame that passes the gate, so what you hear matches what you
- * see. The frames sit in a texture array with mipmaps, so a pinched frame
+ * see. The frames sit in a texture array with mipmaps, so a narrowed frame
  * stays clean. Nothing re-renders while it runs; React hears when it stops.
  *
  * The screen is a slider over the frames: the arrows step one, Home and End
- * go to the first and last, and holding Space or Enter spools.
+ * go to the first and last, and holding Space or Enter spools. `bare` drops
+ * the deck for a page of its own: the screen alone, filling its box.
  */
 
 const V0 = 1; // frames a second as the hold begins
@@ -39,16 +39,17 @@ const STEP = 1 / 240; // s: the detent's integration step, as createSpring's
 const REDUCED_STEP = 0.4; // s between frames under reduced motion, which jumps rather than slides
 const LIGHTS = 6;
 
-/** The frames' size in the texture: 3:4, as the shader draws them. */
-const FRAME_W = 384;
-const FRAME_H = 512;
-const LEVELS = 1 + Math.floor(Math.log2(Math.max(FRAME_W, FRAME_H)));
+const TEXELS_MAX = 1024; // the longest side of a frame in the texture
 
 export type SpoolFrame = { src: string; alt: string };
 
 type SpoolProps = {
-  /** Image URLs, cropped to 3:4. They need CORS headers if they're on another origin. */
+  /** Image URLs, cropped to `aspect`. They need CORS headers if they're on another origin. */
   frames: readonly SpoolFrame[];
+  /** A frame's width over its height. */
+  aspect?: number;
+  /** Only the screen, filling its box, with the frame's number and title in a corner: for a page of its own. */
+  bare?: boolean;
   /** The frame at the gate, from 0. */
   value: number;
   /** The reel has come to rest on a frame. */
@@ -112,12 +113,10 @@ uniform float uCount;
 uniform float uWarp;    // 0 → 1
 uniform float uStreak;  // frames of roll each pixel is exposed to
 uniform vec2 uTexels;   // a frame's size in the texture
+uniform float uAspect;  // a frame's width over its height
 uniform sampler2DArray uFrames;
 out vec4 colour;
 
-const float TILE = 0.58;   // a frame's height at rest, in screen heights
-const float PITCH = 0.66;  // from one frame to the next at rest
-const float ASPECT = 0.75; // a frame's width over its height
 const vec3 BLANK = vec3(0.16, 0.165, 0.175); // a frame still loading
 
 // Where a row, in screen heights down from the centre, reads the roll. Faster, each row reads more of
@@ -125,25 +124,29 @@ const vec3 BLANK = vec3(0.16, 0.165, 0.175); // a frame still loading
 // pass at once. squeeze() is its slope.
 float bend(float y, float a) { return y + a * (1.2 * y - 0.5333 * y * y * y); }
 float squeeze(float y, float a) { return 1.0 + a * (1.2 - 1.6 * y * y); }
-// A frame's width on a row, against its width at rest: 30% through the waist, 150% at the ends.
-float girth(float y, float a) { return 1.0 - a * 0.7 * exp(-y * y / 0.05) + a * 2.0 * y * y; }
+// A frame's width on a row, against its width at rest: a parabola, 60% through the waist and 135% at
+// the ends, so the sides curve evenly from top to bottom, as a strip bent round a cylinder would.
+float girth(float y, float a) { return 1.0 - a * 0.4 + a * 3.0 * y * y; }
 
 void main() {
   float h = uRes.y;
   float y = 0.5 - gl_FragCoord.y / h;
   float x = (gl_FragCoord.x - 0.5 * uRes.x) / h;
   float a = uWarp;
+  // A frame's height at rest, in screen heights: 58%, or less where the screen is too narrow for its width.
+  float tile = min(0.58, 0.62 * uRes.x / h / uAspect);
+  float pitch = tile / 0.88; // from one frame to the next at rest
 
-  float halfWidth = 0.5 * TILE * ASPECT * girth(y, a);
+  float halfWidth = 0.5 * tile * uAspect * girth(y, a);
   float across = clamp((halfWidth - abs(x)) * h + 0.5, 0.0, 1.0);
   if (across <= 0.0) { colour = vec4(0.0); return; }
   float u = 0.5 + 0.5 * x / halfWidth;
 
   float s = squeeze(y, a);
-  float perFrame = PITCH * h / s;          // px this row's stretch of roll gives each frame
-  float at = uPos - bend(y, a) / PITCH;    // along the roll; later frames are further up
+  float perFrame = pitch * h / s;          // px this row's stretch of roll gives each frame
+  float at = uPos - bend(y, a) / pitch;    // along the roll; later frames are further up
   // A frame's share of its pitch: 88% at rest, 62% at the redline, so the gaps stay open under the streak.
-  float fill = TILE / PITCH * (1.0 - 0.3 * a);
+  float fill = 0.88 * (1.0 - 0.3 * a);
   // Mip level from the texels under a pixel, worked out here: derivatives are no use inside the loop.
   float lod = max(0.0, log2(max(uTexels.x / (2.0 * halfWidth * h), uTexels.y / (fill * perFrame))));
   int taps = int(clamp(ceil(uStreak * perFrame / 1.5), 1.0, 12.0));
@@ -161,17 +164,17 @@ void main() {
   sum /= float(taps);
 
   // Through the waist the strip turns away from the light.
-  float shade = 1.0 - a * 0.22 * exp(-y * y / 0.03);
+  float shade = 1.0 - a * 0.18 * (1.0 - 4.0 * y * y);
   colour = vec4(sum.rgb * shade, sum.a) * across;
 }
 `;
 
 type Screen = {
-  /** Room for `n` frames; whatever was there is dropped. */
-  allocate: (n: number) => void;
+  /** Room for `n` frames of `width` × `height` texels; whatever was there is dropped. */
+  allocate: (n: number, width: number, height: number) => void;
   upload: (layer: number, source: TexImageSource) => void;
   resize: (width: number, height: number) => void;
-  draw: (pos: number, warp: number, streak: number) => void;
+  draw: (pos: number, warp: number, streak: number, aspect: number) => void;
   dispose: () => void;
 };
 
@@ -203,20 +206,24 @@ function createScreen(canvas: HTMLCanvasElement): Screen | null {
 
   const u = (name: string) => gl.getUniformLocation(program, name);
   const uRes = u("uRes"), uPos = u("uPos"), uCount = u("uCount"), uWarp = u("uWarp"), uStreak = u("uStreak");
-  gl.uniform2f(u("uTexels"), FRAME_W, FRAME_H);
+  const uTexels = u("uTexels"), uAspect = u("uAspect");
   gl.uniform1i(u("uFrames"), 0);
   gl.clearColor(0, 0, 0, 0);
 
   let texture: WebGLTexture | null = null;
   let count = 0;
+  let size = [1, 1];
   return {
-    allocate(n) {
+    allocate(n, width, height) {
       if (texture) gl.deleteTexture(texture);
       count = n;
+      size = [width, height];
       texture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D_ARRAY, texture);
+      gl.uniform2f(uTexels, width, height);
       // WebGL zeroes new storage, and the shader draws a clear texel as a frame still loading.
-      gl.texStorage3D(gl.TEXTURE_2D_ARRAY, LEVELS, gl.RGBA8, FRAME_W, FRAME_H, Math.max(1, n));
+      const levels = 1 + Math.floor(Math.log2(Math.max(width, height)));
+      gl.texStorage3D(gl.TEXTURE_2D_ARRAY, levels, gl.RGBA8, width, height, Math.max(1, n));
       gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
       gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
@@ -224,7 +231,7 @@ function createScreen(canvas: HTMLCanvasElement): Screen | null {
     },
     upload(layer, source) {
       gl.bindTexture(gl.TEXTURE_2D_ARRAY, texture);
-      gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, layer, FRAME_W, FRAME_H, 1, gl.RGBA, gl.UNSIGNED_BYTE, source);
+      gl.texSubImage3D(gl.TEXTURE_2D_ARRAY, 0, 0, 0, layer, size[0], size[1], 1, gl.RGBA, gl.UNSIGNED_BYTE, source);
       gl.generateMipmap(gl.TEXTURE_2D_ARRAY);
     },
     resize(width, height) {
@@ -233,9 +240,10 @@ function createScreen(canvas: HTMLCanvasElement): Screen | null {
       gl.viewport(0, 0, width, height);
       gl.uniform2f(uRes, width, height);
     },
-    draw(pos, warp, streak) {
+    draw(pos, warp, streak, aspect) {
       gl.clear(gl.COLOR_BUFFER_BIT);
       if (!count) return;
+      gl.uniform1f(uAspect, aspect);
       gl.uniform1f(uPos, pos);
       gl.uniform1f(uCount, count);
       gl.uniform1f(uWarp, warp);
@@ -252,7 +260,7 @@ function createScreen(canvas: HTMLCanvasElement): Screen | null {
 
 const REHEARSAL = { first: 450, hold: 2900, rest: 2400 }; // ms: after mount, held, then coasting and still
 
-export function Spool({ frames, value, onChange, label, rehearse = false, className }: SpoolProps) {
+export function Spool({ frames, value, onChange, label, aspect = 3 / 4, bare = false, rehearse = false, className }: SpoolProps) {
   const [mode, setMode] = useState<Mode>("ready");
   const [pressed, setPressed] = useState(false);
   const hintId = useId();
@@ -266,9 +274,9 @@ export function Spool({ frames, value, onChange, label, rehearse = false, classN
   const visible = useRef(false);
   const holder = useRef<number | "key" | null>(null); // the pointer, or the keyboard, holding it
   // Props the loop reads when it fires, rather than when it was made.
-  const props = useRef({ frames, value, onChange });
+  const props = useRef({ frames, value, onChange, aspect });
   useLayoutEffect(() => {
-    props.current = { frames, value, onChange };
+    props.current = { frames, value, onChange, aspect };
   });
 
   const n = frames.length;
@@ -294,8 +302,6 @@ export function Spool({ frames, value, onChange, label, rehearse = false, classN
     const screen = createScreen(canvas);
     fallback.hidden = !!screen;
     const stage = document.createElement("canvas");
-    stage.width = FRAME_W;
-    stage.height = FRAME_H;
     const pen = stage.getContext("2d")!;
 
     let p = 0;
@@ -334,7 +340,7 @@ export function Spool({ frames, value, onChange, label, rehearse = false, classN
       const n = props.current.frames.length;
       const speed = Math.abs(v);
       const warp = reduced ? 0 : warpAt(speed);
-      screen?.draw(n ? mod(p, n) : 0, warp, warp ? (speed - WARP_FROM) * SHUTTER : 0);
+      screen?.draw(n ? mod(p, n) : 0, warp, warp ? (speed - WARP_FROM) * SHUTTER : 0, props.current.aspect);
 
       // The speed lights: one as soon as it moves, the last, red, at the redline.
       const lit = held || target !== null ? Math.max(1, Math.ceil(level(speed) * LIGHTS - 0.05)) : 0;
@@ -473,7 +479,17 @@ export function Spool({ frames, value, onChange, label, rehearse = false, classN
       },
       load(frames) {
         const generation = ++loading;
-        screen?.allocate(frames.length);
+        // The frames go into the texture at the size the screen draws them at rest, as the shader works
+        // it out, up to 1024 texels on their longest side: a small study holds small frames.
+        const { aspect } = props.current;
+        const density = Math.min(devicePixelRatio, 2);
+        const tall = Math.max(64, Math.min(0.58 * host.clientHeight, (0.62 * host.clientWidth) / aspect) * density);
+        const fit = Math.min(1, TEXELS_MAX / Math.max(tall, tall * aspect));
+        const width = Math.round(tall * aspect * fit);
+        const height = Math.round(tall * fit);
+        stage.width = width;
+        stage.height = height;
+        screen?.allocate(frames.length, width, height);
         shownGate = null;
         render();
         if (!screen) return;
@@ -484,13 +500,13 @@ export function Spool({ frames, value, onChange, label, rehearse = false, classN
           image.decode().then(
             () => {
               if (generation !== loading) return;
-              // Cover the frame: crop to 3:4 about the centre.
-              const scale = Math.max(FRAME_W / image.naturalWidth, FRAME_H / image.naturalHeight);
+              // Cover the frame: crop to its aspect about the centre.
+              const scale = Math.max(width / image.naturalWidth, height / image.naturalHeight);
               const w = image.naturalWidth * scale;
               const h = image.naturalHeight * scale;
               pen.fillStyle = "#000";
-              pen.fillRect(0, 0, FRAME_W, FRAME_H);
-              pen.drawImage(image, (FRAME_W - w) / 2, (FRAME_H - h) / 2, w, h);
+              pen.fillRect(0, 0, width, height);
+              pen.drawImage(image, (width - w) / 2, (height - h) / 2, w, h);
               try {
                 screen.upload(layer, stage);
               } catch {
@@ -527,7 +543,7 @@ export function Spool({ frames, value, onChange, label, rehearse = false, classN
 
   useEffect(() => {
     engine.current?.load(props.current.frames);
-  }, [roll]);
+  }, [roll, aspect]);
 
   // A new value: from outside it travels on the motor; the reel's own landings are already there.
   useLayoutEffect(() => {
@@ -615,41 +631,69 @@ export function Spool({ frames, value, onChange, label, rehearse = false, classN
     }
   }
 
+  // The screen is the slider, on the deck or bare.
+  const slider: ComponentProps<"div"> = {
+    ref: screenRef,
+    role: "slider",
+    tabIndex: 0,
+    "aria-label": label,
+    "aria-orientation": "vertical",
+    "aria-valuemin": 1,
+    "aria-valuemax": Math.max(1, n),
+    "aria-valuenow": at + 1,
+    "aria-valuetext": n ? `${frames[at].alt}, ${at + 1} of ${n}` : undefined,
+    "aria-describedby": hintId,
+    ...hold,
+    onKeyDown,
+    onKeyUp,
+    onBlur() {
+      if (holder.current !== "key") return;
+      holder.current = null;
+      engine.current?.release();
+    },
+  };
+  const canvasHost = (
+    <span ref={hostRef} className="absolute inset-0 overflow-hidden rounded-[inherit]">
+      {/* Without WebGL2, the frame at the gate, still. */}
+      <span data-fallback hidden className="absolute left-1/2 top-1/2 h-[58%] max-w-[62%] -translate-x-1/2 -translate-y-1/2 bg-cover bg-center" style={{ aspectRatio: aspect }} />
+    </span>
+  );
+  const hint = (
+    <span id={hintId} className="sr-only">
+      Hold Space to spool; the longer the hold, the faster it runs. The arrows step one frame.
+    </span>
+  );
+  const capture = {
+    onPointerDownCapture: (e: PointerEvent<HTMLDivElement>) => touch(e.target, e.button === 0),
+    onKeyDownCapture: (e: KeyboardEvent<HTMLDivElement>) => touch(e.target, e.key === " " || e.key === "Enter"),
+  };
+
+  if (bare) {
+    return (
+      <div ref={rootRef} {...capture} className={cx("relative size-full select-none", className)}>
+        <div {...slider} data-hold className="absolute inset-0 cursor-pointer touch-none outline-offset-[-4px] [background:var(--device-window)] [-webkit-touch-callout:none]">
+          {canvasHost}
+        </div>
+        {/* The frame at the gate, as the deck's LCD has it: its number and title, quiet in a corner. */}
+        <p aria-hidden className="pointer-events-none absolute bottom-6 left-6 flex items-baseline gap-3 text-[13px] leading-none text-(--device-lcd-ink)">
+          <span ref={counterRef} className="tabular-nums text-(--device-lcd-dim)" />
+          <span ref={titleRef} />
+        </p>
+        {hint}
+      </div>
+    );
+  }
+
   return (
-    <div
-      ref={rootRef}
-      onPointerDownCapture={(e) => touch(e.target, e.button === 0)}
-      onKeyDownCapture={(e) => touch(e.target, e.key === " " || e.key === "Enter")}
-      className={cx("flex flex-col gap-[0.7em]", className)}
-    >
+    <div ref={rootRef} {...capture} className={cx("flex flex-col gap-[0.7em]", className)}>
       <div data-part="bezel" className="rounded-[0.7em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
         <div
-          ref={screenRef}
-          role="slider"
-          tabIndex={0}
-          aria-label={label}
-          aria-orientation="vertical"
-          aria-valuemin={1}
-          aria-valuemax={Math.max(1, n)}
-          aria-valuenow={at + 1}
-          aria-valuetext={n ? `${frames[at].alt}, ${at + 1} of ${n}` : undefined}
-          aria-describedby={hintId}
+          {...slider}
           data-hold
-          {...hold}
-          onKeyDown={onKeyDown}
-          onKeyUp={onKeyUp}
-          onBlur={() => {
-            if (holder.current !== "key") return;
-            holder.current = null;
-            engine.current?.release();
-          }}
           data-part="screen"
           className="relative block aspect-[4/3] cursor-pointer touch-none rounded-[0.45em] outline-offset-2 [background:var(--device-window)] [-webkit-touch-callout:none]"
         >
-          <span ref={hostRef} className="absolute inset-0 overflow-hidden rounded-[inherit]">
-            {/* Without WebGL2, the frame at the gate, still. */}
-            <span data-fallback hidden className="absolute left-1/2 top-1/2 aspect-[3/4] h-[58%] -translate-x-1/2 -translate-y-1/2 bg-cover bg-center" />
-          </span>
+          {canvasHost}
           {/* The glass: a sheen where the light catches it, and its edge. */}
           <span aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
         </div>
@@ -704,9 +748,7 @@ export function Spool({ frames, value, onChange, label, rehearse = false, classN
         </div>
       </div>
 
-      <span id={hintId} className="sr-only">
-        Hold Space to spool; the longer the hold, the faster it runs. The arrows step one frame.
-      </span>
+      {hint}
     </div>
   );
 }
@@ -720,8 +762,8 @@ export function Spool({ frames, value, onChange, label, rehearse = false, classN
 type Pen = CanvasRenderingContext2D;
 type Scene = { alt: string; paint: (g: Pen, rand: () => number) => void };
 
-const W = FRAME_W;
-const H = FRAME_H;
+/** The frame being painted: its width and height. Every scene is laid out in fractions of these. */
+const size = (g: Pen) => [g.canvas.width, g.canvas.height] as const;
 
 /** A seeded generator (mulberry32), so the roll is the same every visit. */
 function seeded(seed: number) {
@@ -754,19 +796,21 @@ function mix(a: string, b: string, t: number) {
   return `rgb(${c.join(" ")})`;
 }
 
-function linear(g: Pen, stops: string[], from = 0, to = H) {
+function linear(g: Pen, stops: string[], from = 0, to = g.canvas.height) {
   const gradient = g.createLinearGradient(0, from, 0, to);
   stops.forEach((c, i) => gradient.addColorStop(i / (stops.length - 1), c));
   return gradient;
 }
 
-function band(g: Pen, style: string | CanvasGradient, top = 0, bottom = H) {
+function band(g: Pen, style: string | CanvasGradient, top = 0, bottom = g.canvas.height) {
+  const [W] = size(g);
   g.fillStyle = style;
   g.fillRect(0, top, W, bottom - top);
 }
 
 /** A sun or a moon, in a halo. */
 function disc(g: Pen, x: number, y: number, r: number, colour: string, halo: number) {
+  const [W, H] = size(g);
   const glow = g.createRadialGradient(x, y, r, x, y, r * 7);
   glow.addColorStop(0, `rgb(255 255 255 / ${halo})`);
   glow.addColorStop(1, "rgb(255 255 255 / 0)");
@@ -780,6 +824,7 @@ function disc(g: Pen, x: number, y: number, r: number, colour: string, halo: num
 
 /** A silhouette across the frame, filled down to the bottom; `crest` lights its top edge. */
 function ridge(g: Pen, rand: () => number, base: number, amp: number, colour: string, points: number, crest?: string) {
+  const [W, H] = size(g);
   const line = contour(rand, points);
   g.beginPath();
   for (let x = 0; x <= W; x += 4) g.lineTo(x, base + (line(x / W) - 0.5) * amp);
@@ -799,6 +844,7 @@ const SCENES: Scene[] = [
   {
     alt: "Dusk over the bay",
     paint(g, rand) {
+      const [W, H] = size(g);
       band(g, linear(g, ["#252b46", "#4b4f75", "#8e89a7", "#d8c6ce", "#efe2de"], 0, H * 0.62));
       disc(g, W * 0.5, H * 0.55, 20, "#fff7f1", 0.4);
       band(g, linear(g, ["#5b5c7d", "#2b2e48", "#1b1d31"], H * 0.62, H), H * 0.62);
@@ -814,6 +860,7 @@ const SCENES: Scene[] = [
   {
     alt: "Ridges in mist",
     paint(g, rand) {
+      const [W, H] = size(g);
       band(g, linear(g, ["#f1f2ee", "#dfe4df", "#cdd5cf"]));
       disc(g, W * 0.7, H * 0.2, 24, "#fbfbf7", 0.3);
       for (let i = 0; i < 6; i++) ridge(g, rand, H * (0.36 + i * 0.11), 120 - i * 12, mix("#c3ccc6", "#232e29", i / 5), 3 + i);
@@ -822,6 +869,7 @@ const SCENES: Scene[] = [
   {
     alt: "Bamboo at noon",
     paint(g, rand) {
+      const [W, H] = size(g);
       const light = g.createLinearGradient(0, 0, W, 0);
       ["#7da373", "#c4dab3", "#e7efda", "#a9c79c"].forEach((c, i) => light.addColorStop(i / 3, c));
       band(g, light);
@@ -845,6 +893,7 @@ const SCENES: Scene[] = [
   {
     alt: "Moon over the pass",
     paint(g, rand) {
+      const [W, H] = size(g);
       band(g, linear(g, ["#0e1322", "#1b2236", "#333c57"], 0, H * 0.8));
       for (let i = 0; i < 90; i++) {
         g.fillStyle = `rgb(255 255 255 / ${(0.15 + rand() * 0.6).toFixed(2)})`;
@@ -858,6 +907,7 @@ const SCENES: Scene[] = [
   {
     alt: "Snowfield, low sun",
     paint(g, rand) {
+      const [W, H] = size(g);
       band(g, linear(g, ["#c3cfd9", "#e3e9ee", "#f3f5f6"], 0, H * 0.56));
       disc(g, W * 0.18, H * 0.4, 16, "#ffffff", 0.45);
       ridge(g, rand, H * 0.55, 18, "#a9b4be", 6);
@@ -888,6 +938,7 @@ const SCENES: Scene[] = [
   {
     alt: "Tide pool from above",
     paint(g, rand) {
+      const [W, H] = size(g);
       const water = g.createLinearGradient(0, 0, W, H);
       ["#204855", "#3f7a87", "#7fb2b6"].forEach((c, i) => water.addColorStop(i / 2, c));
       band(g, water);
@@ -913,6 +964,7 @@ const SCENES: Scene[] = [
   {
     alt: "Rain on the river",
     paint(g, rand) {
+      const [W, H] = size(g);
       band(g, linear(g, ["#5a686b", "#8a9696", "#b8c0bd"], 0, H * 0.46));
       ridge(g, rand, H * 0.44, 36, "#3a4641", 5);
       band(g, linear(g, ["#7a8888", "#4a5657", "#2f393a"], H * 0.47, H), H * 0.47);
@@ -939,6 +991,7 @@ const SCENES: Scene[] = [
   {
     alt: "Dunes, late light",
     paint(g, rand) {
+      const [, H] = size(g);
       band(g, linear(g, ["#e9e5dc", "#d8d1c3"], 0, H * 0.4));
       const lit = ["#e2d5bf", "#d3c3a6", "#c6b392"];
       const shade = ["#b5a283", "#a28e6f", "#8d7a5d"];
@@ -951,6 +1004,7 @@ const SCENES: Scene[] = [
   {
     alt: "Fields after rain",
     paint(g, rand) {
+      const [W, H] = size(g);
       band(g, linear(g, ["#c1ccc8", "#e4e9e2"], 0, H * 0.5));
       ridge(g, rand, H * 0.49, 14, "#8f9e94", 5);
       const colours = ["#a6bd7b", "#d9d9a3", "#7a9a62", "#c3cd91", "#5e8051", "#b6c788", "#466540", "#9db574"];
@@ -973,6 +1027,7 @@ const SCENES: Scene[] = [
   {
     alt: "Wave crests",
     paint(g) {
+      const [W, H] = size(g);
       band(g, "#1d3049");
       // Rows of concentric arcs, each row overlapping the one behind it.
       const rings = ["#e8efee", "#2c4a68", "#e8efee", "#5d8aa0", "#e8efee", "#22394f"];
@@ -992,6 +1047,7 @@ const SCENES: Scene[] = [
 
 /** Finishes a frame as a print: a vignette and film grain. */
 function finish(g: Pen, rand: () => number) {
+  const [W, H] = size(g);
   const vignette = g.createRadialGradient(W / 2, H * 0.45, H * 0.22, W / 2, H * 0.45, H * 0.78);
   vignette.addColorStop(0, "rgb(0 0 0 / 0)");
   vignette.addColorStop(1, "rgb(0 0 0 / 0.24)");
@@ -1008,26 +1064,58 @@ function finish(g: Pen, rand: () => number) {
   g.putImageData(image, 0, 0);
 }
 
-let developed: Promise<SpoolFrame[]> | undefined;
+const developed = new Map<number, Promise<SpoolFrame[]>>();
 
-/** Paints and encodes the roll once a visit, however often the study mounts. */
-function develop() {
-  developed ??= Promise.all(
-    SCENES.map(
-      ({ alt, paint }, i) =>
-        new Promise<SpoolFrame>((resolve) => {
-          const canvas = document.createElement("canvas");
-          canvas.width = W;
-          canvas.height = H;
-          const g = canvas.getContext("2d")!;
-          const rand = seeded(i * 7919 + 4);
-          paint(g, rand);
-          finish(g, rand);
-          canvas.toBlob((blob) => resolve({ src: blob ? URL.createObjectURL(blob) : canvas.toDataURL(), alt }), "image/jpeg", 0.88);
-        }),
-    ),
+/**
+ * Paints and encodes the roll at an aspect, once a visit, however often it mounts: 512 px tall for
+ * portrait frames, 576 for landscape, so the scenes' fixed sizes (a sun, a stalk, a crest) read the same.
+ */
+function develop(aspect: number) {
+  const height = aspect < 1 ? 512 : 576;
+  const roll =
+    developed.get(aspect) ??
+    Promise.all(
+      SCENES.map(
+        ({ alt, paint }, i) =>
+          new Promise<SpoolFrame>((resolve) => {
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.round(height * aspect);
+            canvas.height = height;
+            const g = canvas.getContext("2d")!;
+            const rand = seeded(i * 7919 + 4);
+            paint(g, rand);
+            finish(g, rand);
+            canvas.toBlob((blob) => resolve({ src: blob ? URL.createObjectURL(blob) : canvas.toDataURL(), alt }), "image/jpeg", 0.88);
+          }),
+      ),
+    );
+  developed.set(aspect, roll);
+  return roll;
+}
+
+/**
+ * The roll on a page of its own: the screen fills the window and a hold anywhere spools it. It plays
+ * `frames` if it's given any, and the painted roll at `aspect` if not.
+ */
+export function SpoolFullscreen({ frames: own = [], aspect = 16 / 9 }: { frames?: readonly SpoolFrame[]; aspect?: number }) {
+  const [painted, setPainted] = useState<SpoolFrame[]>([]);
+  const [value, setValue] = useState(0);
+  const mine = own.length > 0;
+
+  useEffect(() => {
+    if (mine) return;
+    let live = true;
+    develop(aspect).then((roll) => live && setPainted(roll));
+    return () => {
+      live = false;
+    };
+  }, [mine, aspect]);
+
+  return (
+    <div className="fixed inset-0">
+      <Spool bare label="Roll 04" aspect={aspect} frames={mine ? own : painted} value={value} onChange={setValue} rehearse />
+    </div>
   );
-  return developed;
 }
 
 export default function Demo() {
@@ -1036,7 +1124,7 @@ export default function Demo() {
 
   useEffect(() => {
     let live = true;
-    develop().then((roll) => live && setFrames(roll));
+    develop(3 / 4).then((roll) => live && setFrames(roll));
     return () => {
       live = false;
     };
