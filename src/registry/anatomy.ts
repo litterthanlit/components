@@ -6,6 +6,11 @@ import { parts, type PartInfo } from "@/components/anatomy/parts";
  * enough. A study is listed here once its parts carry `data-part`.
  */
 export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>> = {
+  "needle-field": {
+    screen: { note: "A WebGL field of needles on a sphere, one InstancedMesh; needles near the pointer tilt toward it or away." },
+    bezel: { note: "Black, with a polished edge, round the field: a strip of glass set into the well." },
+    key: { note: "Attract and repel, as radios. The selected key's light is on." },
+  },
   knob: {
     cap: { note: "Knurled round its skirt by a conic gradient from var(--a), so it turns without a transform." },
     light: { tokens: ["--device-meter-off", "--device-meter-on"], note: "Fifteen strokes round the collar, lit by the same spring that turns the cap and clicks the detents." },
