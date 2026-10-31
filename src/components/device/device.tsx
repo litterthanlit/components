@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { setTheme, useTheme } from "@/components/gallery/theme-toggle";
@@ -7,8 +8,8 @@ import { VOLUME_DEFAULT, VOLUME_MAX, getVolume, isMuted, play, setMuted, setVolu
 import { site } from "@/site.config";
 import { Dial, type DialButton } from "./dial";
 import { takeLength, takeLengths, usePageVisible, useReducedMotion } from "./hooks";
-import { Readout, type Transport } from "./readout";
-import { AppStage, Chevron, Choice, HomeAbout, Hud, InfoSheet, Panel, ScreenList, StatusBar, TakeArt, TakeWave, VolumeBar, type ListItem, type Study } from "./screen";
+import { GlassReadout, type Transport } from "./readout";
+import { AppStage, Chevron, Choice, HomeAbout, Hud, InfoSheet, Panel, ScreenList, TakeArt, TakeWave, VolumeBar, type ListItem, type Study } from "./screen";
 import { Tape } from "./tape";
 
 const SETTLE = 450; // ms the dial or tape has to rest before the study it reached opens
@@ -568,7 +569,6 @@ export function Device({ studies }: { studies: Study[] }) {
       : flash === "stop" || (flash !== null && flash === (view === "take" ? "play" : "ok"))
         ? "centre"
         : null;
-  const title = view === "take" ? study.title : titles[view];
 
   return (
     <div
@@ -576,26 +576,34 @@ export function Device({ studies }: { studies: Study[] }) {
       role="region"
       aria-label={`${site.name}: a player of studies`}
       onPointerDownCapture={wake}
-      className="flex h-dvh w-full justify-center [--m:8px] sm:[--m:14px] wide:[--m:18px] pt-[max(var(--m),env(safe-area-inset-top))] pr-[max(var(--m),env(safe-area-inset-right))] pb-[max(var(--m),env(safe-area-inset-bottom))] pl-[max(var(--m),env(safe-area-inset-left))]"
+      className="flex h-dvh w-full flex-col items-center [--m:8px] sm:[--m:14px] wide:[--m:24px] pt-[max(var(--m),env(safe-area-inset-top))] pr-[max(var(--m),env(safe-area-inset-right))] pb-[max(var(--m),env(safe-area-inset-bottom))] pl-[max(var(--m),env(safe-area-inset-left))]"
     >
-      {/* The frame: machined, a shade darker than the body, lit along its top. It
-          takes 80% of the window's width, never less than 864px (so phones and
-          tablets keep the whole width) and never more than 1200px. */}
-      <div className="relative flex size-full max-w-[min(1200px,max(864px,80vw))] rounded-[34px] p-[5px] [background:var(--device-frame)] [box-shadow:var(--device-frame-edge),var(--device-body-shadow)] wide:rounded-[46px] wide:p-[8px]">
-        {/* The body: near white, softly lit. */}
-        <div className="relative isolate flex size-full flex-col overflow-hidden rounded-[29px] [background:var(--device-body)] shadow-(--device-body-edge) wide:rounded-[38px] short:flex-row">
-          <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
+      {/* The page around the object: the way to the player's screens and the study's page, off the hardware. */}
+      <header className="flex h-[44px] w-full max-w-[880px] shrink-0 items-center justify-between gap-6 px-2 text-[14px] tracking-[-0.006em]">
+        <span className="font-medium text-ink">{site.name}</span>
+        <nav aria-label="Player" className="flex items-center gap-5 text-muted">
+          <button type="button" onClick={() => press(view === "take" ? "home" : "back")} className="transition-colors hover:text-ink">
+            {view === "take" ? "Menu" : "Back"}
+          </button>
+          {view === "take" && (
+            <>
+              <button type="button" aria-expanded={info} onClick={() => press("ok")} className="transition-colors hover:text-ink">
+                Details
+              </button>
+              <Link href={`/c/${study.slug}`} aria-label={`Source: open the ${study.title} page`} className="transition-colors hover:text-ink">
+                Source
+              </Link>
+            </>
+          )}
+        </nav>
+      </header>
 
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-            {/* The screen: full width, edge to edge under the bumper. */}
-            <div className="@container/display relative isolate flex min-h-0 flex-1 animate-wake flex-col overflow-hidden bg-canvas">
-              <StatusBar
-                title={title}
-                details={view === "take" ? { open: info, onToggle: () => press("ok") } : undefined}
-                nav={view === "take" ? { label: "Menu", onPress: () => press("home") } : { label: "Back", back: true, onPress: () => press("back") }}
-                source={view === "take" ? { href: `/c/${study.slug}`, label: `Source: open the ${study.title} page` } : undefined}
-              />
-
+      <div className="grid min-h-0 w-full flex-1 place-items-center">
+        {/* The Slab: a graphite rim round one sheet of black glass. It is always graphite with a silver dial, whatever the page's theme. */}
+        <div data-theme="dark" className="slab slab-rim relative flex rounded-[30px] p-[10px] wide:rounded-[36px] wide:p-[12px]">
+          <div className="slab-glass relative isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[22px] wide:rounded-[26px]">
+            {/* The screen: the study runs straight on the glass, its own plate dissolved (globals.css, data-slab-screen). */}
+            <div data-slab-screen className="@container/display relative isolate flex min-h-0 flex-1 animate-wake flex-col overflow-hidden">
               <div className="relative min-h-0 flex-1">
                 <div
                   ref={stageRef}
@@ -715,49 +723,49 @@ export function Device({ studies }: { studies: Study[] }) {
                   </div>
                 </Panel>
               </div>
-
-              {/* Glass, and the backlight's bloom as the screen wakes. */}
-              <div aria-hidden className="pointer-events-none absolute inset-0 z-40 [background:var(--screen-glass)]" />
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 z-40 animate-bloom [background:radial-gradient(50%_50%_at_50%_50%,var(--screen-glow),transparent)]"
-              />
             </div>
 
+            {/* The tape, lit in the same glass under the screen. */}
             <Tape
               takes={studies}
               slider={{ label: "Tape", now: dialled + 1, max: n, text: `${study.title}, ${dialled + 1} of ${n}` }}
               hint={hintId}
               onScrub={scrub}
               onScrubEnd={scrubEnd}
-              className="h-[38px] shrink-0 border-t border-black/[0.06] dark:border-white/[0.06] wide:h-[44px] short:h-[34px]"
+              className="h-[30px] shrink-0 wide:h-[36px]"
             />
-          </div>
 
-          {/* The deck. Sized in em from one font size, so it scales as one piece. */}
-          <div className="deck-grid shrink-0 content-center justify-center gap-x-[1.3em] gap-y-[0.8em] border-t border-black/[0.07] px-[1.1em] pb-[1.3em] pt-[1.1em] [font-size:clamp(9px,min(3.2vw,1.7vh),15px)] dark:border-white/[0.06] wide:gap-x-[3.2em] wide:px-[2.4em] wide:py-[1.7em] wide:[font-size:clamp(10px,min(1.45vw,1.6vh),16px)] roomy:gap-x-[3em] roomy:[font-size:clamp(10px,min(1.25vw,1.6vh),16px)] short:border-l short:border-t-0 short:px-[1em] short:py-[0.9em] short:[font-size:clamp(8px,2.7vh,12px)]">
-            {/* The maker's mark and the LCD, one strip of glass. Phones keep only the mark: the screen and the HUD say the rest. */}
-            <Readout at={dialled} n={n} title={study.title} transport={transport} className="self-start justify-self-start [grid-area:readout] wide:self-center" />
+            {/* The deck, in the glass: the readout lit straight into it, and the dial through it in a ring of the rim's metal. */}
+            <div className="flex shrink-0 items-center gap-[1.6em] px-[1.4em] pb-[1.2em] pt-[0.4em] [font-size:clamp(9px,min(3.2vw,1.7vh),15px)] wide:px-[2em] wide:pb-[1.5em] wide:[font-size:clamp(10px,min(1.2vw,1.6vh),15px)]">
+              <GlassReadout at={dialled} n={n} title={study.title} transport={transport} className="min-w-0 flex-1" />
+              <div className="slab-ring shrink-0 rounded-full p-[0.32em]">
+                <Dial
+                  flash={dialFlash}
+                  onTurn={(steps) => {
+                    wake();
+                    turn(steps);
+                  }}
+                  onPress={(button) => press(button !== "centre" ? button : view === "take" ? "play" : "ok")}
+                  onHold={view === "take" ? () => press("stop") : undefined}
+                  labels={
+                    view === "take"
+                      ? { up: "Volume up", down: "Volume down", prev: "Previous study", next: "Next study", centre: `${playing ? "Pause" : "Play"}; hold to stop` }
+                      : { up: "Up", down: "Down", prev: view === "options" ? "Less" : "Previous", next: view === "options" ? "More" : "Next", centre: "Choose" }
+                  }
+                  centre={<CentreGlyph take={view === "take"} playing={playing} />}
+                  slider={slider}
+                  sliderRef={sliderRef}
+                  hint={hintId}
+                  className="w-[9em] wide:w-[10.5em]"
+                />
+              </div>
+            </div>
 
-            {/* The dial: PLAY at its centre, held for STOP. */}
-            <Dial
-              flash={dialFlash}
-              onTurn={(steps) => {
-                wake();
-                turn(steps);
-              }}
-              onPress={(button) => press(button !== "centre" ? button : view === "take" ? "play" : "ok")}
-              onHold={view === "take" ? () => press("stop") : undefined}
-              labels={
-                view === "take"
-                  ? { up: "Volume up", down: "Volume down", prev: "Previous study", next: "Next study", centre: `${playing ? "Pause" : "Play"}; hold to stop` }
-                  : { up: "Up", down: "Down", prev: view === "options" ? "Less" : "Previous", next: view === "options" ? "More" : "Next", centre: "Choose" }
-              }
-              centre={<CentreGlyph take={view === "take"} playing={playing} />}
-              slider={slider}
-              sliderRef={sliderRef}
-              hint={hintId}
-              className="w-[12em] self-center justify-self-center [grid-area:dial] wide:w-[15em] short:w-[11em]"
+            {/* One sheen across the whole sheet of glass, and the backlight's bloom as it wakes. */}
+            <div aria-hidden className="pointer-events-none absolute inset-0 z-40 [background:linear-gradient(160deg,rgb(255_255_255/0.08)_0%,rgb(255_255_255/0.02)_40%,transparent_40.4%)]" />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 z-40 animate-bloom [background:radial-gradient(50%_50%_at_50%_40%,var(--screen-glow),transparent)]"
             />
           </div>
         </div>

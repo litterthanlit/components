@@ -715,7 +715,7 @@ export function Spool({ frames, value, onChange, label, aspect = 3 / 4, bare = f
                   mode === "ghost" ? "animate-pulse bg-(--device-rec) drawn:bg-(--device-rec)!" : mode === "hand" ? "bg-(--device-hold) drawn:bg-(--device-draw-ink)!" : "bg-black drawn:bg-(--device-draw-ink)!",
                 )}
               />
-              <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em]">{mode === "ready" ? "Ready" : "Spool"}</span>
+              <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em]">{mode === "ready" ? "Ready" : "FF"}</span>
             </span>
             <span ref={counterRef} className="text-[0.62em] leading-none tabular-nums text-(--device-lcd-dim)" />
           </span>
@@ -742,7 +742,7 @@ export function Spool({ frames, value, onChange, label, aspect = 3 / 4, bare = f
               ))}
             </span>
             <span data-part="lettering" className="mt-[0.55em] text-[0.8em] font-medium uppercase leading-none tracking-[0.03em] [text-shadow:var(--device-engrave)]">
-              Spool
+              Hold
             </span>
           </span>
         </div>
