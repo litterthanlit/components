@@ -1,473 +1,173 @@
 "use client";
 
 import { useEffect, useEffectEvent, useImperativeHandle, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent, type Ref } from "react";
-import {
-  ACESFilmicToneMapping,
-  Color,
-  ConeGeometry,
-  HalfFloatType,
-  InstancedBufferAttribute,
-  InstancedMesh,
-  Mesh,
-  PerspectiveCamera,
-  Plane,
-  PlaneGeometry,
-  Raycaster,
-  Scene,
-  ShaderMaterial,
-  Vector2,
-  Vector3,
-  WebGLRenderer,
-  WebGLRenderTarget,
-} from "three";
-import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
-import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
-import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
-import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
-import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { Color, DoubleSide, InstancedBufferAttribute, InstancedMesh, OrthographicCamera, Plane, PlaneGeometry, Raycaster, Scene, ShaderMaterial, Vector2, Vector3, WebGLRenderer } from "three";
 import { focusQuietly } from "@/design-system";
 import { hostTransport, play } from "@/lib/sound";
 
 /*
- * Needle Field, alive. An empty floor seen in true isometric (35.264° up,
- * 45° round), a faint grid and nothing else, until a dark glossy mass seeps
- * up through the middle of it. It breathes as it grows, its skin rippling on
- * slow simplex noise. Veins crawl out across the grid ahead of it, and then
- * needles break out of the surface in waves, ring after ring from the centre.
- * As it wakes the camera eases out of the isometric drawing into a freer
- * perspective and starts to orbit: the diagram becomes a creature.
+ * Needle Field, alive, drawn in ink. Blank paper in true isometric (35.264°
+ * up, 45° round), and then a needle springs up at the centre, then a ring
+ * round it, then the next, until a mound of bristles stands on the page.
+ * It breathes. A wave runs across it. And it notices you: the needles lean
+ * toward the pointer and reach for it (attract), or bend away and duck
+ * (repel), and settle back slowly when it leaves.
  *
- * Everything on screen is a pure function of one frame: the time, the
- * awakening's progress (0 to 1), the pointer on the floor and the mode. The
- * component only keeps the clock and the pointer's springs, so the same frame
- * can be scrubbed, played on scroll or rendered offline to video, and comes
- * out identical each time.
+ * It is drawn as a cartoon is: every needle one pen stroke, tapering to a
+ * point, a little bent, and redrawn eight times a second with a slightly
+ * different wobble, so the lines boil the way hand-drawn animation does.
+ * Nothing else is on the page: no floor, no shading, black on white.
  *
- * All motion runs on the GPU. The body is a 320 × 320 plane displaced in its
- * vertex shader: a lobed edge that breathes and reaches toward the pointer, a
- * meniscus profile, two octaves of ripple and a slow ring travelling out. The
- * veins are ridged noise in warped coordinates, revealed by a noise-edged
- * front. The needles are one InstancedMesh of open cones; each instance reads
- * the same field at its root, stands on the surface normal, leans toward the
- * pointer (attract) or away (repel) and rises out of the skin when its wave
- * arrives. 24,000 by default; 60,000 still holds 60 fps on a laptop GPU.
+ * Each frame is a pure function of its time, the awakening's progress (0 to
+ * 1), the pointer on the floor and the mode. The component keeps only the
+ * clock and the pointer's spring, so the same frame can be scrubbed, played
+ * on scroll or rendered offline to video, identically every time.
  *
- * Light comes from an analytic studio: a softbox overhead, a hard strip
- * behind for the specular rim, one wide violet strip low on the far side, and
- * a violet-to-blue thin-film sheen at grazing angles, so the black reads as
- * oily rather than matte. Bloom, a little chromatic aberration, a vignette
- * and 24 fps grain finish it. Reduced motion skips the awakening and holds a
- * still frame of the creature awake; the needles still lean for a pointer.
+ * All of it runs on the GPU. The needles are one InstancedMesh of ribbons;
+ * each instance finds its height, its bend, its lean and its spring in the
+ * vertex shader, projects its curve and widens it in screen pixels, so the
+ * pen keeps its width at any size. Reduced motion skips the awakening and
+ * holds one drawing of it awake; the needles still lean for a pointer.
  */
 
 /* --- Tunable constants ---------------------------------------------------- */
 
-/** Seconds the awakening takes, from the empty floor to the first idle breath. */
-export const DURATION = 7.2;
-/** Needles in the field by default. Each costs ten vertices; 60,000 is fine. */
-export const NEEDLES = 24_000;
+/** Seconds the awakening takes, from the blank page to the last needle landing. */
+export const DURATION = 6;
+/** Needles on the page by default. More reads as fur; fewer, as a doodle. */
+export const NEEDLES = 1200;
 
-const SEGMENTS = 320; // the body's plane, a side: 103,041 vertices
-const EXTENT = 10.8; // world units across the floor and the body's plane
-const EPS = 0.02; // world units between the samples a normal is taken from
+const RADIUS = 3.2; // world units: how far the bristles spread
+const SEGMENTS = 6; // along each stroke, enough for its bend to read as a curve
 
-const PALETTE = {
-  rim: "#6d4dff", // the one cold accent: violet, clear of the screen's blue
-  sheen: "#2f6fd6", // the far end of the thin film's shift, used only at grazing angles
-  floor: "#0b0b0e", // the canvas
-  grid: "#2a2b33", // its lines
-};
-
-const CAMERA = {
-  isoElevation: 35.264, // degrees: atan(1 / √2), true isometric
-  isoAzimuth: 45,
-  isoFov: 0.6, // degrees: so narrow it is orthographic to within 0.3%
-  freeElevation: 27,
-  freeFov: 34,
-  orbit: 18, // degrees it swings round as it wakes
-  sway: 9, // degrees it drifts either side of that, once awake
-  swayRate: 0.07, // radians a second
-};
-
-const POST = {
-  bloom: { strength: 0.62, radius: 0.55, threshold: 0.62 },
-  aberration: 0.012, // UV offset at the corners
-  vignette: 0.55, // how dark the corners go, 0 to 1
-  grain: 0.035,
+const INK = {
+  ink: "#0a0a0a",
+  paper: "#ffffff",
+  width: 1.7, // CSS pixels at the root; strokes taper to a point
+  boil: 8, // redraws a second
+  wobble: 0.022, // world units each redraw can move a tip or a bend
 };
 
 const POINTER = {
-  reach: 0.78, // world units: how far the needles' lean carries (σ of a Gaussian)
+  reach: 0.85, // world units: how far the lean carries (σ of a Gaussian)
   stiffness: 34, // the spring that carries its position: a little under a second to arrive
-  notice: 2.4, // 1/s: how fast the creature notices a pointer arriving
+  notice: 2.4, // 1/s: how fast it notices a pointer arriving
   relax: 0.9, // 1/s: and how slowly it lets go
-  modeRate: 5, // 1/s: needles swinging from leaning in to recoiling
+  modeRate: 5, // 1/s: from leaning in to ducking away
 };
 
-/** A frame of reduced motion: the creature awake, mid-breath. */
-const STILL_TIME = 11.4;
+/** A frame of reduced motion: awake, mid-breath. */
+const STILL_TIME = 9.3;
 
 /* --- The timeline --------------------------------------------------------- */
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const span = (p: number, from: number, to: number) => clamp01((p - from) / (to - from));
 const smooth = (x: number) => x * x * (3 - 2 * x);
-const smoother = (x: number) => x * x * x * (x * (x * 6 - 15) + 10);
-const easeOut = (x: number) => 1 - (1 - x) ** 3;
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-/** The awakening's phases at one point of its progress, each 0 to 1. They overlap, so it reads as one movement. */
+/** The awakening's phases at one point of its progress, each 0 to 1. */
 export function awakening(progress: number) {
   const p = clamp01(progress);
-  const grow = smooth(span(p, 0.18, 0.72));
   return {
-    /** The blob seeping up through the floor. */
-    seep: smooth(span(p, 0.06, 0.3)),
-    /** Growing to full size. */
-    grow,
-    /** It breathes hardest while it grows. */
-    breath: 0.035 + 0.05 * Math.sin(Math.PI * grow),
-    /** The vein front crawling out across the grid. */
-    tendril: easeOut(span(p, 0.26, 0.94)),
-    /** The needles' waves: the shader staggers them from the centre out. */
-    erupt: span(p, 0.42, 1),
-    /** The camera, from the isometric drawing to the creature. */
-    camera: smoother(span(p, 0.38, 1)),
+    /** How far out the waves of needles have travelled. Each needle springs up as its wave arrives. */
+    sprout: span(p, 0.05, 0.85),
+    /** The mound rising in the middle as it fills in. */
+    swell: smooth(span(p, 0.2, 1)),
   };
 }
 
 /* --- Shaders -------------------------------------------------------------- */
 
-// Simplex noise in 3D after Ashima Arts and Stefan Gustavson (MIT).
-const NOISE = /* glsl */ `
-vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec4 permute(vec4 x) { return mod289(((x * 34.0) + 10.0) * x); }
-vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-float snoise(vec3 v) {
-  const vec2 C = vec2(1.0 / 6.0, 1.0 / 3.0);
-  const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
-  vec3 i = floor(v + dot(v, C.yyy));
-  vec3 x0 = v - i + dot(i, C.xxx);
-  vec3 g = step(x0.yzx, x0.xyz);
-  vec3 l = 1.0 - g;
-  vec3 i1 = min(g.xyz, l.zxy);
-  vec3 i2 = max(g.xyz, l.zxy);
-  vec3 x1 = x0 - i1 + C.xxx;
-  vec3 x2 = x0 - i2 + C.yyy;
-  vec3 x3 = x0 - D.yyy;
-  i = mod289(i);
-  vec4 p = permute(permute(permute(i.z + vec4(0.0, i1.z, i2.z, 1.0)) + i.y + vec4(0.0, i1.y, i2.y, 1.0)) + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-  vec3 ns = 0.142857142857 * D.wyz - D.xzx;
-  vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-  vec4 x_ = floor(j * ns.z);
-  vec4 y_ = floor(j - 7.0 * x_);
-  vec4 x = x_ * ns.x + ns.yyyy;
-  vec4 y = y_ * ns.x + ns.yyyy;
-  vec4 h = 1.0 - abs(x) - abs(y);
-  vec4 b0 = vec4(x.xy, y.xy);
-  vec4 b1 = vec4(x.zw, y.zw);
-  vec4 s0 = floor(b0) * 2.0 + 1.0;
-  vec4 s1 = floor(b1) * 2.0 + 1.0;
-  vec4 sh = -step(h, vec4(0.0));
-  vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
-  vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
-  vec3 p0 = vec3(a0.xy, h.x);
-  vec3 p1 = vec3(a0.zw, h.y);
-  vec3 p2 = vec3(a1.xy, h.z);
-  vec3 p3 = vec3(a1.zw, h.w);
-  vec4 norm = taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
-  p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
-  vec4 m = max(0.5 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
-  m = m * m;
-  return 105.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
-}
-`;
-
-// The creature, as a height field over the floor. Shared by the body, the needles and the floor's shadow.
-const FIELD = /* glsl */ `
-uniform float uTime;
-uniform float uSeep;
-uniform float uGrow;
-uniform float uBreath;
-uniform float uTendril;
-uniform vec3 uPointer; // xy: the pointer on the floor (world x, z); z: how present it is, 0 to 1
-uniform float uMode;   // 1 attract, −1 repel, and anything between while it swings
-
-// The body's edge in one direction: lobed, breathing, and reaching toward the pointer (or shying from it).
-float bodyRadius(vec2 dir) {
-  float size = 0.42 * uSeep + 1.22 * uGrow;
-  float lobes = snoise(vec3(dir * 1.2, uTime * 0.09)) * 0.2 + snoise(vec3(dir * 2.8 + 5.0, uTime * 0.17)) * 0.08;
-  float breath = 1.0 + uBreath * (sin(uTime * 1.35) + 0.4 * sin(uTime * 2.3 + 1.7));
-  float r = size * breath * (1.0 + lobes);
-  float dp = length(uPointer.xy);
-  float aim = pow(max(dot(dir, uPointer.xy / max(dp, 1e-3)), 0.0), 10.0);
-  float want = uPointer.z * uGrow * aim * clamp(dp - r * 0.7, 0.0, 1.7);
-  return r + want * (0.75 * max(uMode, 0.0) - 0.5 * max(-uMode, 0.0));
-}
-
-// x: height above the floor; y: how far inside the edge (world units, negative outside).
-vec2 bodyField(vec2 p) {
-  float len = length(p);
-  float inside = bodyRadius(p / max(len, 1e-4)) - len;
-  float soft = log(1.0 + exp(inside * 16.0)) / 16.0; // the edge, rounded like a meniscus
-  float height = 0.5 * uSeep * (0.45 + 0.55 * uGrow);
-  float h = height * (1.0 - exp(-soft * 3.2)) + 0.18 * uGrow * smoothstep(0.0, 1.6, inside);
-  float wet = smoothstep(0.0, 0.4, inside);
-  h += wet * (snoise(vec3(p * 1.15, uTime * 0.22)) * 0.07 + snoise(vec3(p * 2.7 + 9.0, uTime * 0.37)) * 0.022);
-  h += wet * 0.02 * sin(len * 4.6 - uTime * 1.45); // a slow ring, travelling out
-  vec2 dq = p - uPointer.xy;
-  float near = uPointer.z * exp(-dot(dq, dq) / 0.3);
-  h += near * smoothstep(-0.3, 0.3, inside) * (0.16 * max(uMode, 0.0) - 0.12 * max(-uMode, 0.0));
-  return vec2(h, inside);
-}
-
-// The veins: the zero lines of noise wrapped round a cylinder, stretched along the radius so they run out from the
-// body and fork as they go. Each is a fixed width in world units, thinning toward its tip, and a front with a noisy
-// edge reveals them.
-float veinField(vec2 p) {
-  float len = length(p);
-  vec2 dir = p / max(len, 1e-4);
-  vec2 w = dir + 0.12 * vec2(snoise(vec3(p * 0.7, 1.3)), snoise(vec3(p * 0.7, 8.1))); // a waver
-  float taper = 1.0 - smoothstep(1.2, 4.8, len);
-  float main = abs(snoise(vec3(w * 2.1, len * 0.42 + 2.0 + uTime * 0.01)));
-  float twig = abs(snoise(vec3(w * 4.6, len * 0.95 + 6.0 + uTime * 0.015)));
-  // Noise units per world unit across a vein shrink with the radius, so divide it back out.
-  float across = max(len, 0.6);
-  float a = 1.0 - smoothstep(0.0, (0.03 + 0.045 * taper) * 2.1 / across, main);
-  float b = (1.0 - smoothstep(0.0, (0.018 + 0.028 * taper) * 4.6 / across, twig)) * smoothstep(0.1, 0.5, snoise(vec3(p * 0.6, 4.0)) + 0.3);
-  float front = uTendril * 4.9 * (1.0 + 0.22 * snoise(vec3(dir * 1.6, 3.0)));
-  return max(a, b * 0.8) * smoothstep(0.0, 0.45, front - len) * (1.0 - smoothstep(3.6, 5.2, len));
-}
-
-const float VEIN_HEIGHT = 0.06;
-`;
-
-// An analytic studio, so the black has something to reflect.
-const LIGHT = /* glsl */ `
-uniform vec3 uRim;
-uniform vec3 uSheen;
-const vec3 KEY = vec3(-0.33, 0.92, 0.22);
-
-vec3 env(vec3 r) {
-  vec3 c = vec3(0.004, 0.0045, 0.006) + vec3(0.018, 0.019, 0.024) * smoothstep(-0.1, 0.9, r.y);
-  c += vec3(6.0) * smoothstep(0.93, 0.975, dot(r, normalize(KEY)));                         // the softbox overhead
-  c += vec3(3.4, 3.6, 4.0) * smoothstep(0.965, 0.99, dot(r, normalize(vec3(0.9, 0.35, -0.75)))); // a hard strip behind: the rim
-  c += uRim * 1.5 * smoothstep(0.93, 0.99, dot(r, normalize(vec3(-0.8, -0.04, -0.9))));    // the accent, on the far horizon: only silhouettes see it
-  c += vec3(0.05, 0.052, 0.065) * exp(-abs(r.y - 0.02) * 40.0);                              // a horizon
-  return c;
-}
-
-vec3 shade(vec3 n, vec3 v, float ao) {
-  float ndv = clamp(dot(n, v), 0.0, 1.0);
-  float grazing = 1.0 - ndv;
-  float fresnel = 0.045 + 0.955 * pow(grazing, 5.0);
-  vec3 spec = env(reflect(-v, n)) * fresnel;
-  // A thin film: oil on black, its hue shifting with the angle, only where the surface turns away.
-  vec3 film = mix(uRim, uSheen, 0.5 + 0.5 * sin(ndv * 14.0 + n.x * 3.0 + n.z * 2.0));
-  vec3 sheen = film * pow(grazing, 3.0) * 0.14;
-  vec3 rim = uRim * pow(grazing, 6.0) * 0.35;
-  vec3 diffuse = vec3(0.006, 0.006, 0.008) * (0.3 + 0.7 * max(dot(n, normalize(KEY)), 0.0));
-  return (diffuse + spec + sheen + rim) * ao;
-}
-`;
-
-const BODY_VERTEX = /* glsl */ `
-${NOISE}
-${FIELD}
-varying vec3 vWorld;
-varying vec3 vNormal;
-void main() {
-  vec2 p = position.xz;
-  vec2 f = bodyField(p);
-  float hx = bodyField(p + vec2(${EPS}, 0.0)).x;
-  float hz = bodyField(p + vec2(0.0, ${EPS})).x;
-  vNormal = normalize(vec3(f.x - hx, ${EPS}, f.x - hz));
-  // Off the body, the plane sinks under the floor, so the floor's depth cuts its edge cleanly.
-  vWorld = vec3(p.x, mix(-0.06, f.x, smoothstep(-0.04, 0.0, f.y)), p.y);
-  gl_Position = projectionMatrix * viewMatrix * vec4(vWorld, 1.0);
-}
-`;
-
-const BODY_FRAGMENT = /* glsl */ `
-${LIGHT}
-varying vec3 vWorld;
-varying vec3 vNormal;
-void main() {
-  vec3 n = normalize(vNormal);
-  vec3 v = normalize(cameraPosition - vWorld);
-  float ao = mix(0.5, 1.0, smoothstep(0.0, 0.22, vWorld.y)); // darker in the creases, against the floor
-  gl_FragColor = vec4(shade(n, v, ao), 1.0);
-}
-`;
-
 const NEEDLE_VERTEX = /* glsl */ `
-${NOISE}
-${FIELD}
-uniform float uErupt;
+uniform float uTime;
+uniform float uBoil;      // the time, held to the redraws
+uniform float uSprout;
+uniform float uSwell;
+uniform float uSeconds;   // the awakening's length, for the springs
+uniform vec3 uPointer;    // xy: the pointer on the floor (world x, z); z: how present it is
+uniform float uMode;      // 1 attract, −1 repel, between while it swings
 uniform float uReach;
-attribute vec4 aRoot; // xy: where it stands on the floor; zw: two random numbers of its own
-varying vec3 vWorld;
-varying vec3 vNormal;
-varying float vAlong;
+uniform float uWobble;
+uniform float uWidth;     // device pixels
+uniform vec2 uRes;        // device pixels
+attribute vec4 aRoot;     // xy: where it stands; zw: two random numbers of its own
+
+float hash(vec3 p) {
+  p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+  p += dot(p, p.yxz + 33.33);
+  return fract((p.x + p.y) * p.z);
+}
+vec3 jitter(float salt) {
+  vec3 k = vec3(aRoot.z * 91.7, aRoot.w * 53.3, uBoil * 8.0 + salt);
+  return vec3(hash(k), hash(k + 17.0), hash(k + 41.0)) - 0.5;
+}
+
 void main() {
   vec2 p = aRoot.xy;
   float len = length(p);
-  vec2 body = bodyField(p);
-  float vein = veinField(p);
-  float onBody = smoothstep(0.03, 0.3, body.y);
-  float onVein = smoothstep(0.35, 0.75, vein) * step(0.55, aRoot.w);
-  float cover = max(onBody, onVein * 0.45);
-  if (cover < 0.002) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; } // not grown here: off the screen
+  float edge = len / ${RADIUS.toFixed(1)};
 
-  float h = max(body.x, VEIN_HEIGHT * vein);
-  float hx = bodyField(p + vec2(${EPS}, 0.0)).x;
-  float hz = bodyField(p + vec2(0.0, ${EPS})).x;
-  vec3 skin = normalize(vec3(body.x - hx, ${EPS}, body.x - hz));
+  // The waves: ring after ring from the centre, each needle a little early or late in its ring.
+  float ring = floor(len * 2.6) / 2.6;
+  float arrive = mix(len, ring, 0.7) / ${RADIUS.toFixed(1)} + aRoot.z * 0.05;
+  float since = (uSprout - arrive) * uSeconds * 0.8; // seconds since its wave arrived
+  if (since <= 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; } // not up yet: off the page
+  // A cartoon spring: it shoots up past its height, and wobbles down onto it.
+  float rise = 1.0 - exp(-5.5 * since) * cos(13.0 * since);
 
-  // The waves: ring after ring from the centre, each needle a little late or early within its ring.
-  float ring = floor(len * 2.2) / 2.2;
-  float arrive = mix(len, ring, 0.6) / 4.6 * 0.72 + aRoot.z * 0.12;
-  float rise = smoothstep(arrive, arrive + 0.14, uErupt);
+  // The mound: tall in the middle, short at the edge, breathing in a ring that travels out.
+  float mound = pow(1.0 - smoothstep(0.0, 1.0, edge), 1.2);
+  float height = (0.07 + 0.07 * aRoot.w + (0.12 + 0.95 * mound) * uSwell) * (1.0 - 0.3 * smoothstep(0.85, 1.0, edge));
+  height *= 1.0 + 0.07 * sin(uTime * 1.3 - len * 1.4);
 
-  // Mostly short bristle, and one in thirty a spike.
-  float spike = step(0.967, fract(aRoot.z * 13.7));
-  float length_ = (0.07 + 0.16 * pow(aRoot.w, 2.5) + spike * 0.5) * cover * (0.55 + 0.45 * smoothstep(0.0, 1.2, body.y));
-  float wave = sin(dot(p, vec2(0.83, 0.56)) * 2.6 - uTime * 1.1); // the bristle wave that crosses it, idle
-  length_ *= 1.0 + 0.12 * wave * onBody;
+  // The idle wave that crosses it, and a sway of its own.
+  vec2 across = vec2(0.83, 0.56);
+  float wave = sin(dot(p, across) * 2.4 - uTime * 1.1);
+  vec2 lean = across * wave * 0.12 + 0.05 * vec2(sin(uTime * 0.9 + aRoot.z * 40.0), cos(uTime * 0.7 + aRoot.w * 40.0));
+  lean += p / max(len, 0.3) * 0.18 * edge; // the edge splays out a little, like a brush
 
-  // The pointer: lean in and reach (attract), or lean away and shrink back (repel).
+  // The pointer: lean in and reach for it, or bend away and duck.
   vec2 toward = uPointer.xy - p;
   float d = length(toward);
   float near = uPointer.z * exp(-d * d / (uReach * uReach));
-  length_ *= 1.0 + near * (0.35 * max(uMode, 0.0) - 0.55 * max(-uMode, 0.0));
-  vec3 axis = normalize(skin + vec3(0.0, 0.35, 0.0) + vec3(p.x, 0.0, p.y) / max(len, 0.3) * 0.3 * onBody); // fanned out, like an urchin's
-  axis += vec3(toward.x, 0.0, toward.y) / max(d, 1e-3) * near * smoothstep(0.0, 0.25, d) * (1.6 * max(uMode, 0.0) + 2.2 * min(uMode, 0.0));
-  axis.xz += 0.08 * vec2(sin(uTime * 0.9 + aRoot.z * 40.0), cos(uTime * 0.7 + aRoot.w * 40.0)) + 0.1 * wave * vec2(0.83, 0.56);
-  axis = normalize(axis);
+  lean += toward / max(d, 1e-3) * near * smoothstep(0.0, 0.25, d) * (1.3 * max(uMode, 0.0) + 1.6 * min(uMode, 0.0));
+  height *= 1.0 + near * (0.4 * max(uMode, 0.0) - 0.5 * max(-uMode, 0.0));
+  height *= rise;
 
-  // It rises out of the skin: the root starts below the surface and the needle slides up along itself.
-  float shown = length_ * (0.55 + 0.45 * rise);
-  vec3 root = vec3(p.x, h, p.y) - axis * (shown * (1.0 - rise) + 0.01);
-  vec3 side = normalize(cross(axis, abs(axis.y) < 0.99 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0)));
-  vec3 front = cross(side, axis);
-  float width = (0.013 + 0.009 * aRoot.w + spike * 0.02) * (0.6 + 0.4 * rise);
+  // The stroke: a curve from the root, up, then over toward its tip, each redraw a little different.
+  vec3 root = vec3(p.x, 0.0, p.y) + jitter(1.0) * vec3(1.0, 0.0, 1.0) * uWobble * 0.4;
+  vec3 tip = root + vec3(lean.x, 1.0, lean.y) * height + jitter(2.0) * uWobble;
+  vec3 bend = root + vec3(lean.x * 0.15, 0.62, lean.y * 0.15) * height + jitter(3.0) * uWobble * 0.8;
 
-  vWorld = root + axis * position.y * shown + (side * position.x + front * position.z) * width;
-  vNormal = normalize(side * normal.x + axis * normal.y + front * normal.z); // the cone's own normal, turned onto the needle
-  vAlong = position.y;
-  gl_Position = projectionMatrix * viewMatrix * vec4(vWorld, 1.0);
+  float s = position.y + 0.5;
+  float s2 = min(s + 0.02, 1.0);
+  vec3 at = mix(mix(root, bend, s), mix(bend, tip, s), s);
+  vec3 ahead = mix(mix(root, bend, s2), mix(bend, tip, s2), s2);
+  if (s2 == s) ahead = at + (tip - bend);
+
+  // Widen it in screen pixels, across its own direction on the page, so the pen is the same at any size.
+  vec4 clip = projectionMatrix * viewMatrix * vec4(at, 1.0);
+  vec4 next = projectionMatrix * viewMatrix * vec4(ahead, 1.0);
+  vec2 dir = (next.xy / next.w - clip.xy / clip.w) * uRes;
+  dir = length(dir) > 1e-5 ? normalize(dir) : vec2(0.0, 1.0);
+  float pen = uWidth * (1.0 - 0.8 * pow(s, 1.6)) * (0.85 + 0.3 * hash(vec3(aRoot.zw * 13.0, uBoil)));
+  clip.xy += vec2(-dir.y, dir.x) * position.x * pen / uRes * 2.0 * clip.w;
+  gl_Position = clip;
 }
 `;
 
 const NEEDLE_FRAGMENT = /* glsl */ `
-${LIGHT}
-varying vec3 vWorld;
-varying vec3 vNormal;
-varying float vAlong;
-void main() {
-  vec3 n = normalize(vNormal);
-  vec3 v = normalize(cameraPosition - vWorld);
-  // Each needle is a cylinder with a grazing edge somewhere, so held darker than the skin: black spikes, not grey hair.
-  gl_FragColor = vec4(shade(n, v, mix(0.15, 0.6, vAlong * vAlong)), 1.0);
-}
+uniform vec3 uInk;
+void main() { gl_FragColor = vec4(uInk, 1.0); }
 `;
-
-const FLOOR_VERTEX = /* glsl */ `
-varying vec3 vWorld;
-void main() {
-  vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
-  gl_Position = projectionMatrix * viewMatrix * vec4(vWorld, 1.0);
-}
-`;
-
-const FLOOR_FRAGMENT = /* glsl */ `
-${NOISE}
-${FIELD}
-${LIGHT}
-uniform vec3 uFloor;
-uniform vec3 uGrid;
-varying vec3 vWorld;
-// Antialiased lines, fading out where they get closer together than a few pixels, so the far floor never turns grey.
-float lines(vec2 p, float every) {
-  vec2 q = p / every;
-  vec2 width = fwidth(q);
-  vec2 g = abs(fract(q - 0.5) - 0.5) / width;
-  return (1.0 - min(min(g.x, g.y), 1.0)) * (1.0 - smoothstep(0.15, 0.45, max(width.x, width.y)));
-}
-void main() {
-  vec2 p = vWorld.xz;
-  float len = length(p);
-  float fade = 1.0 - smoothstep(1.6, 5.2, len);
-  // Before it wakes, something under the floor: a faint ring passing out through the grid.
-  float pulse = exp(-pow(len - mod(uTime * 1.1, 6.0), 2.0) * 3.0) * (1.0 - uGrow) * 0.9;
-  vec3 c = uFloor * (1.0 - 0.45 * smoothstep(0.0, 5.5, len) + 0.45 * smoothstep(7.0, 14.0, len)); // dark round the creature, the canvas at the horizon
-  c += uGrid * (lines(p, 0.5) * 0.45 + lines(p, 2.5) * 0.55) * fade * (1.0 + pulse);
-  // The creature's shadow on the floor around it.
-  float inside = bodyRadius(p / max(len, 1e-4)) - len;
-  c *= 1.0 - 0.85 * smoothstep(-0.6, 0.05, inside) * uSeep;
-  // The veins, drawn into the floor a pixel at a time so they stay fine and unbroken at any distance,
-  // in the body's own material, lit by a normal taken across them.
-  float vein = veinField(p);
-  float edge = fwidth(vein);
-  float cover = smoothstep(0.3 - edge, 0.3 + edge, vein);
-  if (cover > 0.0) {
-    float hx = veinField(p + vec2(0.006, 0.0));
-    float hz = veinField(p + vec2(0.0, 0.006));
-    vec3 n = normalize(vec3((vein - hx) * VEIN_HEIGHT, 0.009, (vein - hz) * VEIN_HEIGHT)); // a little softer than true, so they catch less of the rim
-    c = mix(c, shade(n, normalize(cameraPosition - vWorld), 0.85), cover);
-  }
-  gl_FragColor = vec4(c, 1.0);
-}
-`;
-
-const FINISH = {
-  uniforms: {
-    tDiffuse: { value: null },
-    uRes: { value: new Vector2(1, 1) },
-    uTime: { value: 0 },
-    uAberration: { value: POST.aberration },
-    uVignette: { value: POST.vignette },
-    uGrain: { value: POST.grain },
-  },
-  vertexShader: /* glsl */ `
-varying vec2 vUv;
-void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }
-`,
-  fragmentShader: /* glsl */ `
-uniform sampler2D tDiffuse;
-uniform vec2 uRes;
-uniform float uTime;
-uniform float uAberration;
-uniform float uVignette;
-uniform float uGrain;
-varying vec2 vUv;
-float hash(vec2 p) {
-  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
-  p3 += dot(p3, p3.yzx + 33.33);
-  return fract((p3.x + p3.y) * p3.z);
-}
-void main() {
-  vec2 c = vUv - 0.5;
-  vec2 shift = c * dot(c, c) * uAberration * 4.0;
-  vec3 col = vec3(texture2D(tDiffuse, vUv + shift).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - shift).b);
-  float r = length(c * vec2(uRes.x / uRes.y, 1.0));
-  col *= mix(1.0 - uVignette, 1.0, smoothstep(0.95, 0.2, r));
-  // Grain at 24 fps, from the frame's time, so a render to video comes out the same every time.
-  float n = hash(vUv * uRes + floor(uTime * 24.0) * vec2(37.0, 17.0)) - 0.5;
-  col += n * uGrain * (0.06 + col);
-  gl_FragColor = vec4(max(col, 0.0), 1.0);
-}
-`,
-};
 
 /* --- The engine ----------------------------------------------------------- */
 
-/** Everything a frame depends on. The same frame always renders the same picture. */
+/** Everything a frame depends on. The same frame always draws the same picture. */
 export type SymbioteFrame = {
-  /** Seconds on the field's clock: noise, breathing, the orbit and the grain all run on it. */
+  /** Seconds on the field's clock: breathing, the wave, the sway and the boil all run on it. */
   time: number;
-  /** Where the awakening stands, 0 (the empty floor) to 1 (awake). */
+  /** Where the awakening stands, 0 (the blank page) to 1 (awake). */
   progress: number;
   /** The pointer on the floor, in world units, and how present it is (0 gone, 1 here). */
   pointer: { x: number; z: number; presence: number };
@@ -479,7 +179,7 @@ export type SymbioteEngine = {
   render: (frame: SymbioteFrame) => void;
   /** Sizes the canvas's drawing buffer, in CSS pixels at a density. */
   resize: (width: number, height: number, density: number) => void;
-  /** The floor point under a position on the canvas (−1 to 1 each way), through the last frame's camera. */
+  /** The floor point under a position on the canvas (−1 to 1 each way). */
   pick: (x: number, y: number) => { x: number; z: number } | null;
   dispose: () => void;
 };
@@ -494,49 +194,21 @@ function mulberry32(seed: number) {
   };
 }
 
-/** Roots on two sunflower spirals: four in five on the body, the rest out along the veins. */
+/** Roots on a sunflower spiral, nudged off it so the rows don't read as a pattern. */
 function roots(count: number) {
   const random = mulberry32(7);
   const data = new Float32Array(count * 4);
   const golden = Math.PI * (3 - Math.sqrt(5));
-  const inner = Math.round(count * 0.8);
+  const spacing = RADIUS / Math.sqrt(count);
   for (let i = 0; i < count; i++) {
-    const onBody = i < inner;
-    const k = onBody ? i : i - inner;
-    const n = onBody ? inner : count - inner;
-    const radius = (onBody ? 2.05 : 4.7) * Math.sqrt((k + 0.5) / n);
-    const angle = k * golden + (onBody ? 0 : 1.3);
-    const jitter = 0.35 * (onBody ? 2.05 : 4.7) / Math.sqrt(n);
-    data[i * 4] = radius * Math.cos(angle) + (random() - 0.5) * jitter;
-    data[i * 4 + 1] = radius * Math.sin(angle) + (random() - 0.5) * jitter;
+    const radius = RADIUS * Math.sqrt((i + 0.5) / count);
+    const angle = i * golden;
+    data[i * 4] = radius * Math.cos(angle) + (random() - 0.5) * spacing * 0.7;
+    data[i * 4 + 1] = radius * Math.sin(angle) + (random() - 0.5) * spacing * 0.7;
     data[i * 4 + 2] = random();
     data[i * 4 + 3] = random();
   }
   return data;
-}
-
-/** Where the camera stands for a frame: the isometric drawing, easing into an orbiting perspective as it wakes. */
-function placeCamera(camera: PerspectiveCamera, time: number, wake: number, aspect: number) {
-  const rad = Math.PI / 180;
-  const fov = lerp(CAMERA.isoFov, CAMERA.freeFov, wake);
-  const elevation = (lerp(CAMERA.isoElevation, CAMERA.freeElevation, wake) + wake * 2.5 * Math.sin(time * 0.13)) * rad;
-  const azimuth = (CAMERA.isoAzimuth + wake * (CAMERA.orbit + CAMERA.sway * Math.sin(time * CAMERA.swayRate))) * rad;
-  // The half-height of the view at the target, wide enough that the floor fills a narrow screen too.
-  const half = Math.max(lerp(2.35, 2.1, wake), lerp(3.7, 3.2, wake) / aspect);
-  // A dolly zoom: as the lens widens the camera comes in, so the creature stays the same size on screen.
-  const distance = half / Math.tan((fov * rad) / 2);
-  const target = new Vector3(0, lerp(0, 0.22, wake), 0);
-  camera.fov = fov;
-  camera.aspect = aspect;
-  camera.near = Math.max(0.1, distance - 14);
-  camera.far = distance + 48;
-  camera.position.set(
-    target.x + distance * Math.cos(elevation) * Math.cos(azimuth),
-    target.y + distance * Math.sin(elevation),
-    target.z + distance * Math.cos(elevation) * Math.sin(azimuth),
-  );
-  camera.lookAt(target);
-  camera.updateProjectionMatrix();
 }
 
 /**
@@ -545,100 +217,80 @@ function placeCamera(camera: PerspectiveCamera, time: number, wake: number, aspe
  * scrubbed or offline, a frame at a time, to video.
  */
 export function createSymbiote(canvas: HTMLCanvasElement, { needles = NEEDLES } = {}): SymbioteEngine {
-  const renderer = new WebGLRenderer({ canvas, antialias: false, alpha: false, powerPreference: "high-performance" });
-  renderer.toneMapping = ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
-  renderer.setClearColor(new Color(PALETTE.floor), 1);
+  const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer.setClearColor(new Color(INK.paper), 1);
 
   const uniforms = {
     uTime: { value: 0 },
-    uSeep: { value: 0 },
-    uGrow: { value: 0 },
-    uBreath: { value: 0 },
-    uTendril: { value: 0 },
-    uErupt: { value: 0 },
+    uBoil: { value: 0 },
+    uSprout: { value: 0 },
+    uSwell: { value: 0 },
+    uSeconds: { value: DURATION },
     uPointer: { value: new Vector3() },
     uMode: { value: 1 },
     uReach: { value: POINTER.reach },
-    uRim: { value: new Color(PALETTE.rim) },
-    uSheen: { value: new Color(PALETTE.sheen) },
-    uFloor: { value: new Color(PALETTE.floor) },
-    uGrid: { value: new Color(PALETTE.grid) },
+    uWobble: { value: INK.wobble },
+    uWidth: { value: INK.width },
+    uRes: { value: new Vector2(1, 1) },
+    uInk: { value: new Color(INK.ink) },
   };
-  // One uniforms object for every material, so a frame is written once.
-  const material = (vertexShader: string, fragmentShader: string) => new ShaderMaterial({ uniforms, vertexShader, fragmentShader });
 
+  // True isometric: an orthographic camera down the diagonal, 35.264° up and 45° round.
+  const camera = new OrthographicCamera();
+  camera.position.set(20, 20, 20);
+  camera.lookAt(0, 0.35, 0);
+  camera.near = 1;
+  camera.far = 80;
+
+  // A ribbon, its spine along y from −0.5 (root) to 0.5 (tip), widened in the shader.
+  const geometry = new PlaneGeometry(1, 1, 1, SEGMENTS);
+  geometry.setAttribute("aRoot", new InstancedBufferAttribute(roots(needles), 4));
+  const material = new ShaderMaterial({ uniforms, vertexShader: NEEDLE_VERTEX, fragmentShader: NEEDLE_FRAGMENT, side: DoubleSide, depthTest: false, depthWrite: false });
+  const strokes = new InstancedMesh(geometry, material, needles);
+  strokes.frustumCulled = false; // every vertex is placed in the shader
   const scene = new Scene();
-  const camera = new PerspectiveCamera();
-
-  const floorGeometry = new PlaneGeometry(EXTENT * 8, EXTENT * 8).rotateX(-Math.PI / 2); // past the horizon, so it has no edge
-  const floor = new Mesh(floorGeometry, material(FLOOR_VERTEX, FLOOR_FRAGMENT));
-  floor.position.y = -0.004;
-
-  const bodyGeometry = new PlaneGeometry(EXTENT, EXTENT, SEGMENTS, SEGMENTS).rotateX(-Math.PI / 2);
-  const body = new Mesh(bodyGeometry, material(BODY_VERTEX, BODY_FRAGMENT));
-
-  // An open cone, root at 0 and tip at 1: ten vertices a needle.
-  const needleGeometry = new ConeGeometry(1, 1, 4, 1, true).translate(0, 0.5, 0);
-  needleGeometry.setAttribute("aRoot", new InstancedBufferAttribute(roots(needles), 4));
-  const bristle = new InstancedMesh(needleGeometry, material(NEEDLE_VERTEX, NEEDLE_FRAGMENT), needles);
-
-  // Every vertex is placed in a shader, so the CPU's bounds mean nothing.
-  for (const mesh of [floor, body, bristle]) {
-    mesh.frustumCulled = false;
-    scene.add(mesh);
-  }
-
-  const target = new WebGLRenderTarget(1, 1, { type: HalfFloatType, samples: 4 });
-  const composer = new EffectComposer(renderer, target);
-  const bloom = new UnrealBloomPass(new Vector2(1, 1), POST.bloom.strength, POST.bloom.radius, POST.bloom.threshold);
-  const finish = new ShaderPass(FINISH);
-  composer.addPass(new RenderPass(scene, camera));
-  composer.addPass(bloom);
-  composer.addPass(finish);
-  composer.addPass(new OutputPass());
+  scene.add(strokes);
 
   let size = { width: 1, height: 1 };
   const raycaster = new Raycaster();
-  const surface = new Plane(new Vector3(0, 1, 0), -0.25); // about the height of the body's skin
+  const floor = new Plane(new Vector3(0, 1, 0), 0);
 
   return {
     render({ time, progress, pointer, mode }) {
       const phase = awakening(progress);
       uniforms.uTime.value = time;
-      uniforms.uSeep.value = phase.seep;
-      uniforms.uGrow.value = phase.grow;
-      uniforms.uBreath.value = phase.breath;
-      uniforms.uTendril.value = phase.tendril;
-      uniforms.uErupt.value = phase.erupt;
+      uniforms.uBoil.value = Math.floor(time * INK.boil) / INK.boil;
+      uniforms.uSprout.value = phase.sprout;
+      uniforms.uSwell.value = phase.swell;
       // The pointer means nothing to it until it has grown.
-      uniforms.uPointer.value.set(pointer.x, pointer.z, pointer.presence * phase.grow);
+      uniforms.uPointer.value.set(pointer.x, pointer.z, pointer.presence * phase.swell);
       uniforms.uMode.value = Math.max(-1, Math.min(1, mode));
-      finish.uniforms.uTime.value = time;
-      placeCamera(camera, time, phase.camera, size.width / size.height);
-      composer.render();
+      renderer.render(scene, camera);
     },
     resize(width, height, density) {
       size = { width: Math.max(1, width), height: Math.max(1, height) };
       renderer.setPixelRatio(density);
       renderer.setSize(size.width, size.height, false);
-      composer.setPixelRatio(density);
-      composer.setSize(size.width, size.height);
-      finish.uniforms.uRes.value.set(size.width * density, size.height * density);
+      uniforms.uRes.value.set(size.width * density, size.height * density);
+      uniforms.uWidth.value = INK.width * density;
+      // Frame the field: wide enough for its diamond, tall enough for the mound, whatever the shape of the box.
+      const aspect = size.width / size.height;
+      const half = Math.max(2.7, 4.9 / aspect);
+      camera.left = -half * aspect;
+      camera.right = half * aspect;
+      camera.top = half;
+      camera.bottom = -half;
+      camera.updateProjectionMatrix();
     },
     pick(x, y) {
       raycaster.setFromCamera(new Vector2(x, y), camera);
-      const hit = raycaster.ray.intersectPlane(surface, new Vector3());
+      const hit = raycaster.ray.intersectPlane(floor, new Vector3());
       return hit ? { x: hit.x, z: hit.z } : null;
     },
     dispose() {
-      for (const mesh of [floor, body, bristle]) (mesh.material as ShaderMaterial).dispose();
-      floorGeometry.dispose();
-      bodyGeometry.dispose();
-      needleGeometry.dispose();
-      bristle.dispose();
-      composer.dispose();
-      target.dispose();
+      geometry.dispose();
+      material.dispose();
+      strokes.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
     },
@@ -679,7 +331,7 @@ type SymbioteFieldProps = {
 };
 
 /**
- * The field, live: a canvas the size of its box (at up to 1.5× for dense
+ * The field, live: a canvas the size of its box (at up to 2× for dense
  * displays) that keeps the clock and the pointer's springs and hands each
  * frame to the engine. It only runs while on screen.
  */
@@ -692,7 +344,7 @@ export function SymbioteField({
   needles = NEEDLES,
   onAwake,
   onFrame,
-  label = "A dark, glossy mass that wakes on an empty floor, spreads its veins and grows needles that follow the pointer.",
+  label = "Ink needles that spring up on a blank page in waves, breathe, and lean toward the pointer.",
   ref,
   className = "",
 }: SymbioteFieldProps) {
@@ -833,7 +485,7 @@ export function SymbioteField({
 
     const resize = new ResizeObserver(() => {
       const rect = host.getBoundingClientRect();
-      engine.resize(rect.width, rect.height, Math.min(devicePixelRatio, 1.5));
+      engine.resize(rect.width, rect.height, Math.min(devicePixelRatio, 2));
       draw();
     });
     resize.observe(host);
@@ -860,10 +512,10 @@ export function SymbioteField({
     };
   }, [needles]);
 
-  return <div ref={hostRef} role="img" aria-label={label} className={`block size-full touch-pan-y bg-[#0b0b0e] ${className}`} />;
+  return <div ref={hostRef} role="img" aria-label={label} className={`block size-full touch-pan-y bg-white ${className}`} />;
 }
 
-/* --- Demo: the creature behind glass, its readout and three keys ---------- */
+/* --- Demo: the field behind glass, its readout and three keys ---------- */
 
 const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(" ");
 const sink = "group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75";
@@ -948,9 +600,9 @@ export default function Demo() {
       <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[26rem]:p-[1.1em]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
-        {/* The window: the creature behind black glass. */}
+        {/* The window: the page of needles behind glass. */}
         <div data-part="bezel" className="rounded-[0.7em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
-          <div data-part="screen" className="relative aspect-[4/3] rounded-[0.45em] bg-[#0b0b0e] @[26rem]:aspect-[16/10]">
+          <div data-part="screen" className="relative aspect-[4/3] rounded-[0.45em] bg-white @[26rem]:aspect-[16/10]">
             <span className="absolute inset-0 overflow-hidden rounded-[inherit]">
               <SymbioteField ref={field} mode={mode} awake={phase !== "asleep"} onAwake={() => setPhase("awake")} onFrame={(p) => paintClock(clockRef.current, p * DURATION)} />
             </span>

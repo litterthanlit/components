@@ -22,7 +22,7 @@ function num(value: string | string[] | undefined, fallback: number) {
 export default async function SymbiotePage({ searchParams }: PageProps<"/lab/symbiote-field">) {
   const query = await searchParams;
   if (query.render !== undefined) {
-    return <SymbioteRender width={num(query.w, 1280)} height={num(query.h, 720)} needles={num(query.needles, 24000)} />;
+    return <SymbioteRender width={num(query.w, 1280)} height={num(query.h, 720)} needles={query.needles === undefined ? undefined : num(query.needles, 1)} />;
   }
   return <SymbioteLab />;
 }

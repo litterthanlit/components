@@ -26,8 +26,8 @@ export const registry: RegistryEntry[] = [
     slug: "symbiote-field",
     title: "Symbiote Field",
     description:
-      "Needle Field, alive. An empty floor in true isometric until a dark, glossy mass seeps up through it, breathing as it grows. Veins crawl out across the grid, needles break out of its skin in waves from the centre, and the camera eases out of the drawing into an orbiting perspective. Then it senses the pointer: the mass reaches for it and the needles lean in, or both recoil. Each frame is a pure function of time, progress and the pointer, all on the GPU.",
-    tagline: "A needle field that wakes up and notices you.",
+      "Needle Field, alive, drawn in ink. A blank page in true isometric, then needles spring up from the centre in rings, overshooting and wobbling down like a cartoon, until a mound of bristles stands on the paper and breathes. Each needle is one pen stroke, redrawn eight times a second so the lines boil. Awake, it notices the pointer: the needles lean in and reach for it, or bend away and duck.",
+    tagline: "A needle field that wakes up and notices you, in ink.",
     tags: ["surface", "pointer", "motion", "webgl"],
     date: "2026-10-31",
     status: "new",

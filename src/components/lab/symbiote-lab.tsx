@@ -5,26 +5,25 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createSymbiote, DURATION, NEEDLES, SymbioteField, type SymbioteFrame, type SymbioteHandle, type SymbioteMode } from "@/registry/components/symbiote-field";
 
 /*
- * The preview page. The artwork is dark in both themes, so the page is too:
- * the creature's own near-black canvas, white type at three strengths and
- * the creature's violet as the one accent, on the scrubber.
+ * The preview page. The artwork is ink on paper in both themes, so the page
+ * is too: white paper, black type at three strengths, and nothing else.
  */
 
-const ink = "text-white";
-const muted = "text-white/55";
-const quiet = "text-white/35";
+const ink = "text-black";
+const muted = "text-black/55";
+const quiet = "text-black/40";
 
 /** One segment of a two-way switch: a native radio under a label, so it is one tab stop with arrow keys. */
 function Segment({ name, value, checked, onChange, children }: { name: string; value: string; checked: boolean; onChange: () => void; children: ReactNode }) {
   return (
-    <label className="relative grid h-8 cursor-pointer place-items-center rounded-[10px] px-3 text-[13px] font-medium transition-colors duration-150 has-checked:bg-white/[0.12] has-checked:text-white has-focus-visible:outline-2 has-focus-visible:outline-offset-1 has-focus-visible:outline-[#8f78ff] text-white/55 hover:text-white">
+    <label className="relative grid h-8 cursor-pointer place-items-center rounded-[10px] px-3 text-[13px] font-medium transition-colors duration-150 has-checked:bg-black has-checked:text-white has-focus-visible:outline-2 has-focus-visible:outline-offset-1 has-focus-visible:outline-black text-black/55 hover:text-black has-checked:hover:text-white">
       <input type="radio" name={name} value={value} checked={checked} onChange={onChange} className="sr-only" />
       {children}
     </label>
   );
 }
 
-const glass = "rounded-[18px] border border-white/[0.08] bg-white/[0.04] shadow-[0_20px_60px_-20px_rgb(0_0_0/0.8)] backdrop-blur-xl";
+const glass = "rounded-[18px] border border-black/[0.08] bg-white/70 shadow-[0_20px_50px_-24px_rgb(0_0_0/0.25)] backdrop-blur-xl";
 
 export function SymbioteLab() {
   const field = useRef<SymbioteHandle>(null);
@@ -58,20 +57,20 @@ export function SymbioteLab() {
   const still = motion === "still";
 
   return (
-    <div className="bg-[#0b0b0e] text-white">
+    <div className="bg-white text-black">
       {/* The stage: the creature, full bleed. */}
       <section aria-labelledby="symbiote-title" className="relative h-[100svh] min-h-[560px] overflow-hidden">
         <SymbioteField ref={field} mode={mode} progress={scrub ?? undefined} reducedMotion={still} onFrame={onFrame} className="absolute inset-0" />
 
         <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-6 p-4 sm:p-8">
           <div className="max-w-[28rem]">
-            <p className={`text-[12px] font-medium uppercase tracking-[0.14em] ${quiet}`}>Study · WebGL</p>
+            <p className={`text-[12px] font-medium uppercase tracking-[0.14em] ${quiet}`}>Study · Ink · WebGL</p>
             <h1 id="symbiote-title" className={`mt-3 text-[clamp(28px,4.4vw,48px)] font-medium leading-[1.02] tracking-[-0.025em] ${ink}`}>
               Symbiote Field
             </h1>
-            <p className={`mt-3 text-[15px] leading-[1.5] ${muted}`}>A needle field that wakes up and notices you. Move over it; switch to repel and it shies away.</p>
+            <p className={`mt-3 text-[15px] leading-[1.5] ${muted}`}>Ink needles that spring up on a blank page and notice you. Move over them; switch to repel and they duck away.</p>
           </div>
-          <Link href="/c/symbiote-field" className={`pointer-events-auto shrink-0 rounded-md text-[14px] ${muted} transition-colors duration-150 hover:text-white`}>
+          <Link href="/c/symbiote-field" className={`pointer-events-auto shrink-0 rounded-md text-[14px] ${muted} transition-colors duration-150 hover:text-black`}>
             Source →
           </Link>
         </header>
@@ -83,7 +82,7 @@ export function SymbioteLab() {
               type="button"
               onClick={() => field.current?.replay()}
               disabled={still}
-              className="h-8 rounded-[10px] bg-white px-3.5 text-[13px] font-medium text-black transition-opacity duration-150 hover:opacity-90 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8f78ff]"
+              className="h-8 rounded-[10px] bg-black px-3.5 text-[13px] font-medium text-white transition-opacity duration-150 hover:opacity-85 disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
             >
               Replay
             </button>
@@ -101,17 +100,17 @@ export function SymbioteLab() {
                 onPointerUp={commit}
                 onKeyUp={commit}
                 onBlur={commit}
-                className="h-8 min-w-0 flex-1 cursor-pointer accent-[#6d4dff] disabled:opacity-30"
+                className="h-8 min-w-0 flex-1 cursor-pointer accent-black disabled:opacity-30"
               />
               <span className={`w-[5.5em] shrink-0 text-right text-[13px] tabular-nums ${muted}`}>
-                <span ref={timeRef} className="text-white">
+                <span ref={timeRef} className="text-black">
                   0.0
                 </span>{" "}
                 / {DURATION} s
               </span>
             </div>
 
-            <div role="radiogroup" aria-label="Pointer" className="flex rounded-[12px] bg-black/30 p-0.5">
+            <div role="radiogroup" aria-label="Pointer" className="flex rounded-[12px] bg-black/[0.05] p-0.5">
               <Segment name="mode" value="attract" checked={mode === "attract"} onChange={() => setMode("attract")}>
                 Attract
               </Segment>
@@ -120,7 +119,7 @@ export function SymbioteLab() {
               </Segment>
             </div>
 
-            <div role="radiogroup" aria-label="Motion" className="flex rounded-[12px] bg-black/30 p-0.5">
+            <div role="radiogroup" aria-label="Motion" className="flex rounded-[12px] bg-black/[0.05] p-0.5">
               <Segment name="motion" value="full" checked={!still} onChange={() => setMotion("full")}>
                 Full
               </Segment>
@@ -140,10 +139,10 @@ export function SymbioteLab() {
             Drop it in
           </h2>
           <p className={`mt-4 max-w-[26rem] text-[15px] leading-[1.6] ${muted}`}>
-            One file, plain Three.js. The engine renders a frame from its time, progress, pointer and mode alone, so the same call scrubs it, drives it from scroll or renders it to video a frame at a time.
+            One file, plain Three.js: an InstancedMesh of pen strokes, bent and boiled on the GPU. The engine draws a frame from its time, progress, pointer and mode alone, so the same call scrubs it, drives it from scroll or renders it to video a frame at a time.
           </p>
         </div>
-        <pre className="overflow-x-auto rounded-[18px] border border-white/[0.08] bg-white/[0.03] p-5 text-[13px] leading-[1.7] text-white/80">
+        <pre className="overflow-x-auto rounded-[18px] border border-black/[0.08] bg-black/[0.025] p-5 text-[13px] leading-[1.7] text-black/80">
           <code>{`import { SymbioteField } from "@/registry/components/symbiote-field";
 
 // Plays the awakening by itself, then idles.
@@ -194,7 +193,7 @@ function ScrollSection() {
   }, []);
 
   return (
-    <section ref={sectionRef} aria-labelledby="scroll-title" className="relative h-[260vh] border-t border-white/[0.06]">
+    <section ref={sectionRef} aria-labelledby="scroll-title" className="relative h-[260vh] border-t border-black/[0.06]">
       <div className="sticky top-0 grid h-[100svh] items-center gap-8 px-4 py-10 sm:px-8 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.6fr)]">
         <div className="mx-auto w-full max-w-[26rem]">
           <p className={`text-[12px] font-medium uppercase tracking-[0.14em] ${quiet}`}>progress = scroll</p>
@@ -202,11 +201,11 @@ function ScrollSection() {
             It wakes as you read
           </h2>
           <p className={`mt-4 text-[15px] leading-[1.6] ${muted}`}>
-            The same awakening, held to this section’s scroll. Scroll back and it sinks into the floor again; the needles, the veins and the camera all follow the one number.
+            The same awakening, held to this section’s scroll. Scroll back and the needles sink into the page again, ring by ring; every stroke follows the one number.
           </p>
           <p className={`mt-6 text-[13px] tabular-nums ${quiet}`}>{Math.round(progress * 100)}%</p>
         </div>
-        <div className="relative h-[min(70svh,640px)] overflow-hidden rounded-[22px] border border-white/[0.06]">
+        <div className="relative h-[min(70svh,640px)] overflow-hidden rounded-[22px] border border-black/[0.08]">
           <SymbioteField progress={progress} className="absolute inset-0" label="The same creature, its awakening following the page's scroll." />
         </div>
       </div>
@@ -221,7 +220,7 @@ declare global {
 }
 
 /** A bare canvas for offline rendering: `window.symbiote.frame()` draws one frame and hands it back as a PNG. */
-export function SymbioteRender({ width, height, needles }: { width: number; height: number; needles: number }) {
+export function SymbioteRender({ width, height, needles = NEEDLES }: { width: number; height: number; needles?: number }) {
   const hostRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -249,5 +248,5 @@ export function SymbioteRender({ width, height, needles }: { width: number; heig
     };
   }, [width, height, needles]);
 
-  return <main ref={hostRef} className="grid min-h-screen place-items-center bg-black" />;
+  return <main ref={hostRef} className="grid min-h-screen place-items-center bg-white" />;
 }

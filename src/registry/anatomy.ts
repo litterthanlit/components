@@ -7,7 +7,7 @@ import { parts, type PartInfo } from "@/components/anatomy/parts";
  */
 export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>> = {
   "symbiote-field": {
-    screen: { tokens: [], note: "The creature on a WebGL canvas: a displaced plane for the body, 24,000 instanced needles, every frame a pure function of its time, its awakening and the pointer." },
+    screen: { tokens: [], note: "Ink on paper on a WebGL canvas: 1,200 instanced pen strokes, bent and boiled on the GPU, every frame a pure function of its time, its awakening and the pointer." },
     glass: { tokens: ["--screen-glass", "--device-lcd-edge"], note: "A sheen over the screen, breaking at 38%, and its edge." },
     light: { tokens: ["--device-meter-off", "--device-meter-on", "--device-rec"], note: "The mode's key lit in grey; Wake's in red while the awakening plays." },
     lcd: { note: "The state, and the awakening's clock in seconds and frames at 25 fps, written by the frame loop." },
