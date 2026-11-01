@@ -6,6 +6,13 @@ import { parts, type PartInfo } from "@/components/anatomy/parts";
  * enough. A study is listed here once its parts carry `data-part`.
  */
 export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>> = {
+  spool: {
+    screen: { tokens: ["--device-window"], note: "A roll of frames in raw WebGL2 over smoked glass. Spooling fast, the strip bends in an even arc, narrow through the middle and wide at the ends, as if round a drum." },
+    glass: { note: "A sheen over the screen and its edge, where the light catches the glass." },
+    key: { note: "A second place to hold the reel: the face stays down as long as the hand does." },
+    light: { tokens: ["--device-meter-off", "--device-meter-on", "--device-rec"], note: "A speed meter on a log scale, as the motor ramps: one light as the reel starts, the last, red, at the redline." },
+    lcd: { note: "The frame at the gate and its title, written by the loop that clicks as each frame passes, so the count runs with the sound." },
+  },
   knob: {
     cap: { note: "Knurled round its skirt by a conic gradient from var(--a), so it turns without a transform." },
     light: { tokens: ["--device-meter-off", "--device-meter-on"], note: "Fifteen strokes round the collar, lit by the same spring that turns the cap and clicks the detents." },
@@ -75,6 +82,10 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     bezel: { note: "Black, with a polished edge, round the player's own screen: the menu is a second screen, not a card." },
     screen: { name: "Screen", note: "The site's own ground under glass: its canvas and type, and the accent bar gliding on a spring between rows." },
     glass: { note: "The screen's sheen, and the backlight's bloom as it wakes." },
+  },
+  "copy-button": {
+    lcd: { note: "A character LCD. Copied, the command leaves in a wave from right to left, each character scrambling through the half-width katakana in an HD44780's ROM; it decodes back in from the left." },
+    lettering: { name: "Glyphs", tokens: ["--device-key-ink", "--device-engrave-glyph"], note: "The copy mark and the check share the key's face and cross-fade; the check draws itself in over 400 ms." },
   },
 };
 

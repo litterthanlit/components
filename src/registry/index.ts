@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "spool",
+    title: "Spool",
+    description:
+      "An image strip that spools while you hold it. It starts at a frame a second, and the longer the hold, the faster the motor turns, doubling every 0.8 s to 16 frames a second. Past 2.5 a second the strip bends in an even arc, narrow through the middle of the screen and wide at the ends, the frames shrinking and streaking as they go. Let go and it coasts on to the next frame. Every frame that passes the gate clicks.",
+    tagline: "Hold to spool: the longer the hold, the faster it runs and the more it bends.",
+    tags: ["pointer", "motion", "sound", "webgl"],
+    date: "2026-10-31",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "gradient-keys",
     title: "Gradient Keys",
     description:
@@ -264,11 +275,11 @@ export const registry: RegistryEntry[] = [
     slug: "copy-button",
     title: "Copy Button",
     description:
-      "Icons cross-fade with scale and blur, and the checkmark draws itself in. A live region announces the result for screen readers.",
-    tagline: "The smallest delight: a check that draws itself.",
-    tags: ["button", "feedback", "svg"],
+      "A key that copies a command and comes up with a check that draws itself, beside a character LCD that lets the command go: a wave runs through it from right to left, each character scrambling through the display's katakana before it clears, then decodes back in from the left. Every character clicks as it settles, nothing on the line moves, and a second copy turns the wave round mid-flight.",
+    tagline: "Copy, and the LCD scrambles the command away.",
+    tags: ["button", "feedback", "sound", "a11y"],
     date: "2026-09-01",
-    background: "dots",
+    background: "plain",
   },
 ];
 

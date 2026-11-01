@@ -10,7 +10,8 @@
     "capture": "node scripts/capture.mjs",
     "typecheck": "tsc --noEmit",
     "check:fit": "node scripts/check-fit.mjs",
-    "check:anatomy": "node scripts/check-anatomy.mjs"
+    "check:anatomy": "node scripts/check-anatomy.mjs",
+    "check:player": "node scripts/check-player.mjs"
   },
   "dependencies": {
     "next": "16.3.8",

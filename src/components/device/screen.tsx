@@ -29,81 +29,12 @@ const floor2 = (z: number) => Math.floor(z * 100) / 100;
 /**
  * How much to zoom a running study. Demos are made for stages from a phone's
  * (about 330 × 380) up to a desktop's, so a smaller screen shrinks them
- * uniformly instead of clipping, and a big one grows them a little.
+ * uniformly instead of clipping, and a big one grows them a little. A short
+ * screen counts 420 px of height, not 380: on a wide stage a demo grows to its
+ * full width, and with it as much as 40 px taller than at a phone's.
  */
 export function appZoom({ w, h }: { w: number; h: number }) {
-  return floor2(w >= 680 && h >= 480 ? Math.min(1.3, w / 680, h / 480) : Math.min(1, w / 330, h / 380));
-}
-
-/* --- Status line ---------------------------------------------------------- */
-
-const side =
-  "flex h-full items-center gap-1 rounded-sm px-1.5 text-[13px] text-muted outline-offset-[-2px] transition-colors duration-(--duration-exit) hover:text-ink hover:duration-(--duration-enter) wide:text-[14px]";
-
-/**
- * The screen's top edge. The title of what's on screen sits in the middle, and
- * on a take it opens the study's details. The player's screens and the
- * study's page are tucked in at either side, so the deck keeps only what plays
- * the tape: Menu at the left (Back on a screen), Source at the right.
- */
-export function StatusBar({
-  title,
-  details,
-  nav,
-  source,
-}: {
-  title: string;
-  details?: { open: boolean; onToggle: () => void };
-  /** The way to the player's screens: Menu on a take, Back on a screen. */
-  nav: { label: string; back?: boolean; onPress: () => void };
-  /** The study's own page, on a take. */
-  source?: { href: string; label: string };
-}) {
-  const text = (
-    <p key={title} className="max-w-[48cqw] animate-enter truncate text-[13px] font-medium tracking-[-0.01em] wide:text-[14px]">
-      {title}
-    </p>
-  );
-  return (
-    <div className="relative z-30 grid h-[32px] shrink-0 grid-cols-[1fr_auto_1fr] items-center bg-canvas px-[14px] text-ink shadow-[0_1px_0_var(--line)] wide:h-[36px] wide:px-[24px]">
-      <button type="button" onClick={nav.onPress} className={cn(side, "justify-self-start")}>
-        {nav.back && (
-          <svg aria-hidden viewBox="0 0 16 16" className="size-[13px] shrink-0">
-            <path d="M10 3.5 5.5 8l4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        )}
-        {nav.label}
-      </button>
-      {details ? (
-        // On a take, the title is the way in to what the study is.
-        <button
-          type="button"
-          aria-expanded={details.open}
-          aria-label={`${title}: ${details.open ? "hide" : "show"} details`}
-          onClick={details.onToggle}
-          className="group/title flex max-w-full items-center gap-1.5 rounded-sm px-1.5 outline-offset-2"
-        >
-          {text}
-          <svg
-            aria-hidden
-            viewBox="0 0 16 16"
-            className="size-[13px] shrink-0 text-muted transition-[color,rotate] duration-(--duration-exit) ease-out group-hover/title:text-ink group-hover/title:duration-(--duration-enter) group-aria-expanded/title:rotate-180"
-          >
-            <path d="M4.5 6.5 8 10l3.5-3.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
-      ) : (
-        text
-      )}
-      {source ? (
-        <Link href={source.href} aria-label={source.label} className={cn(side, "justify-self-end")}>
-          Source
-        </Link>
-      ) : (
-        <span />
-      )}
-    </div>
-  );
+  return floor2(w >= 680 && h >= 480 ? Math.min(1.3, w / 680, h / 480) : Math.min(1, w / 330, h / 420));
 }
 
 /* --- The running study ----------------------------------------------------- */
@@ -354,6 +285,7 @@ export function Panel({ open, label, children, className }: { open: boolean; lab
     <section
       aria-label={label}
       inert={!open}
+      data-panel
       data-open={open || undefined}
       className={cn(
         // Visibility only transitions on the way out, so an opening panel can take focus in its first frame.
@@ -486,6 +418,7 @@ export function Hud({ show, children }: { show: boolean; children: ReactNode }) 
   return (
     <div
       aria-hidden
+      data-player-hud
       className={cn(
         "pointer-events-none absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-surface/85 px-3 py-1.5 text-meta text-ink shadow-md backdrop-blur-md transition-[opacity,transform] ease-out",
         show ? "opacity-100 duration-(--duration-enter)" : "translate-y-1 opacity-0 duration-(--duration-move)",

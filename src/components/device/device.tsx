@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useId, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { setTheme, useTheme } from "@/components/gallery/theme-toggle";
@@ -8,7 +9,7 @@ import { site } from "@/site.config";
 import { Dial, type DialButton } from "./dial";
 import { takeLength, takeLengths, usePageVisible, useReducedMotion } from "./hooks";
 import { Readout, type Transport } from "./readout";
-import { AppStage, Chevron, Choice, HomeAbout, Hud, InfoSheet, Panel, ScreenList, StatusBar, TakeArt, TakeWave, VolumeBar, type ListItem, type Study } from "./screen";
+import { AppStage, Chevron, Choice, HomeAbout, Hud, InfoSheet, Panel, ScreenList, TakeArt, TakeWave, VolumeBar, type ListItem, type Study } from "./screen";
 import { Tape } from "./tape";
 
 const SETTLE = 450; // ms the dial or tape has to rest before the study it reached opens
@@ -97,7 +98,7 @@ export function Device({ studies }: { studies: Study[] }) {
   const [transport, setTransport] = useState<Transport>("pause");
   const [cursor, setCursor] = useState(0); // highlighted row on a panel
   const [query, setQuery] = useState("");
-  const [hud, setHud] = useState<{ kind: "take" | "volume"; at: number } | null>(null);
+  const [hud, setHud] = useState<number | null>(null); // when the volume last changed, while its pop-up shows
   const [flash, setFlash] = useState<Control | null>(null);
   const [announcement, setAnnouncement] = useState("");
 
@@ -187,12 +188,12 @@ export function Device({ studies }: { studies: Study[] }) {
     return () => clearTimeout(id);
   }, [pending]);
 
-  // Readouts over the screen fade shortly after the last change.
+  // The volume's pop-up fades 1.1 s after the last change. A take dialled to says itself on the readout, so it has no pop-up.
   useEffect(() => {
-    if (!hud || pending !== null) return;
+    if (hud === null) return;
     const id = setTimeout(() => setHud(null), 1100);
     return () => clearTimeout(id);
-  }, [hud, pending]);
+  }, [hud]);
 
   useEffect(() => () => clearTimeout(flashTimer.current), []);
 
@@ -217,14 +218,13 @@ export function Device({ studies }: { studies: Study[] }) {
     play("wake");
   }
 
-  const showHud = (kind: "take" | "volume") => setHud({ kind, at: performance.now() });
+  const showHud = () => setHud(performance.now());
 
   function step(delta: number) {
     const current = pending ?? at;
     const next = clamp(current + delta, 0, n - 1);
     if (next === current) return play("bump");
     go(next, { dir: delta });
-    showHud("take");
   }
 
   function turn(steps: number) {
@@ -236,7 +236,6 @@ export function Device({ studies }: { studies: Study[] }) {
     pos.current = next;
     paint();
     setPending(next === at ? null : next);
-    showHud("take");
   }
 
   function scrub(f: number) {
@@ -249,7 +248,6 @@ export function Device({ studies }: { studies: Study[] }) {
     if (reached !== (pending ?? at)) {
       play("tick", { pitch: 0.97 + Math.random() * 0.06 });
       setPending(reached === at ? null : reached);
-      showHud("take");
     }
   }
 
@@ -264,7 +262,7 @@ export function Device({ studies }: { studies: Study[] }) {
     if (next === volume) return play("bump");
     setVolume(next); // set first, so the tick is heard at the new level
     play("tick", { pitch: 0.9 + next * 0.02 });
-    showHud("volume");
+    showHud();
     announce(`Volume ${next} of ${VOLUME_MAX}`);
   }
 
@@ -568,7 +566,6 @@ export function Device({ studies }: { studies: Study[] }) {
       : flash === "stop" || (flash !== null && flash === (view === "take" ? "play" : "ok"))
         ? "centre"
         : null;
-  const title = view === "take" ? study.title : titles[view];
 
   return (
     <div
@@ -576,26 +573,34 @@ export function Device({ studies }: { studies: Study[] }) {
       role="region"
       aria-label={`${site.name}: a player of studies`}
       onPointerDownCapture={wake}
-      className="flex h-dvh w-full justify-center [--m:8px] sm:[--m:14px] wide:[--m:18px] pt-[max(var(--m),env(safe-area-inset-top))] pr-[max(var(--m),env(safe-area-inset-right))] pb-[max(var(--m),env(safe-area-inset-bottom))] pl-[max(var(--m),env(safe-area-inset-left))]"
+      className="flex h-dvh w-full flex-col items-center [--m:8px] sm:[--m:14px] wide:[--m:24px] pt-[max(var(--m),env(safe-area-inset-top))] pr-[max(var(--m),env(safe-area-inset-right))] pb-[max(var(--m),env(safe-area-inset-bottom))] pl-[max(var(--m),env(safe-area-inset-left))]"
     >
-      {/* The frame: machined, a shade darker than the body, lit along its top. It
-          takes 80% of the window's width, never less than 864px (so phones and
-          tablets keep the whole width) and never more than 1200px. */}
-      <div className="relative flex size-full max-w-[min(1200px,max(864px,80vw))] rounded-[34px] p-[5px] [background:var(--device-frame)] [box-shadow:var(--device-frame-edge),var(--device-body-shadow)] wide:rounded-[46px] wide:p-[8px]">
-        {/* The body: near white, softly lit. */}
-        <div className="relative isolate flex size-full flex-col overflow-hidden rounded-[29px] [background:var(--device-body)] shadow-(--device-body-edge) wide:rounded-[38px] short:flex-row">
-          <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
+      {/* The page around the object: the way to the player's screens and the study's page, off the hardware. */}
+      <header className="flex h-[44px] w-full max-w-[880px] shrink-0 items-center justify-between gap-6 px-2 text-[14px] tracking-[-0.006em]">
+        <span className="font-medium text-ink">{site.name}</span>
+        <nav aria-label="Player" className="flex items-center gap-5 text-muted">
+          <button type="button" onClick={() => press(view === "take" ? "home" : "back")} className="transition-colors hover:text-ink">
+            {view === "take" ? "Menu" : "Back"}
+          </button>
+          {view === "take" && (
+            <>
+              <button type="button" aria-expanded={info} onClick={() => press("ok")} className="transition-colors hover:text-ink">
+                Details
+              </button>
+              <Link href={`/c/${study.slug}`} aria-label={`Source: open the ${study.title} page`} className="transition-colors hover:text-ink">
+                Source
+              </Link>
+            </>
+          )}
+        </nav>
+      </header>
 
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-            {/* The screen: full width, edge to edge under the bumper. */}
-            <div className="@container/display relative isolate flex min-h-0 flex-1 animate-wake flex-col overflow-hidden bg-canvas">
-              <StatusBar
-                title={title}
-                details={view === "take" ? { open: info, onToggle: () => press("ok") } : undefined}
-                nav={view === "take" ? { label: "Menu", onPress: () => press("home") } : { label: "Back", back: true, onPress: () => press("back") }}
-                source={view === "take" ? { href: `/c/${study.slug}`, label: `Source: open the ${study.title} page` } : undefined}
-              />
-
+      <div className="grid min-h-0 w-full flex-1 grid-cols-1 place-items-center">
+        {/* The Slab: a metal rim round one sheet of glass. Silver with pale glass in light, graphite with black glass in dark (globals.css). */}
+        <div data-player className="player player-casing relative flex rounded-[30px] p-[10px] wide:rounded-[36px] wide:p-[12px]">
+          <div className="player-pane relative isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[22px] wide:rounded-[26px] short:grid short:grid-cols-[minmax(0,1fr)_auto] short:grid-rows-[minmax(0,1fr)_auto]">
+            {/* The screen: the study runs straight on the glass, its own plate dissolved (globals.css, data-player-screen). */}
+            <div data-player-screen className="@container/display relative isolate flex min-h-0 flex-1 animate-wake flex-col overflow-hidden short:col-start-1 short:row-start-1">
               <div className="relative min-h-0 flex-1">
                 <div
                   ref={stageRef}
@@ -612,20 +617,9 @@ export function Device({ studies }: { studies: Study[] }) {
                     <AppStage key={`${studies[at].slug}:${replay}`} study={studies[at]} from={reduced ? 0 : from} transport={transport} />
                   </div>
                   <Hud show={hud !== null}>
-                    {hud?.kind === "volume" ? (
-                      <>
-                        <span className="text-muted">Volume</span>
-                        <VolumeBar volume={volume} />
-                        <span className="w-[2ch] text-right tabular-nums text-muted">{volume}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="tabular-nums text-muted">
-                          {dialled + 1} / {n}
-                        </span>
-                        <span className="font-medium">{study.title}</span>
-                      </>
-                    )}
+                    <span className="text-muted">Volume</span>
+                    <VolumeBar volume={volume} />
+                    <span className="w-[2ch] text-right tabular-nums text-muted">{volume}</span>
                   </Hud>
                   <InfoSheet study={studies[at]} at={at} n={n} open={info && view === "take"} onClose={toggleInfo} />
                 </div>
@@ -715,49 +709,50 @@ export function Device({ studies }: { studies: Study[] }) {
                   </div>
                 </Panel>
               </div>
-
-              {/* Glass, and the backlight's bloom as the screen wakes. */}
-              <div aria-hidden className="pointer-events-none absolute inset-0 z-40 [background:var(--screen-glass)]" />
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 z-40 animate-bloom [background:radial-gradient(50%_50%_at_50%_50%,var(--screen-glow),transparent)]"
-              />
             </div>
 
+            {/* The tape, lit in the same glass under the screen. */}
             <Tape
               takes={studies}
               slider={{ label: "Tape", now: dialled + 1, max: n, text: `${study.title}, ${dialled + 1} of ${n}` }}
               hint={hintId}
               onScrub={scrub}
               onScrubEnd={scrubEnd}
-              className="h-[38px] shrink-0 border-t border-black/[0.06] dark:border-white/[0.06] wide:h-[44px] short:h-[34px]"
+              className="h-[30px] shrink-0 wide:h-[36px] short:col-start-1 short:row-start-2 short:h-[26px]"
             />
-          </div>
 
-          {/* The deck. Sized in em from one font size, so it scales as one piece. */}
-          <div className="deck-grid shrink-0 content-center justify-center gap-x-[1.3em] gap-y-[0.8em] border-t border-black/[0.07] px-[1.1em] pb-[1.3em] pt-[1.1em] [font-size:clamp(9px,min(3.2vw,1.7vh),15px)] dark:border-white/[0.06] wide:gap-x-[3.2em] wide:px-[2.4em] wide:py-[1.7em] wide:[font-size:clamp(10px,min(1.45vw,1.6vh),16px)] roomy:gap-x-[3em] roomy:[font-size:clamp(10px,min(1.25vw,1.6vh),16px)] short:border-l short:border-t-0 short:px-[1em] short:py-[0.9em] short:[font-size:clamp(8px,2.7vh,12px)]">
-            {/* The maker's mark and the LCD, one strip of glass. Phones keep only the mark: the screen and the HUD say the rest. */}
-            <Readout at={dialled} n={n} title={study.title} transport={transport} className="self-start justify-self-start [grid-area:readout] wide:self-center" />
+            {/* The deck, in the pane: the readout printed into it, and the dial through it in a ring of the casing's metal.
+                On a phone held sideways the pane lies on its side: screen over tape at the left, readout over dial at the right. */}
+            <div className="flex shrink-0 items-center gap-[1.6em] px-[1.4em] pb-[1.2em] pt-[0.4em] [font-size:clamp(9px,min(3.2vw,1.7vh),15px)] wide:px-[2em] wide:pb-[1.5em] wide:[font-size:clamp(10px,min(1.2vw,1.6vh),15px)] short:col-start-2 short:row-span-2 short:row-start-1 short:w-[11em] short:flex-col short:justify-center short:gap-[1.2em] short:px-[1em] short:py-[0.9em] short:[font-size:clamp(9px,2.8vh,12px)]">
+              <Readout at={dialled} n={n} title={study.title} transport={transport} className="min-w-0 flex-1 short:w-full short:flex-none short:flex-col short:items-start short:gap-[0.5em]" />
+              <div className="player-ring shrink-0 rounded-full p-[0.32em]">
+                <Dial
+                  flash={dialFlash}
+                  onTurn={(steps) => {
+                    wake();
+                    turn(steps);
+                  }}
+                  onPress={(button) => press(button !== "centre" ? button : view === "take" ? "play" : "ok")}
+                  onHold={view === "take" ? () => press("stop") : undefined}
+                  labels={
+                    view === "take"
+                      ? { up: "Volume up", down: "Volume down", prev: "Previous study", next: "Next study", centre: `${playing ? "Pause" : "Play"}; hold to stop` }
+                      : { up: "Up", down: "Down", prev: view === "options" ? "Less" : "Previous", next: view === "options" ? "More" : "Next", centre: "Choose" }
+                  }
+                  centre={<CentreGlyph take={view === "take"} playing={playing} />}
+                  slider={slider}
+                  sliderRef={sliderRef}
+                  hint={hintId}
+                  className="w-[max(104px,9em)] wide:w-[10.5em] short:w-[max(104px,8.5em)]"
+                />
+              </div>
+            </div>
 
-            {/* The dial: PLAY at its centre, held for STOP. */}
-            <Dial
-              flash={dialFlash}
-              onTurn={(steps) => {
-                wake();
-                turn(steps);
-              }}
-              onPress={(button) => press(button !== "centre" ? button : view === "take" ? "play" : "ok")}
-              onHold={view === "take" ? () => press("stop") : undefined}
-              labels={
-                view === "take"
-                  ? { up: "Volume up", down: "Volume down", prev: "Previous study", next: "Next study", centre: `${playing ? "Pause" : "Play"}; hold to stop` }
-                  : { up: "Up", down: "Down", prev: view === "options" ? "Less" : "Previous", next: view === "options" ? "More" : "Next", centre: "Choose" }
-              }
-              centre={<CentreGlyph take={view === "take"} playing={playing} />}
-              slider={slider}
-              sliderRef={sliderRef}
-              hint={hintId}
-              className="w-[12em] self-center justify-self-center [grid-area:dial] wide:w-[15em] short:w-[11em]"
+            {/* One sheen across the whole sheet of glass, and the backlight's bloom as it wakes. */}
+            <div aria-hidden className="player-sheen pointer-events-none absolute inset-0 z-40" />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 z-40 animate-bloom [background:radial-gradient(50%_50%_at_50%_40%,var(--screen-glow),transparent)]"
             />
           </div>
         </div>
