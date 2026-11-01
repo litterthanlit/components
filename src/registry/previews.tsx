@@ -49,6 +49,7 @@ function demo(load: () => Promise<Module>): Demo {
 
 export const previews: Record<string, Demo> = {
   "file-browser": demo(() => import("./components/file-browser")),
+  spool: demo(() => import("./components/spool")),
   "gradient-keys": demo(() => import("./components/gradient-keys")),
   "agent-indicators": demo(() => import("./components/agent-indicators")),
   "agent-status": demo(() => import("./components/agent-status")),

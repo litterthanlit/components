@@ -1,12 +1,11 @@
 @import "tailwindcss";
 @import "../design-system/tokens.css";
 
-/* The device's arrangements: its deck under the screen in a column (phones,
-   the default), in a row (tablets and up, `wide`), in a row with room for
-   a wider readout (`roomy`), or beside the screen when the viewport is a
-   short landscape (phones on their side, `short`). */
+/* The player's arrangements: filling the space under the header (phones, the
+   default), at its own proportions on tablets and up (`wide`), or lying on
+   its side when the viewport is a short landscape (phones held sideways,
+   `short`). */
 @custom-variant wide (@media (min-width: 720px) and (min-height: 521px));
-@custom-variant roomy (@media (min-width: 1100px) and (min-height: 521px));
 @custom-variant short (@media (orientation: landscape) and (max-height: 520px));
 /* A study taken apart in the drawing finish (src/components/anatomy). A study
    tunes how its own parts are drawn with it, as it would with dark:. The
@@ -59,23 +58,6 @@ h3 {
   background-size: 160px 160px;
   mix-blend-mode: soft-light;
   opacity: var(--device-grain);
-}
-/* The deck's grid, one per arrangement (see the variants above). The deck
-   holds only what plays the tape: the readout (the maker's mark and the LCD
-   on one strip of glass) and the dial; the screens and the study's page are
-   on the screen's top edge. On phones the screen comes first: the readout
-   shows only the mark, tucked into the corner beside the dial. On wide decks
-   the whole strip sits beside the dial. */
-.deck-grid {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  grid-template-areas: "readout dial .";
-}
-@media (min-width: 720px) and (min-height: 521px) {
-  .deck-grid {
-    grid-template-columns: auto auto;
-    grid-template-areas: "readout dial";
-  }
 }
 /* A take coming onto the screen: in from the side it was dialled from. It
    starts half lit, so a dial spun through several takes a second shows each
@@ -321,4 +303,80 @@ h3 {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* The player: one pane of glass in a metal casing. Wide viewports get the
+   object at its own proportions, 160 × 116, as large as the window allows up
+   to 880 px; phones give it the whole space under the header. Its finish is
+   the --device-casing, -pane and -ring tokens: silver, pale glass and a black
+   dial in light; graphite, black glass and a silver dial in dark. */
+.player {
+  width: 100%;
+  max-width: 880px;
+  height: 100%;
+}
+@media (min-width: 720px) and (min-height: 521px) {
+  .player {
+    height: auto;
+    width: min(100%, 880px, calc((100dvh - 44px - 2 * var(--m, 24px)) * 160 / 116));
+    aspect-ratio: 160 / 116;
+  }
+}
+/* Brushed along its width, lit from the upper left, with the side wall showing below. */
+.player-casing {
+  background: var(--device-casing);
+  box-shadow: var(--device-casing-shadow);
+}
+.player-casing::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='200'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.002 0.9' numOctaves='2' seed='15'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
+  mix-blend-mode: var(--device-casing-blend);
+  opacity: 0.5;
+}
+.player-pane {
+  background: var(--device-pane);
+  box-shadow: var(--device-pane-edge);
+}
+.player-sheen {
+  background: var(--device-pane-sheen);
+}
+/* The dial goes through the glass, so the rim's metal shows round it. */
+.player-ring {
+  background: var(--device-ring);
+  box-shadow: var(--device-ring-edge);
+}
+/* On the Slab's screen a study loses its plate: its wells, keys and LCDs sit
+   straight on the glass, and the stage behind it goes clear. */
+[data-player-screen] [data-part="plate"] {
+  background: none !important;
+  box-shadow: none !important;
+}
+[data-player-screen] [data-part="plate"] > .device-grain {
+  display: none;
+}
+[data-player-screen] [data-preview] {
+  background: none !important;
+}
+[data-player-screen] [data-preview] > [class*="stage-"] {
+  display: none;
+}
+/* A study that is itself a screen (Spool's window, Gradient Keys' preview,
+   Command Menu) loses its bezel, its screen's own ground and its glass too:
+   what it shows sits on the Slab's glass rather than in a monitor drawn on
+   it. Bezels round hardware readouts (drums, cells, a matrix, meters) stay. */
+[data-player-screen] [data-part="bezel"]:has(> [data-part="screen"]),
+[data-player-screen] [data-part="bezel"] > [data-part="screen"] {
+  background: none !important;
+  box-shadow: none !important;
+}
+[data-player-screen] [data-part="bezel"] > [data-part="screen"] [data-part="glass"] {
+  display: none;
+}
+/* The player's own screens (Home, Find, Options) take the glass's colour, so they don't read as a sheet laid on it. */
+[data-player-screen] section[data-panel] {
+  background: var(--device-pane-panel);
 }

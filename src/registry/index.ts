@@ -34,6 +34,17 @@ export const registry: RegistryEntry[] = [
     background: "plain",
   },
   {
+    slug: "spool",
+    title: "Spool",
+    description:
+      "An image strip that spools while you hold it. It starts at a frame a second, and the longer the hold, the faster the motor turns, doubling every 0.8 s to 16 frames a second. Past 2.5 a second the strip bends in an even arc, narrow through the middle of the screen and wide at the ends, the frames shrinking and streaking as they go. Let go and it coasts on to the next frame. Every frame that passes the gate clicks.",
+    tagline: "Hold to spool: the longer the hold, the faster it runs and the more it bends.",
+    tags: ["pointer", "motion", "sound", "webgl"],
+    date: "2026-10-31",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "gradient-keys",
     title: "Gradient Keys",
     description:
