@@ -214,6 +214,40 @@ await check("details", {}, async (page, expect) => {
   expect(await shown(), "Details did not open the sheet a second time");
 });
 
+// Every take on a phone: a long name must never widen the object past the window.
+await check("phone, every take", { width: 390, height: 844 }, async (page, expect) => {
+  for (const take of takes) {
+    await dialTo(page, take.slug);
+    const fits = inside(await box(page, "[data-player]"), 390, 844) && (await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+    expect(fits, `${take.title} pushes the object off the window`);
+  }
+});
+
+// Every take held sideways: the name ellipsises inside the readout instead of running off the pane.
+await check("short landscape, every take", { width: 844, height: 390 }, async (page, expect) => {
+  for (const take of takes) {
+    await dialTo(page, take.slug);
+    const name = await box(page, "[data-player-name]");
+    const readout = await box(page, "[data-player-readout]");
+    expect(name.x + name.width <= readout.x + readout.width + 0.5, `${take.title} runs out of the readout`);
+  }
+});
+
+await check("wide short window", { width: 1920, height: 500 }, async (page, expect) => {
+  const b = await box(page, "[data-player]");
+  expect(b.width <= 880.5, `object stretches to ${b.width.toFixed(0)} px in a wide window under 521 px tall`);
+});
+
+// Each of the dial's arrows is a touch target: 24 px or more on its short side, at every size.
+for (const [width, height] of [[1440, 900], [844, 390], [740, 360], [390, 844], [360, 640], [320, 568]])
+  await check("dial arrows", { width, height }, async (page, expect) => {
+    for (const arrow of ["up", "down", "prev", "next"]) {
+      const b = await box(page, `[data-dial="${arrow}"]`);
+      const side = Math.min(b.width, b.height);
+      expect(side >= 23.95, `the ${arrow} arrow is ${side.toFixed(1)} px, under 24`);
+    }
+  });
+
 await browser.close();
 
 console.log(`Checked the player ${checks} ways.\n`);

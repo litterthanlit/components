@@ -309,6 +309,7 @@ h3 {
    dial in light; graphite, black glass and a silver dial in dark. */
 .player {
   width: 100%;
+  max-width: 880px;
   height: 100%;
 }
 @media (min-width: 720px) and (min-height: 521px) {

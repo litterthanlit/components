@@ -595,7 +595,7 @@ export function Device({ studies }: { studies: Study[] }) {
         </nav>
       </header>
 
-      <div className="grid min-h-0 w-full flex-1 place-items-center">
+      <div className="grid min-h-0 w-full flex-1 grid-cols-1 place-items-center">
         {/* The Slab: a metal rim round one sheet of glass. Silver with pale glass in light, graphite with black glass in dark (globals.css). */}
         <div data-player className="player player-casing relative flex rounded-[30px] p-[10px] wide:rounded-[36px] wide:p-[12px]">
           <div className="player-pane relative isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[22px] wide:rounded-[26px] short:grid short:grid-cols-[minmax(0,1fr)_auto] short:grid-rows-[minmax(0,1fr)_auto]">
@@ -743,7 +743,7 @@ export function Device({ studies }: { studies: Study[] }) {
                   slider={slider}
                   sliderRef={sliderRef}
                   hint={hintId}
-                  className="w-[9em] wide:w-[10.5em] short:w-[8.5em]"
+                  className="w-[max(104px,9em)] wide:w-[10.5em] short:w-[max(104px,8.5em)]"
                 />
               </div>
             </div>

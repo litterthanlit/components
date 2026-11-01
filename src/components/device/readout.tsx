@@ -14,7 +14,7 @@ export type Transport = "play" | "pause" | "stop";
 export function Readout({ at, n, title, transport, className }: { at: number; n: number; title: string; transport: Transport; className?: string }) {
   return (
     <div aria-hidden data-player-readout className={cn("flex items-end justify-between gap-[1em] text-ink", className)}>
-      <span key={title} data-player-name className="min-w-0 animate-enter truncate text-[1.25em] font-medium leading-none tracking-[-0.015em]">
+      <span key={title} data-player-name className="min-w-0 max-w-full animate-enter truncate text-[1.25em] font-medium leading-none tracking-[-0.015em]">
         {title}
       </span>
       <p data-player-take className="flex shrink-0 items-baseline gap-[0.35em] leading-none tabular-nums">
