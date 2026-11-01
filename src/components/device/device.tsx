@@ -600,8 +600,8 @@ export function Device({ studies }: { studies: Study[] }) {
 
       <div className="grid min-h-0 w-full flex-1 place-items-center">
         {/* The Slab: a metal rim round one sheet of glass. Silver with pale glass in light, graphite with black glass in dark (globals.css). */}
-        <div data-player className="slab slab-rim relative flex rounded-[30px] p-[10px] wide:rounded-[36px] wide:p-[12px]">
-          <div className="slab-glass relative isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[22px] wide:rounded-[26px]">
+        <div data-player className="player player-casing relative flex rounded-[30px] p-[10px] wide:rounded-[36px] wide:p-[12px]">
+          <div className="player-pane relative isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[22px] wide:rounded-[26px]">
             {/* The screen: the study runs straight on the glass, its own plate dissolved (globals.css, data-player-screen). */}
             <div data-player-screen className="@container/display relative isolate flex min-h-0 flex-1 animate-wake flex-col overflow-hidden">
               <div className="relative min-h-0 flex-1">
@@ -738,7 +738,7 @@ export function Device({ studies }: { studies: Study[] }) {
             {/* The deck, in the glass: the readout lit straight into it, and the dial through it in a ring of the rim's metal. */}
             <div className="flex shrink-0 items-center gap-[1.6em] px-[1.4em] pb-[1.2em] pt-[0.4em] [font-size:clamp(9px,min(3.2vw,1.7vh),15px)] wide:px-[2em] wide:pb-[1.5em] wide:[font-size:clamp(10px,min(1.2vw,1.6vh),15px)]">
               <GlassReadout at={dialled} n={n} title={study.title} transport={transport} className="min-w-0 flex-1" />
-              <div className="slab-ring shrink-0 rounded-full p-[0.32em]">
+              <div className="player-ring shrink-0 rounded-full p-[0.32em]">
                 <Dial
                   flash={dialFlash}
                   onTurn={(steps) => {
@@ -762,7 +762,7 @@ export function Device({ studies }: { studies: Study[] }) {
             </div>
 
             {/* One sheen across the whole sheet of glass, and the backlight's bloom as it wakes. */}
-            <div aria-hidden className="slab-sheen pointer-events-none absolute inset-0 z-40" />
+            <div aria-hidden className="player-sheen pointer-events-none absolute inset-0 z-40" />
             <div
               aria-hidden
               className="pointer-events-none absolute inset-0 z-40 animate-bloom [background:radial-gradient(50%_50%_at_50%_40%,var(--screen-glow),transparent)]"

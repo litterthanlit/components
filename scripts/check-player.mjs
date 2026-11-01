@@ -200,7 +200,7 @@ await check("details", {}, async (page, expect) => {
   // The screens' glass colour, resolved the way the browser paints it.
   const panel = await page.evaluate(() => {
     const probe = document.createElement("div");
-    probe.style.backgroundColor = "var(--device-pane-panel, var(--slab-panel))";
+    probe.style.backgroundColor = "var(--device-pane-panel)";
     document.querySelector("[data-player-screen]").append(probe);
     const colour = getComputedStyle(probe).backgroundColor;
     probe.remove();

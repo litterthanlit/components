@@ -320,72 +320,48 @@ h3 {
   }
 }
 
-/* The Slab (a spike): the player as one sheet of glass in a metal rim. Wide
-   viewports get the object at its own proportions, 160 × 116, as large as
-   the window allows; phones give it the whole space. In light it is silver
-   with pale glass and a black dial; in dark, graphite with black glass and a
-   silver dial, as the old body and dial were. */
-:root {
-  --slab-rim: radial-gradient(120% 80% at 25% 0%, rgb(255 255 255 / 0.6), transparent 55%), linear-gradient(180deg, #e4e7ea 0%, #d3d7dc 50%, #c3c7cd 100%);
-  --slab-rim-shadow: inset 0 1.5px 0 rgb(255 255 255 / 0.95), inset 0 -1.5px 0 rgb(0 0 0 / 0.12), 0 0 0 1px rgb(0 0 0 / 0.16), 0 7px 0 -1px #a7abb2,
-    0 8px 0 -1px rgb(0 0 0 / 0.18), 0 22px 34px -14px rgb(0 0 0 / 0.35), 0 60px 90px -45px rgb(0 0 0 / 0.4);
-  --slab-brush-blend: overlay;
-  --slab-glass: linear-gradient(180deg, #f6f7f8 0%, #eceef1 100%);
-  --slab-panel: #f3f4f6;
-  --slab-glass-edge: 0 0 0 1px rgb(0 0 0 / 0.16), 0 1px 0 1px rgb(255 255 255 / 0.7), inset 0 1px 3px rgb(0 0 0 / 0.1);
-  --slab-sheen: linear-gradient(160deg, rgb(255 255 255 / 0.55) 0%, rgb(255 255 255 / 0.12) 40%, transparent 40.4%);
-  --slab-ring: linear-gradient(180deg, #eef0f2 0%, #b9bec5 100%);
-  --slab-ring-edge: 0 0 0 1px rgb(0 0 0 / 0.14), inset 0 1px 2px rgb(0 0 0 / 0.18);
-}
-[data-theme="dark"] {
-  --slab-rim: radial-gradient(120% 80% at 25% 0%, rgb(255 255 255 / 0.14), transparent 55%), linear-gradient(180deg, #4b4e54 0%, #3d4045 50%, #313338 100%);
-  --slab-rim-shadow: inset 0 1.5px 0 rgb(255 255 255 / 0.18), inset 0 -1.5px 0 rgb(0 0 0 / 0.4), 0 0 0 1px rgb(0 0 0 / 0.55), 0 7px 0 -1px #24262a,
-    0 8px 0 -1px rgb(0 0 0 / 0.4), 0 22px 34px -14px rgb(0 0 0 / 0.5), 0 60px 90px -45px rgb(0 0 0 / 0.5);
-  --slab-brush-blend: soft-light;
-  --slab-glass: linear-gradient(180deg, #0f1012 0%, #08090a 100%);
-  --slab-panel: #0d0e10;
-  --slab-glass-edge: 0 0 0 1px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.1), inset 0 0 0 1px rgb(255 255 255 / 0.04);
-  --slab-sheen: linear-gradient(160deg, rgb(255 255 255 / 0.08) 0%, rgb(255 255 255 / 0.02) 40%, transparent 40.4%);
-  --slab-ring: linear-gradient(180deg, #5d6067 0%, #3a3d42 100%);
-  --slab-ring-edge: 0 0 0 1px rgb(0 0 0 / 0.7), inset 0 1px 2px rgb(0 0 0 / 0.5);
-}
-.slab {
+/* The player: one pane of glass in a metal casing. Wide viewports get the
+   object at its own proportions, 160 × 116, as large as the window allows up
+   to 880 px; phones give it the whole space under the header. Its finish is
+   the --device-casing, -pane and -ring tokens: silver, pale glass and a black
+   dial in light; graphite, black glass and a silver dial in dark. */
+.player {
   width: 100%;
   height: 100%;
 }
 @media (min-width: 720px) and (min-height: 521px) {
-  .slab {
+  .player {
     height: auto;
     width: min(100%, 880px, calc((100dvh - 44px - 2 * var(--m, 24px)) * 160 / 116));
     aspect-ratio: 160 / 116;
   }
 }
 /* Brushed along its width, lit from the upper left, with the side wall showing below. */
-.slab-rim {
-  background: var(--slab-rim);
-  box-shadow: var(--slab-rim-shadow);
+.player-casing {
+  background: var(--device-casing);
+  box-shadow: var(--device-casing-shadow);
 }
-.slab-rim::before {
+.player-casing::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='200'%3E%3Cfilter id='b'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.002 0.9' numOctaves='2' seed='15'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
-  mix-blend-mode: var(--slab-brush-blend);
+  mix-blend-mode: var(--device-casing-blend);
   opacity: 0.5;
 }
-.slab-glass {
-  background: var(--slab-glass);
-  box-shadow: var(--slab-glass-edge);
+.player-pane {
+  background: var(--device-pane);
+  box-shadow: var(--device-pane-edge);
 }
-.slab-sheen {
-  background: var(--slab-sheen);
+.player-sheen {
+  background: var(--device-pane-sheen);
 }
 /* The dial goes through the glass, so the rim's metal shows round it. */
-.slab-ring {
-  background: var(--slab-ring);
-  box-shadow: var(--slab-ring-edge);
+.player-ring {
+  background: var(--device-ring);
+  box-shadow: var(--device-ring-edge);
 }
 /* On the Slab's screen a study loses its plate: its wells, keys and LCDs sit
    straight on the glass, and the stage behind it goes clear. */
@@ -416,5 +392,5 @@ h3 {
 }
 /* The player's own screens (Home, Find, Options) take the glass's colour, so they don't read as a sheet laid on it. */
 [data-player-screen] section[aria-label] {
-  background: var(--slab-panel);
+  background: var(--device-pane-panel);
 }
