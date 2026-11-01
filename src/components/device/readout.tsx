@@ -104,7 +104,7 @@ export function GlassReadout({ at, n, title, transport, className }: { at: numbe
             transport === "play" ? "bg-(--device-rec) shadow-[0_0_0.5em_var(--device-rec)] duration-0" : "bg-(--device-meter-off) duration-(--duration-exit)",
           )}
         />
-        <span key={at} className="animate-enter text-[2.2em] font-light tracking-[-0.03em]">
+        <span key={at} className="animate-enter text-[2.2em] font-medium tracking-[-0.035em]">
           {String(at + 1).padStart(2, "0")}
         </span>
         <span className="text-[0.7em] text-muted">/ {n}</span>
