@@ -86,7 +86,8 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
   "file-browser": {
     bezel: { note: "Black, with a polished edge, round the player's own screen: a second screen, not a card." },
     screen: { name: "Screen", note: "The site's own ground under glass: the path, the files, and the accent bar gliding on a spring between rows." },
-    face: { name: "Preview", tokens: [], note: "Quick Look for the selected take, clipped from its left edge so it slides in without leaving its box. Its previews stand in a column that rises on the bar's own spring." },
+    face: { name: "Preview", tokens: [], note: "Quick Look for the selected take, with no fill of its own: clipped from its left edge so it slides in without leaving its box, the files drawing in to make room. Its previews stand in a column that rises on the bar's own spring." },
+    light: { tokens: ["--device-meter-off", "--device-meter-on", "--device-rec"], note: "Beside the readout, as on the Slab's: red with its glow while a take plays, lit grey once one has loaded." },
     glass: { note: "The screen's sheen, and the backlight's bloom as it wakes." },
   },
   "copy-button": {

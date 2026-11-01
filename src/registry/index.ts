@@ -26,7 +26,7 @@ export const registry: RegistryEntry[] = [
     slug: "file-browser",
     title: "File Browser",
     description:
-      "A folder of takes on the player's screen, with Quick Look. Space slides a preview in from the right, and the selected take plays: a red playhead crosses its waveform and the LCD counts the time. One spring drives the accent bar and a column of previews inside the pane, so as the bar glides down a row the next take rises into view at the same speed. A listbox with one tab stop.",
+      "A folder of takes on the player's screen, with Quick Look. Space slides a preview in from the right, and the selected take plays: a red playhead crosses its waveform and the readout counts the time. One spring drives the accent bar and a column of previews inside the pane, so as the bar glides down a row the next take rises into view at the same speed. A listbox with one tab stop.",
     tagline: "A file list with Quick Look that rides the selection.",
     tags: ["input", "motion", "a11y", "sound"],
     date: "2026-11-01",

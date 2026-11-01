@@ -142,6 +142,9 @@ await check("light", {}, async (page, expect) => {
 });
 
 await check("dissolve", {}, async (page, expect) => {
+  // A study built on a plate, by name: the first take on the tape may be a screen with none.
+  await dialTo(page, "knob");
+  await page.waitForTimeout(SETTLE);
   const plates = await page.$$eval("[data-player-screen] [data-part=plate]", (els) =>
     els.map((el) => [getComputedStyle(el).backgroundImage, getComputedStyle(el).boxShadow]),
   );
@@ -152,6 +155,11 @@ await check("dissolve", {}, async (page, expect) => {
   const spool = await page.$eval("[data-player-screen] [data-part=bezel]", (el) => [getComputedStyle(el).boxShadow, getComputedStyle(el.querySelector("[data-part=glass]")).display]);
   expect(spool[0] === "none", "Spool's bezel keeps its rim");
   expect(spool[1] === "none", "Spool's glass still shows");
+  await dialTo(page, "file-browser");
+  await page.waitForTimeout(SETTLE);
+  const files = await page.$eval("[data-player-screen] [data-part=bezel]", (el) => [getComputedStyle(el).boxShadow, getComputedStyle(el.querySelector("[data-part=screen]")).backgroundColor]);
+  expect(files[0] === "none", "File Browser's bezel keeps its rim");
+  expect(files[1] === "rgba(0, 0, 0, 0)", "File Browser's screen keeps its ground");
   await dialTo(page, "number-ticker");
   await page.waitForTimeout(SETTLE);
   const ticker = await page.$eval("[data-player-screen] [data-part=bezel]", (el) => getComputedStyle(el).boxShadow);

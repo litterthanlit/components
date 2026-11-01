@@ -20,8 +20,14 @@ import { hostTransport, play, type PlayOptions, type SoundName } from "@/lib/sou
 /*
  * A file browser with Quick Look, as one of the player's own screens: a
  * path along the top, the files in a list with the player's accent bar for
- * the selection, and a footer of tiny keys beside an LCD. Space slides a
- * preview of the selected file in from the right.
+ * the selection, and a footer of tiny keys beside a readout printed in the
+ * page's ink, as the Slab prints its own. Space slides a preview of the
+ * selected file in from the right.
+ *
+ * Nothing on it is a sheet. The pane, the path and the footer are regions of
+ * one ground, parted by hairlines, so on the Slab, where the bezel and the
+ * screen's ground dissolve, they sit on the player's glass as its own
+ * screens do, and on the study's page they sit on the screen's ground.
  *
  * One spring drives the bar and the previews. It runs in rows: the bar's
  * clip reads `--bar × --row`, and the previews stand in a column inside the
@@ -35,11 +41,12 @@ import { hostTransport, play, type PlayOptions, type SoundName } from "@/lib/sou
  * The pane rides a second spring (`springs.snappy`) as `--open`, 0 to 1.
  * It clips itself from the left and slides its contents with the clip's
  * edge, so it never leaves its own box: the anatomy can take it apart open
- * or shut. The bar's clip draws in from the right with the pane's edge, and
- * the files' lengths fade out under it. A file with a `duration` plays
+ * or shut. It has no fill of its own, so the files make room rather than go
+ * under it: the rows draw in from the right with the pane's edge, the bar's
+ * clip with them, and the lengths fade out first. A file with a `duration` plays
  * while it's previewed: a frame loop writes how far through it is as `--t`
  * (0 to 1) on the pane, for the preview to draw a playhead, and the time
- * straight into the LCD.
+ * straight into the readout, behind a light lit red while it plays.
  *
  * Focus is the list (a listbox pointing at the selected option). ↑ ↓, Page
  * Up and Down, Home and End move; Space or → opens the preview and Space or
@@ -58,7 +65,7 @@ export type FileItem = {
   duration?: number;
 };
 
-/** What the LCD shows instead of the count: "Loaded" "take_1202.wav". */
+/** What the readout shows instead of the count: "Loaded" "take_1202.wav". */
 export type FileStatus = { text: string; detail?: string };
 
 export type FileBrowserKey = "up" | "down" | "pageUp" | "pageDown" | "home" | "end" | "space" | "right" | "left" | "enter" | "escape";
@@ -82,7 +89,7 @@ type FileBrowserProps<T extends FileItem> = {
   onOpen?: (item: T) => void;
   /** The folders down to this one, outermost first: ["Library", "Session 12"]. */
   path?: string[];
-  /** Shown on the LCD in place of the count, e.g. what just opened. */
+  /** Shown on the readout in place of the count, e.g. what just opened. */
   status?: FileStatus | null;
   /** The browser's accessible name. */
   label?: string;
@@ -98,7 +105,8 @@ const ROW = 2.5; // em: every row is one height, so a row's place is its index t
 const OVERSCAN = 3; // rows rendered past each edge of the view
 const CHUNK = 4; // the rendered window moves this many rows at a time, so scrolling rarely re-renders
 const NEAR = 2; // previews rendered either side of the selection: enough for the spring's longest glide (1.5 rows)
-const PANE = "56%"; // of the list's width, at the preview's widest
+/** The preview's width, of the list's: half on a phone, so a name still fits beside it. */
+const pane = "[--pane:50%] @[30rem]:[--pane:56%]";
 
 const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(" ");
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
@@ -130,8 +138,15 @@ function RowContent({ item, bar }: { item: FileItem; bar?: boolean }) {
       <span className={cx("grid size-[1.15em] shrink-0 place-items-center [&>svg]:size-full", bar ? "text-accent-ink" : cx("text-muted", dim))}>{item.icon}</span>
       <span className={cx("min-w-0 flex-1 truncate text-[1.06em] tracking-[-0.01em]", bar ? "text-accent-ink" : "text-ink")}>{item.name}</span>
       {item.meta && (
-        // Under the preview the lengths go first, so a name keeps the room it has left.
-        <span className={cx("shrink-0 text-[0.8em] tabular-nums [opacity:calc(1-var(--open,0)*2.5)]", bar ? "text-accent-ink/80" : cx("text-muted", dim))}>{item.meta}</span>
+        // As the preview opens the lengths fade and give up their width, so a name gets the room back.
+        <span
+          className={cx(
+            "shrink-0 overflow-hidden whitespace-nowrap text-right text-[0.8em] tabular-nums [max-width:calc((1-var(--open,0))*12em)] [opacity:calc(1-var(--open,0)*2.5)]",
+            bar ? "text-accent-ink/80" : cx("text-muted", dim),
+          )}
+        >
+          {item.meta}
+        </span>
       )}
     </>
   );
@@ -160,9 +175,10 @@ function paintThumb(list: HTMLElement) {
   frame.toggleAttribute("data-scrolls", range > 1);
 }
 
-const rowClass = "absolute inset-x-0 flex h-(--row) items-center gap-[0.7em] pl-[1.05em] pr-[1.15em]";
+/** A row: drawn in from the right by the open pane, so a name never runs under the preview. */
+const rowClass = "absolute left-0 right-[calc(var(--open,0)*var(--pane))] flex h-(--row) items-center gap-[0.7em] pl-[1.05em] pr-[1.15em]";
 /** The bar's clip: the overlay cut down to row `--bar`, a little in from the screen's edge and in from the right by the open pane. */
-const barClip = `inset(calc(var(--bar, 0) * var(--row) + 0.08em) calc(0.45em + var(--open, 0) * ${PANE}) calc(100% - (var(--bar, 0) + 1) * var(--row) + 0.08em) 0.45em round 0.6em)`;
+const barClip = "inset(calc(var(--bar, 0) * var(--row) + 0.08em) calc(0.45em + var(--open, 0) * var(--pane)) calc(100% - (var(--bar, 0) + 1) * var(--row) + 0.08em) 0.45em round 0.6em)";
 const thumb = "max(1.4em, calc(var(--sv, 1) * 100%))";
 /** The pane's left edge, from its right side (0 shut) to its left (1 open). Clamped, so the spring's overshoot never pulls it past its box. */
 const edge = "clamp(0%, calc((1 - var(--open, 0)) * 100%), 100%)";
@@ -280,7 +296,7 @@ export function FileBrowser<T extends FileItem>({
     list.scrollTo({ top: next, behavior: near && !calm ? "smooth" : "auto" });
   }, [current]);
 
-  // The previewed file plays from the top: `--t` on the pane and the time on the LCD, written each frame.
+  // The previewed file plays from the top: `--t` on the pane and the time on the readout, written each frame.
   useEffect(() => {
     const pane = paneRef.current!;
     const time = timeRef.current;
@@ -293,7 +309,7 @@ export function FileBrowser<T extends FileItem>({
     const frame = (now: number) => {
       const s = Math.min(length, (now - from) / 1000);
       pane.style.setProperty("--t", (s / length).toFixed(5));
-      // The LCD changes once a second, not every frame.
+      // The readout changes once a second, not every frame.
       if (time && Math.floor(s) !== shown) {
         shown = Math.floor(s);
         time.textContent = clock(s);
@@ -414,7 +430,7 @@ export function FileBrowser<T extends FileItem>({
   for (let i = Math.max(0, current - NEAR); i <= Math.min(total - 1, current + NEAR); i++) near.push(i);
 
   const count = `${thousands(total)} ${total === 1 ? noun : `${noun}s`}`;
-  const lcd = status ?? (playing ? null : { text: previewing ? "Preview" : count });
+  const readout = status ?? (playing ? null : { text: previewing ? "Preview" : count });
 
   return (
     <div className={cx("@container w-full", className)}>
@@ -448,7 +464,7 @@ export function FileBrowser<T extends FileItem>({
           </nav>
 
           {/* The files, and the preview over them. */}
-          <div className="relative" style={{ "--pane": PANE } as CSSProperties}>
+          <div className={cx("relative", pane)}>
             <div
               ref={listRef}
               id={listId}
@@ -510,16 +526,9 @@ export function FileBrowser<T extends FileItem>({
             </div>
 
             {/* The scroll thumb, as on the player's lists: tiny when the list is long. */}
-            <div aria-hidden className="pointer-events-none absolute inset-y-[0.5em] right-[0.2em] w-[0.16em] opacity-0 transition-opacity duration-(--duration-exit) [[data-scrolls]_&]:opacity-100">
+            <div aria-hidden className="pointer-events-none absolute inset-y-[0.5em] right-[calc(0.2em+var(--open,0)*var(--pane))] w-[0.16em] opacity-0 transition-opacity duration-(--duration-exit) [[data-scrolls]_&]:opacity-100">
               <div className="absolute inset-x-0 rounded-full bg-(--device-meter-off) drawn:bg-(--device-draw-ink)!" style={{ height: thumb, top: `calc(var(--sp, 0) * (100% - ${thumb}))` }} />
             </div>
-
-            {/* The pane's shadow on the files, at its edge, deepening as it opens. */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 w-[1.6em] bg-linear-to-l from-black/[0.07] to-transparent [opacity:var(--open,0)] dark:from-black/40 drawn:hidden"
-              style={{ right: `calc(var(--open, 0) * var(--pane))` }}
-            />
 
             {/* The preview: clipped from the left, its contents riding the clip's edge, so it slides without leaving its box. */}
             <div
@@ -530,7 +539,8 @@ export function FileBrowser<T extends FileItem>({
               className="pointer-events-none absolute inset-y-0 right-0 w-(--pane) overflow-hidden"
               style={{ clipPath: `inset(0 0 0 ${edge})` }}
             >
-              <div className="absolute inset-0 bg-surface shadow-[inset_1px_0_0_var(--line)] drawn:border-l" style={{ translate: `${edge} 0` }}>
+              {/* No fill: a hairline leads it in, and what it shows sits on the ground the files do. */}
+              <div className="absolute inset-0 shadow-[inset_1px_0_0_var(--line)] drawn:border-l" style={{ translate: `${edge} 0` }}>
                 {near.map((i) => (
                   // A column of previews, one pane-height apart, risen by the bar's spring.
                   <div
@@ -545,41 +555,40 @@ export function FileBrowser<T extends FileItem>({
             </div>
           </div>
 
-          {/* Footer: the keys that drive it, and the LCD. */}
-          <div onMouseDown={(e) => e.preventDefault()} className="flex h-[2.75em] items-center gap-[0.3em] bg-panel px-[0.55em] shadow-[0_-1px_0_var(--line)] drawn:border-t">
+          {/* Footer: the keys that drive it, and the readout. */}
+          <div onMouseDown={(e) => e.preventDefault()} className="flex h-[2.75em] items-center gap-[0.3em] px-[0.55em] shadow-[0_-1px_0_var(--line)] drawn:border-t">
             <FooterKey cap="up" onPress={() => press("up")} />
             <FooterKey cap="down" onPress={() => press("down")} />
             <FooterKey cap="space" onPress={() => press("space")} />
 
-            <span
-              aria-hidden
-              data-part="lcd"
-              className="ml-auto flex h-[1.95em] min-w-0 items-center gap-[0.45em] rounded-[0.5em] pl-[0.3em] pr-[0.6em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
-            >
-              <span data-part="chip" className="grid h-[1.35em] w-[1.35em] shrink-0 place-items-center rounded-[0.3em] bg-white text-black">
-                {status ? (
-                  <span key={`${status.text}${status.detail}`} className="size-[0.5em] animate-enter rounded-full bg-black drawn:bg-(--device-draw-ink)!" />
-                ) : playing ? (
-                  <span className="size-[0.5em] animate-pulse rounded-full bg-(--device-rec) drawn:bg-(--device-rec)!" />
-                ) : (
-                  <svg viewBox="0 0 16 16" className="size-[0.85em] fill-none stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:2]">
-                    <path d="M2 4.5v8.25h12V6H8L6.5 4H2.5" />
-                  </svg>
+            {/* Printed in the page's ink, as the Slab's readout is: a light, then the words or the time. */}
+            <p aria-hidden className="ml-auto flex min-w-0 items-baseline gap-[0.45em] pr-[0.5em] leading-none tabular-nums">
+              <span
+                data-part="light"
+                className={cx(
+                  "size-[0.45em] shrink-0 self-center rounded-full transition-[background-color,box-shadow]",
+                  playing
+                    ? "bg-(--device-rec) shadow-[0_0_0.5em_var(--device-rec)] duration-0 drawn:bg-(--device-rec)!"
+                    : status
+                      ? "bg-(--device-meter-on) duration-0 drawn:bg-(--device-draw-ink)!"
+                      : "bg-(--device-meter-off) duration-(--duration-exit)",
                 )}
-              </span>
-              {lcd ? (
-                <span key={`${lcd.text}|${lcd.detail ?? ""}`} className="min-w-0 animate-enter truncate text-[0.7em] leading-none tabular-nums">
-                  <span className="font-semibold uppercase tracking-[0.06em]">{lcd.text}</span>
-                  {lcd.detail && <span className={cx("text-(--device-lcd-dim)", dim)}> {lcd.detail}</span>}
+              />
+              {readout ? (
+                <span key={`${readout.text}|${readout.detail ?? ""}`} className="min-w-0 animate-enter truncate text-[0.9em] tracking-[-0.01em]">
+                  <span className={status ? "font-medium text-ink" : cx("text-muted", dim)}>{readout.text}</span>
+                  {readout.detail && <span className={cx("text-muted", dim)}> {readout.detail}</span>}
                 </span>
               ) : (
-                // The time, written by the frame loop; its length beside it.
-                <span key={selected!.id} className="animate-enter text-[0.78em] font-light leading-none tracking-[-0.01em] tabular-nums">
-                  <span ref={timeRef}>0:00</span>
-                  <span className={cx("text-(--device-lcd-dim)", dim)}> / {clock(selected!.duration!)}</span>
+                // The time, written by the frame loop; its length beside it, at two-thirds its size.
+                <span key={selected!.id} className="animate-enter whitespace-nowrap">
+                  <span ref={timeRef} className="text-[1.15em] font-medium tracking-[-0.02em] text-ink">
+                    0:00
+                  </span>
+                  <span className={cx("text-[0.8em] text-muted", dim)}> / {clock(selected!.duration!)}</span>
                 </span>
               )}
-            </span>
+            </p>
           </div>
 
           {/* Glass, and the backlight's bloom as the screen wakes. */}
