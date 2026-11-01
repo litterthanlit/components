@@ -251,16 +251,6 @@ export const registry: RegistryEntry[] = [
     background: "grid",
   },
   {
-    slug: "magnetic-button",
-    title: "Magnetic Button",
-    description:
-      "A button that leans toward the cursor while its label travels a little further, giving a sense of depth. Springs back with pure CSS.",
-    tagline: "A button with a little gravity.",
-    tags: ["button", "pointer", "motion"],
-    date: "2026-09-05",
-    background: "glow",
-  },
-  {
     slug: "copy-button",
     title: "Copy Button",
     description:

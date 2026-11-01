@@ -6,18 +6,23 @@ import { setTheme, useTheme } from "@/components/gallery/theme-toggle";
 import { VOLUME_DEFAULT, VOLUME_MAX, getVolume, isMuted, play, setMuted, setVolume, subscribeMuted, subscribeVolume } from "@/lib/sound";
 import { site } from "@/site.config";
 import { Dial, type DialButton } from "./dial";
+import { previews } from "@/registry/previews";
 import { takeLength, takeLengths, usePageVisible, useReducedMotion } from "./hooks";
 import { Readout, type Transport } from "./readout";
 import { AppStage, Chevron, Choice, HomeAbout, Hud, InfoSheet, Panel, ScreenList, StatusBar, TakeArt, TakeWave, VolumeBar, type ListItem, type Study } from "./screen";
 import { Tape } from "./tape";
 
-const SETTLE = 450; // ms the dial or tape has to rest before the study it reached opens
+const OPEN_EVERY = 90; // ms between takes opening while the dial turns or the tape is dragged: a spin shows every 2nd or 3rd study it passes
+const QUIET_AFTER_TURN = 300; // ms a take opened mid-turn stays quiet after the dial last moved, so a spin through a playing tape doesn't chatter
 const HOLD_AFTER_TOUCH = 2500; // ms the tape waits after a hand or key works the study on screen
 
 type View = "take" | "home" | "options" | "find";
 type Control = "up" | "down" | "prev" | "next" | "ok" | "play" | "stop" | "find" | "home" | "back" | "options";
 
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
+const wrap = (v: number, n: number) => ((v % n) + n) % n;
+/** Fetches a study's code ahead of time. A fetch that fails is tried again when the study is next asked for. */
+const warm = (slug: string) => previews[slug]?.preload().catch(() => {}) ?? Promise.resolve();
 const titles: Record<Exclude<View, "take">, string> = { home: "Home", options: "Options", find: "Find" };
 
 const themes = [
@@ -74,8 +79,8 @@ function CentreGlyph({ take, playing }: { take: boolean; playing: boolean }) {
  * marks the one on screen. Under that, the deck: an LCD with the take
  * number, three keys, and the dial, whose centre is PLAY, with STOP beside it.
  *
- * Driving it: the dial's arrows (or ← →) step through studies, turning it
- * (or dragging along the tape) scrubs, and PLAY, at the dial's centre, rolls
+ * Driving it: the dial's arrows (or ← →) step through studies, round from
+ * the last to the first, turning it (or dragging along the tape) scrubs, and PLAY, at the dial's centre, rolls
  * the tape so each study plays for a few seconds before the next. STOP
  * rewinds the study to its first frame. The title on the screen (or Enter)
  * shows what the study is; ↑ ↓ set the volume. HOME (Find is on it, and on
@@ -92,6 +97,7 @@ export function Device({ studies }: { studies: Study[] }) {
   const [pending, setPending] = useState<number | null>(null); // dialled or scrubbed to, not yet open
   const [from, setFrom] = useState(1); // which side the take on screen came in from
   const [replay, setReplay] = useState(0);
+  const [turning, setTurning] = useState(false); // the dial or tape moved within QUIET_AFTER_TURN
   const [view, setView] = useState<View>("take");
   const [info, setInfo] = useState(false);
   const [transport, setTransport] = useState<Transport>("pause");
@@ -124,6 +130,8 @@ export function Device({ studies }: { studies: Study[] }) {
   const scrubbing = useRef(false);
   const lastTouch = useRef(0);
   const woke = useRef(false);
+  const opened = useRef(-Infinity); // when the take on screen opened, for OPEN_EVERY
+  const heading = useRef(1); // the way the dial last turned: a take it opens comes in from that side, wrapping or not
   const flashTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const dialled = pending ?? at;
@@ -147,6 +155,7 @@ export function Device({ studies }: { studies: Study[] }) {
 
   /** Puts a take on screen. `dir` is the side it comes in from; `progress` where in it the playhead sits. */
   function go(i: number, { dir = Math.sign(i - atRef.current) || 1, progress = 0, say = true } = {}) {
+    opened.current = performance.now();
     atRef.current = i;
     pos.current = i + progress;
     setFrom(dir);
@@ -176,16 +185,45 @@ export function Device({ studies }: { studies: Study[] }) {
     return () => cancelAnimationFrame(raf);
   }, [playing, pageVisible]);
 
-  // A take dialled or scrubbed to opens once the hand rests.
+  // A take dialled or scrubbed to while another opened less than OPEN_EVERY ago
+  // opens when that time is up, so a spin plays the takes it passes like a
+  // flicked-through tape instead of holding the last one until the hand rests.
   const settle = useEffectEvent(() => {
     if (pending === null) return;
-    go(pending, { progress: scrubbing.current ? pos.current - pending : 0 });
+    go(pending, { dir: heading.current, progress: scrubbing.current ? pos.current - pending : 0 });
   });
   useEffect(() => {
     if (pending === null) return;
-    const id = setTimeout(settle, SETTLE);
+    const id = setTimeout(settle, Math.max(0, OPEN_EVERY - (performance.now() - opened.current)));
     return () => clearTimeout(id);
   }, [pending]);
+
+  // A take opened mid-turn plays quietly until the dial rests (see AppStage's transport below).
+  useEffect(() => {
+    if (!turning) return;
+    const id = setTimeout(() => setTurning(false), QUIET_AFTER_TURN);
+    return () => clearTimeout(id);
+  }, [turning, dialled]);
+
+  // Studies' code comes in before it's needed, so a take opens on its first
+  // frame: the takes either side of the dial straight away, then every other
+  // one, a chunk at a time, while the page is idle.
+  useEffect(() => {
+    for (const d of [1, -1, 2, -2]) warm(studies[wrap(dialled + d, n)].slug);
+  }, [dialled, n, studies]);
+  useEffect(() => {
+    let i = 0;
+    let done = false;
+    const later = (fn: () => void) => ("requestIdleCallback" in window ? requestIdleCallback(fn, { timeout: 2000 }) : setTimeout(fn, 200));
+    const next = () => {
+      if (done || i >= studies.length) return;
+      void warm(studies[i++].slug).then(() => later(next));
+    };
+    later(next);
+    return () => {
+      done = true;
+    };
+  }, [studies]);
 
   // Readouts over the screen fade shortly after the last change.
   useEffect(() => {
@@ -219,24 +257,30 @@ export function Device({ studies }: { studies: Study[] }) {
 
   const showHud = (kind: "take" | "volume") => setHud({ kind, at: performance.now() });
 
-  function step(delta: number) {
+  /**
+   * Moves the dial `delta` takes, round from the last to the first and back.
+   * The take opens at once, or, if one opened less than OPEN_EVERY ago, when
+   * that time is up (see `settle`).
+   */
+  function dial(delta: number, { tick = false } = {}) {
     const current = pending ?? at;
-    const next = clamp(current + delta, 0, n - 1);
+    const next = wrap(current + delta, n);
     if (next === current) return play("bump");
-    go(next, { dir: delta });
+    if (tick) play("tick", { pitch: 0.97 + Math.random() * 0.06 });
+    heading.current = Math.sign(delta);
+    setTurning(true);
     showHud("take");
-  }
-
-  function turn(steps: number) {
-    if (view !== "take") return moveCursor(steps);
-    const current = pending ?? at;
-    const next = clamp(current + steps, 0, n - 1);
-    if (next === current) return play("bump");
-    play("tick", { pitch: 0.97 + Math.random() * 0.06 });
+    if (performance.now() - opened.current >= OPEN_EVERY) return go(next, { dir: heading.current });
     pos.current = next;
     paint();
     setPending(next === at ? null : next);
-    showHud("take");
+  }
+
+  const step = (delta: number) => dial(delta);
+
+  function turn(steps: number) {
+    if (view !== "take") return moveCursor(steps);
+    dial(steps, { tick: true });
   }
 
   function scrub(f: number) {
@@ -248,6 +292,8 @@ export function Device({ studies }: { studies: Study[] }) {
     const reached = Math.min(n - 1, Math.floor(pos.current));
     if (reached !== (pending ?? at)) {
       play("tick", { pitch: 0.97 + Math.random() * 0.06 });
+      heading.current = Math.sign(reached - (pending ?? at));
+      setTurning(true);
       setPending(reached === at ? null : reached);
       showHud("take");
     }
@@ -609,7 +655,12 @@ export function Device({ studies }: { studies: Study[] }) {
                   className="absolute inset-0"
                 >
                   <div role="group" aria-label={`${studies[at].title}, running`} className="absolute inset-0">
-                    <AppStage key={`${studies[at].slug}:${replay}`} study={studies[at]} from={reduced ? 0 : from} transport={transport} />
+                    <AppStage
+                      study={studies[at]}
+                      replay={replay}
+                      from={reduced ? 0 : from}
+                      transport={turning && transport === "play" ? "pause" : transport}
+                    />
                   </div>
                   <Hud show={hud !== null}>
                     {hud?.kind === "volume" ? (
