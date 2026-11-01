@@ -402,6 +402,18 @@ h3 {
 [data-slab-screen] [data-preview] > [class*="stage-"] {
   display: none;
 }
+/* A study that is itself a screen (Spool's window, Gradient Keys' preview,
+   Command Menu) loses its bezel, its screen's own ground and its glass too:
+   what it shows sits on the Slab's glass rather than in a monitor drawn on
+   it. Bezels round hardware readouts (drums, cells, a matrix, meters) stay. */
+[data-slab-screen] [data-part="bezel"]:has(> [data-part="screen"]),
+[data-slab-screen] [data-part="bezel"] > [data-part="screen"] {
+  background: none !important;
+  box-shadow: none !important;
+}
+[data-slab-screen] [data-part="bezel"] > [data-part="screen"] [data-part="glass"] {
+  display: none;
+}
 /* The player's own screens (Home, Find, Options) take the glass's colour, so they don't read as a sheet laid on it. */
 [data-slab-screen] section[aria-label] {
   background: var(--slab-panel);
