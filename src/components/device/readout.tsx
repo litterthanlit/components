@@ -94,7 +94,7 @@ export function Readout({ at, n, title, transport, className }: { at: number; n:
 export function GlassReadout({ at, n, title, transport, className }: { at: number; n: number; title: string; transport: Transport; className?: string }) {
   return (
     <div aria-hidden className={cn("flex items-end justify-between gap-[1em] text-ink", className)}>
-      <span key={title} className="min-w-0 animate-enter truncate text-[1.25em] font-light leading-none tracking-[-0.01em]">
+      <span key={title} className="min-w-0 animate-enter truncate text-[1.25em] font-medium leading-none tracking-[-0.015em]">
         {title}
       </span>
       <p className="flex shrink-0 items-baseline gap-[0.35em] leading-none tabular-nums">
