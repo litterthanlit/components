@@ -31,7 +31,7 @@ We explored six front-view directions on a design canvas (https://claude.ai/arti
 
 - A study that looks like a device sitting on the player's screen, with its own plate, bezel or monitor showing.
 - The player stretching across a wide window.
-- The study's name, or the transport state, repeated in more than one place on the player.
+- The study's name, or the transport state, repeated in more than one place that is always on show on the player (see "Where the name may still appear").
 - A finish that ignores the site's theme.
 
 ## What was decided
@@ -70,6 +70,13 @@ These are Nick's decisions, made by reacting to the spike.
   - The light is lit red (`--device-rec`, with its glow) while the tape plays, and unlit (`--device-meter-off`) otherwise.
 - **No transport chip.** The dial's centre already shows ▶ or ❚❚, and the moving playhead shows the tape running.
 
+### Where the name may still appear (my call)
+
+"Once" means once among the things that are always on show. The readout is that place.
+
+- **The pop-up while dialling** (the HUD in `screen.tsx`) loses its take mode ("05 / 24 Knob"). The readout now follows the dialled take on every screen size, so the pop-up said the same thing at the same moment. Its volume mode stays: nothing else shows the volume.
+- **The Details sheet** and **Home's "Now playing" row** keep the study's title. They are screens you open on purpose, about that study. The title is their subject, not a repeat of a label.
+
 ### Spool
 
 - Its chip says FF while it spools (was "Spool"), and its key says Hold (was "Spool"). This keeps its name off its own hardware.
@@ -97,7 +104,7 @@ These are Nick's decisions, made by reacting to the spike.
    - Fold `GlassReadout` into `Readout`'s name and place.
 3. **Short landscape phones** (the old `short` variant): not reworked in the spike. The object should still work there, deck beside the screen or stacked, with nothing clipped.
 4. **The design language.**
-   - Update `DESIGN.md` so it describes the Slab: Ethos (the player is an object), Materials (the frame becomes the rim and glass), the readout, the page header, and the dissolve rules.
+   - Update `DESIGN.md` so it describes the Slab: Ethos (the player is an object), Materials (the frame becomes the rim and glass), the readout, the page header, the dissolve rules, and what "Say it once" now covers.
    - Update `/system`, which renders the materials live and describes the player in words, so it shows the rim, glass and readout, not the frame.
 5. **Anatomy.** The player isn't taken apart today. Keep it that way unless it comes free.
 
