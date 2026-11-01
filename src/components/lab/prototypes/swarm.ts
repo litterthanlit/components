@@ -12,8 +12,8 @@ import { INK, needle, paper, project, seeded, wobble, type Prototype } from "./i
  * falling body, or a stroke lying flat on a heap. O(n) a frame, no neighbours.
  */
 
-const COUNT = 2000;
-const MAX_SWARM = 1100;
+const COUNT = 1500;
+const MAX_SWARM = 900;
 const CELL = 0.12; // heap grid, world units
 const GRID = 84; // cells a side, covering ±5
 
@@ -37,12 +37,21 @@ export const swarm: Prototype = () => {
   };
   const heapY = (x: number, z: number) => Math.min(0.22, heap[cellOf(x, z)] * 0.011);
 
+  // Most start in a few loose piles, the rest strewn between them.
+  const piles = [[-1.6, -0.9], [1.5, -1.3], [0.4, 1.6], [-1.9, 1.4], [2.2, 1.1]];
   for (let i = 0; i < COUNT; i++) {
-    const r = 3.9 * Math.sqrt(random()), a = random() * Math.PI * 2;
-    px[i] = r * Math.cos(a);
-    pz[i] = r * Math.sin(a);
+    if (random() < 0.6) {
+      const [cx, cz] = piles[i % piles.length];
+      const r = 0.55 * Math.sqrt(random()) * (0.6 + 0.4 * random()), a = random() * Math.PI * 2;
+      px[i] = cx + r * Math.cos(a);
+      pz[i] = cz + r * Math.sin(a);
+    } else {
+      const r = 3.1 * Math.sqrt(random()), a = random() * Math.PI * 2;
+      px[i] = r * Math.cos(a);
+      pz[i] = r * Math.sin(a);
+    }
     ang[i] = random() * Math.PI;
-    len[i] = 0.13 + 0.17 * random() ** 2 + (random() > 0.96 ? 0.22 : 0);
+    len[i] = 0.09 + 0.12 * random() ** 2 + (random() > 0.96 ? 0.18 : 0);
     // A slot on the unit sphere, biased upward so the ball sits on its spines.
     const u = random() * 2 - 0.7, t = random() * Math.PI * 2, s = Math.sqrt(Math.max(0, 1 - u * u));
     dx[i] = s * Math.cos(t);
@@ -89,7 +98,7 @@ export const swarm: Prototype = () => {
           C.vx = C.vz = 0;
         }
         const k = 26, c = 2 * Math.sqrt(k) * 0.75;
-        const ty = 0.55 + R * 0.9;
+        const ty = 0.3 + R * 0.75;
         C.vx += (k * (pointer.x - C.x) - c * C.vx) * dt;
         C.vz += (k * (pointer.z - C.z) - c * C.vz) * dt;
         C.vy += (k * (ty - C.y) - c * C.vy) * dt;
@@ -169,7 +178,7 @@ export const swarm: Prototype = () => {
           ox[i] = rx;
           oy[i] = ry;
           oz[i] = rz;
-          const spine = len[i] * (1.3 + 0.25 * wobble(i, 3, boil));
+          const spine = len[i] * (1.7 + 0.3 * wobble(i, 3, boil));
           roots[i * 3] = px[i] - rx * len[i] * 0.3;
           roots[i * 3 + 1] = py[i] - ry * len[i] * 0.3;
           roots[i * 3 + 2] = pz[i] - rz * len[i] * 0.3;
@@ -216,6 +225,22 @@ export const swarm: Prototype = () => {
       // --- Draw: paper, the flat needles in one stroke, the shadow, then everything standing, back to front. ---
       paper(ctx, view);
 
+      // Where needles lie thick, the heap reads as an ink blot under them.
+      ctx.fillStyle = INK;
+      ctx.beginPath();
+      for (let c = 0; c < GRID * GRID; c++) {
+        const n = heap[c];
+        if (n < 4) continue;
+        const cx = ((c % GRID) - GRID / 2 + 0.5) * CELL, cz = (Math.floor(c / GRID) - GRID / 2 + 0.5) * CELL;
+        const h = Math.min(0.22, n * 0.011);
+        // A round blot on the floor (an isometric circle: an ellipse half as tall as it is wide), a little ragged.
+        const r = CELL * Math.min(1.1, 0.35 + n * 0.07) * (1 + 0.15 * wobble(c, 13, boil)) * view.scale * 1.22;
+        const [ex, ey] = project(view, cx + wobble(c, 14, boil) * 0.03, h, cz + wobble(c, 15, boil) * 0.03);
+        ctx.moveTo(ex + r, ey);
+        ctx.ellipse(ex, ey, r, r * 0.58, 0, 0, Math.PI * 2);
+      }
+      ctx.fill();
+
       ctx.strokeStyle = INK;
       ctx.lineCap = "round";
       ctx.lineWidth = 1.3;
@@ -234,14 +259,14 @@ export const swarm: Prototype = () => {
       // A hatched shadow on the paper under the ball, its lines boiling.
       if (count > 8) {
         const [cx, cy] = project(view, C.x, 0, C.z);
-        const rw = R * 1.5 * view.scale * Math.cos(Math.PI / 6) * 1.2, rh = rw * 0.55;
+        const rw = R * 0.8 * view.scale * 1.22, rh = rw * 0.58;
         ctx.save();
         ctx.beginPath();
         ctx.ellipse(cx, cy, rw, rh, 0, 0, Math.PI * 2);
         ctx.clip();
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 0.9;
         ctx.beginPath();
-        for (let k = -rw * 2; k < rw * 2; k += 4) {
+        for (let k = -rw * 2; k < rw * 2; k += 5) {
           const w = wobble(k | 0, 9, boil) * 1.5;
           ctx.moveTo(cx + k + w, cy - rh);
           ctx.lineTo(cx + k - rh * 1.2 + w, cy + rh);
@@ -256,7 +281,7 @@ export const swarm: Prototype = () => {
       let coreDrawn = count < 12;
       const core = () => {
         const [cx, cy] = project(view, C.x, C.y, C.z);
-        const r = R * 0.62 * view.scale;
+        const r = R * 0.85 * view.scale;
         ctx.fillStyle = INK;
         ctx.beginPath();
         // A lumpy, boiling blob rather than a circle.
@@ -274,7 +299,9 @@ export const swarm: Prototype = () => {
         if (!coreDrawn && depth[i] > coreDepth) core();
         const root = project(view, roots[i * 3], roots[i * 3 + 1], roots[i * 3 + 2]);
         const tip = project(view, tips[i * 3] + wobble(i, 5, boil) * 0.02, tips[i * 3 + 1], tips[i * 3 + 2] + wobble(i, 6, boil) * 0.02);
-        needle(ctx, root, tip, mode[i] === SWARM ? 1.9 : 1.5);
+        // Spines behind the core go without their white gap, so the ball stays black, not grey.
+        const behind = mode[i] === SWARM && !coreDrawn;
+        needle(ctx, root, tip, mode[i] === SWARM ? 2.3 : 1.5, !behind);
       }
       if (!coreDrawn) core();
     },
