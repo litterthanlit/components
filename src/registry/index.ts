@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "symbiote-field",
+    title: "Symbiote Field",
+    description:
+      "A symbiote you grow with the pointer, in ink on isometric paper. Move and a glossy black mass wells up behind you, thicker where you linger; hold the button and it pumps up. Needles break out where it is thick and veins creep across the paper toward you. Switch to repel and you push the goo around instead. It lives in a float texture on the GPU, stepped 120 times a second.",
+    tagline: "An ink symbiote you grow with the pointer.",
+    tags: ["surface", "pointer", "motion", "webgl"],
+    date: "2026-10-31",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "gradient-keys",
     title: "Gradient Keys",
     description:
@@ -264,11 +275,11 @@ export const registry: RegistryEntry[] = [
     slug: "copy-button",
     title: "Copy Button",
     description:
-      "Icons cross-fade with scale and blur, and the checkmark draws itself in. A live region announces the result for screen readers.",
-    tagline: "The smallest delight: a check that draws itself.",
-    tags: ["button", "feedback", "svg"],
+      "A key that copies a command and comes up with a check that draws itself, beside a character LCD that lets the command go: a wave runs through it from right to left, each character scrambling through the display's katakana before it clears, then decodes back in from the left. Every character clicks as it settles, nothing on the line moves, and a second copy turns the wave round mid-flight.",
+    tagline: "Copy, and the LCD scrambles the command away.",
+    tags: ["button", "feedback", "sound", "a11y"],
     date: "2026-09-01",
-    background: "dots",
+    background: "plain",
   },
 ];
 

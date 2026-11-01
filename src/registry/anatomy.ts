@@ -6,6 +6,12 @@ import { parts, type PartInfo } from "@/components/anatomy/parts";
  * enough. A study is listed here once its parts carry `data-part`.
  */
 export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>> = {
+  "symbiote-field": {
+    screen: { tokens: [], note: "Ink on paper on a WebGL canvas: the creature lives in a float texture stepped 120 times a second, its body a displaced plane and its needles one InstancedMesh, every line boiling eight times a second." },
+    glass: { tokens: ["--screen-glass", "--device-lcd-edge"], note: "A sheen over the screen, breaking at 38%, and its edge." },
+    light: { tokens: ["--device-meter-off", "--device-meter-on"], note: "The mode's key lit in grey." },
+    lcd: { note: "Who is drawing it (the ghost, a hand, or nobody), and how long it has lived, written by the frame loop." },
+  },
   knob: {
     cap: { note: "Knurled round its skirt by a conic gradient from var(--a), so it turns without a transform." },
     light: { tokens: ["--device-meter-off", "--device-meter-on"], note: "Fifteen strokes round the collar, lit by the same spring that turns the cap and clicks the detents." },
@@ -75,6 +81,10 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     bezel: { note: "Black, with a polished edge, round the player's own screen: the menu is a second screen, not a card." },
     screen: { name: "Screen", note: "The site's own ground under glass: its canvas and type, and the accent bar gliding on a spring between rows." },
     glass: { note: "The screen's sheen, and the backlight's bloom as it wakes." },
+  },
+  "copy-button": {
+    lcd: { note: "A character LCD. Copied, the command leaves in a wave from right to left, each character scrambling through the half-width katakana in an HD44780's ROM; it decodes back in from the left." },
+    lettering: { name: "Glyphs", tokens: ["--device-key-ink", "--device-engrave-glyph"], note: "The copy mark and the check share the key's face and cross-fade; the check draws itself in over 400 ms." },
   },
 };
 
