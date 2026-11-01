@@ -8,7 +8,7 @@ import { VOLUME_DEFAULT, VOLUME_MAX, getVolume, isMuted, play, setMuted, setVolu
 import { site } from "@/site.config";
 import { Dial, type DialButton } from "./dial";
 import { takeLength, takeLengths, usePageVisible, useReducedMotion } from "./hooks";
-import { GlassReadout, type Transport } from "./readout";
+import { Readout, type Transport } from "./readout";
 import { AppStage, Chevron, Choice, HomeAbout, Hud, InfoSheet, Panel, ScreenList, TakeArt, TakeWave, VolumeBar, type ListItem, type Study } from "./screen";
 import { Tape } from "./tape";
 
@@ -98,7 +98,7 @@ export function Device({ studies }: { studies: Study[] }) {
   const [transport, setTransport] = useState<Transport>("pause");
   const [cursor, setCursor] = useState(0); // highlighted row on a panel
   const [query, setQuery] = useState("");
-  const [hud, setHud] = useState<{ kind: "take" | "volume"; at: number } | null>(null);
+  const [hud, setHud] = useState<number | null>(null); // when the volume last changed, while its pop-up shows
   const [flash, setFlash] = useState<Control | null>(null);
   const [announcement, setAnnouncement] = useState("");
 
@@ -188,12 +188,12 @@ export function Device({ studies }: { studies: Study[] }) {
     return () => clearTimeout(id);
   }, [pending]);
 
-  // Readouts over the screen fade shortly after the last change.
+  // The volume's pop-up fades 1.1 s after the last change. A take dialled to says itself on the readout, so it has no pop-up.
   useEffect(() => {
-    if (!hud || pending !== null) return;
+    if (hud === null) return;
     const id = setTimeout(() => setHud(null), 1100);
     return () => clearTimeout(id);
-  }, [hud, pending]);
+  }, [hud]);
 
   useEffect(() => () => clearTimeout(flashTimer.current), []);
 
@@ -218,14 +218,13 @@ export function Device({ studies }: { studies: Study[] }) {
     play("wake");
   }
 
-  const showHud = (kind: "take" | "volume") => setHud({ kind, at: performance.now() });
+  const showHud = () => setHud(performance.now());
 
   function step(delta: number) {
     const current = pending ?? at;
     const next = clamp(current + delta, 0, n - 1);
     if (next === current) return play("bump");
     go(next, { dir: delta });
-    showHud("take");
   }
 
   function turn(steps: number) {
@@ -237,7 +236,6 @@ export function Device({ studies }: { studies: Study[] }) {
     pos.current = next;
     paint();
     setPending(next === at ? null : next);
-    showHud("take");
   }
 
   function scrub(f: number) {
@@ -250,7 +248,6 @@ export function Device({ studies }: { studies: Study[] }) {
     if (reached !== (pending ?? at)) {
       play("tick", { pitch: 0.97 + Math.random() * 0.06 });
       setPending(reached === at ? null : reached);
-      showHud("take");
     }
   }
 
@@ -265,7 +262,7 @@ export function Device({ studies }: { studies: Study[] }) {
     if (next === volume) return play("bump");
     setVolume(next); // set first, so the tick is heard at the new level
     play("tick", { pitch: 0.9 + next * 0.02 });
-    showHud("volume");
+    showHud();
     announce(`Volume ${next} of ${VOLUME_MAX}`);
   }
 
@@ -620,20 +617,9 @@ export function Device({ studies }: { studies: Study[] }) {
                     <AppStage key={`${studies[at].slug}:${replay}`} study={studies[at]} from={reduced ? 0 : from} transport={transport} />
                   </div>
                   <Hud show={hud !== null}>
-                    {hud?.kind === "volume" ? (
-                      <>
-                        <span className="text-muted">Volume</span>
-                        <VolumeBar volume={volume} />
-                        <span className="w-[2ch] text-right tabular-nums text-muted">{volume}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="tabular-nums text-muted">
-                          {dialled + 1} / {n}
-                        </span>
-                        <span className="font-medium">{study.title}</span>
-                      </>
-                    )}
+                    <span className="text-muted">Volume</span>
+                    <VolumeBar volume={volume} />
+                    <span className="w-[2ch] text-right tabular-nums text-muted">{volume}</span>
                   </Hud>
                   <InfoSheet study={studies[at]} at={at} n={n} open={info && view === "take"} onClose={toggleInfo} />
                 </div>
@@ -737,7 +723,7 @@ export function Device({ studies }: { studies: Study[] }) {
 
             {/* The deck, in the glass: the readout lit straight into it, and the dial through it in a ring of the rim's metal. */}
             <div className="flex shrink-0 items-center gap-[1.6em] px-[1.4em] pb-[1.2em] pt-[0.4em] [font-size:clamp(9px,min(3.2vw,1.7vh),15px)] wide:px-[2em] wide:pb-[1.5em] wide:[font-size:clamp(10px,min(1.2vw,1.6vh),15px)]">
-              <GlassReadout at={dialled} n={n} title={study.title} transport={transport} className="min-w-0 flex-1" />
+              <Readout at={dialled} n={n} title={study.title} transport={transport} className="min-w-0 flex-1" />
               <div className="player-ring shrink-0 rounded-full p-[0.32em]">
                 <Dial
                   flash={dialFlash}
