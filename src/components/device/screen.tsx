@@ -488,6 +488,7 @@ export function Hud({ show, children }: { show: boolean; children: ReactNode }) 
   return (
     <div
       aria-hidden
+      data-player-hud
       className={cn(
         "pointer-events-none absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-surface/85 px-3 py-1.5 text-meta text-ink shadow-md backdrop-blur-md transition-[opacity,transform] ease-out",
         show ? "opacity-100 duration-(--duration-enter)" : "translate-y-1 opacity-0 duration-(--duration-move)",

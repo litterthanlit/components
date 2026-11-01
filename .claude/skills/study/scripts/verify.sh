@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Checks the studies the way CI does: types, lint, a production build, then
-# the overflow and anatomy checks against a server this script starts and
+# the overflow, anatomy and player checks against a server this script starts and
 # stops itself.
 #
 #   .claude/skills/study/scripts/verify.sh              # every study
@@ -65,3 +65,7 @@ BASE_URL="$BASE_URL" npm run --silent check:fit -- "$@"
 
 step "Anatomy check${*:+: $*}"
 BASE_URL="$BASE_URL" npm run --silent check:anatomy -- "$@"
+
+# The player is one object, not a set of studies: it is checked whole, whichever studies were named.
+step "Player check"
+BASE_URL="$BASE_URL" npm run --silent check:player

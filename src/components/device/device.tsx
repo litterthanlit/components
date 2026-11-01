@@ -600,10 +600,10 @@ export function Device({ studies }: { studies: Study[] }) {
 
       <div className="grid min-h-0 w-full flex-1 place-items-center">
         {/* The Slab: a metal rim round one sheet of glass. Silver with pale glass in light, graphite with black glass in dark (globals.css). */}
-        <div className="slab slab-rim relative flex rounded-[30px] p-[10px] wide:rounded-[36px] wide:p-[12px]">
+        <div data-player className="slab slab-rim relative flex rounded-[30px] p-[10px] wide:rounded-[36px] wide:p-[12px]">
           <div className="slab-glass relative isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[22px] wide:rounded-[26px]">
-            {/* The screen: the study runs straight on the glass, its own plate dissolved (globals.css, data-slab-screen). */}
-            <div data-slab-screen className="@container/display relative isolate flex min-h-0 flex-1 animate-wake flex-col overflow-hidden">
+            {/* The screen: the study runs straight on the glass, its own plate dissolved (globals.css, data-player-screen). */}
+            <div data-player-screen className="@container/display relative isolate flex min-h-0 flex-1 animate-wake flex-col overflow-hidden">
               <div className="relative min-h-0 flex-1">
                 <div
                   ref={stageRef}
