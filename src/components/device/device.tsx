@@ -598,9 +598,9 @@ export function Device({ studies }: { studies: Study[] }) {
       <div className="grid min-h-0 w-full flex-1 place-items-center">
         {/* The Slab: a metal rim round one sheet of glass. Silver with pale glass in light, graphite with black glass in dark (globals.css). */}
         <div data-player className="player player-casing relative flex rounded-[30px] p-[10px] wide:rounded-[36px] wide:p-[12px]">
-          <div className="player-pane relative isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[22px] wide:rounded-[26px]">
+          <div className="player-pane relative isolate flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-[22px] wide:rounded-[26px] short:grid short:grid-cols-[minmax(0,1fr)_auto] short:grid-rows-[minmax(0,1fr)_auto]">
             {/* The screen: the study runs straight on the glass, its own plate dissolved (globals.css, data-player-screen). */}
-            <div data-player-screen className="@container/display relative isolate flex min-h-0 flex-1 animate-wake flex-col overflow-hidden">
+            <div data-player-screen className="@container/display relative isolate flex min-h-0 flex-1 animate-wake flex-col overflow-hidden short:col-start-1 short:row-start-1">
               <div className="relative min-h-0 flex-1">
                 <div
                   ref={stageRef}
@@ -718,12 +718,13 @@ export function Device({ studies }: { studies: Study[] }) {
               hint={hintId}
               onScrub={scrub}
               onScrubEnd={scrubEnd}
-              className="h-[30px] shrink-0 wide:h-[36px]"
+              className="h-[30px] shrink-0 wide:h-[36px] short:col-start-1 short:row-start-2 short:h-[26px]"
             />
 
-            {/* The deck, in the glass: the readout lit straight into it, and the dial through it in a ring of the rim's metal. */}
-            <div className="flex shrink-0 items-center gap-[1.6em] px-[1.4em] pb-[1.2em] pt-[0.4em] [font-size:clamp(9px,min(3.2vw,1.7vh),15px)] wide:px-[2em] wide:pb-[1.5em] wide:[font-size:clamp(10px,min(1.2vw,1.6vh),15px)]">
-              <Readout at={dialled} n={n} title={study.title} transport={transport} className="min-w-0 flex-1" />
+            {/* The deck, in the pane: the readout printed into it, and the dial through it in a ring of the casing's metal.
+                On a phone held sideways the pane lies on its side: screen over tape at the left, readout over dial at the right. */}
+            <div className="flex shrink-0 items-center gap-[1.6em] px-[1.4em] pb-[1.2em] pt-[0.4em] [font-size:clamp(9px,min(3.2vw,1.7vh),15px)] wide:px-[2em] wide:pb-[1.5em] wide:[font-size:clamp(10px,min(1.2vw,1.6vh),15px)] short:col-start-2 short:row-span-2 short:row-start-1 short:w-[11em] short:flex-col short:justify-center short:gap-[1.2em] short:px-[1em] short:py-[0.9em] short:[font-size:clamp(9px,2.8vh,12px)]">
+              <Readout at={dialled} n={n} title={study.title} transport={transport} className="min-w-0 flex-1 short:w-full short:flex-none short:flex-col short:items-start short:gap-[0.5em]" />
               <div className="player-ring shrink-0 rounded-full p-[0.32em]">
                 <Dial
                   flash={dialFlash}
@@ -742,7 +743,7 @@ export function Device({ studies }: { studies: Study[] }) {
                   slider={slider}
                   sliderRef={sliderRef}
                   hint={hintId}
-                  className="w-[9em] wide:w-[10.5em]"
+                  className="w-[9em] wide:w-[10.5em] short:w-[8.5em]"
                 />
               </div>
             </div>
