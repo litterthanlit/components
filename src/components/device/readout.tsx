@@ -107,7 +107,7 @@ export function GlassReadout({ at, n, title, transport, className }: { at: numbe
         <span key={at} className="animate-enter text-[2.2em] font-medium tracking-[-0.035em]">
           {String(at + 1).padStart(2, "0")}
         </span>
-        <span className="text-[0.7em] text-muted">/ {n}</span>
+        <span className="text-[1.1em] text-muted">/ {n}</span>
       </p>
     </div>
   );
