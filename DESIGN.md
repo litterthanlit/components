@@ -8,9 +8,9 @@ The values live in code. `src/design-system/tokens.css` is the source of truth (
 
 ### The player is an object, not a page
 
-The home page is a player after a field recorder: a cool silver body in a machined frame, a full-width screen, wells pressed into the body, keys that sink 2px onto their base, a dial in the body's opposite finish with PLAY at its centre, a tape of waveforms with a red playhead. It is something you could hold, and it runs the studies one at a time.
+The home page is a player after a field recorder: one pane of glass in a brushed metal casing, sitting on the page at the size of a real device. The screen, a tape of waveforms with a red playhead, a readout and a dial in the casing's opposite finish, with PLAY at its centre, are all regions of that one pane. It is something you could hold, and it runs the studies one at a time.
 
-An object gives every study the same frame and makes polish legible: a lit edge, a recess or a 2px base is either right or it isn't. So a study is a part of the same instrument, built from the same materials, never a card on a screen and never a second player. When a click-wheel player ran inside the player's screen, it competed with it, and it was taken out.
+An object gives every study the same frame and makes polish legible: a lit edge, a recess or a 2px base is either right or it isn't. So a study is a part of the same instrument, built from the same materials, never a card on a screen and never a second player. When a click-wheel player ran inside the player's screen, it competed with it, and it was taken out. For the same reason, a study shown on the player loses its own plate, and a study that is itself a screen loses its own monitor: what it shows sits straight on the player's glass (see Casing and pane).
 
 ### It uses an instrument's vocabulary
 
@@ -34,9 +34,9 @@ What a study does by itself asks the player first (the transport rule, under Sou
 
 Monochrome, plus red for REC and the playhead, orange for a hand on it, and one blue on the screen for selection. Figures are tabular, so a count never shuffles sideways. Grey text, hairlines and one weight change on the page. The work should be the loudest thing here, and when a colour only ever means one thing, it reads at once.
 
-Restraint is also subtraction. The player lost its battery icon, timecodes, scanlines, a BACK key and a keyboard legend because each one repeated something the screen, the LCD or the hold switch already said. Later it lost the file name beside the LCD (the screen names the study), the captions under the transport (▶ and ■ need no words), a maker's window that stood the full height of the deck (it became a nameplate, and then the left end of the LCD: the maker stays quiet inside the readout), the LCD's running clock and level meters (the tape already shows where the playhead is, so the LCD says only the state, the study's name and the take, as a CD player's display does), a FIND key (Find is on Home, and on /), the HOLD switch (Options › Sound and M already muted), the STOP key (hold the dial's centre) and the deck's key row (Menu and Source sit at the screen's top corners, and Options is on Menu). The deck keeps only what plays the tape: the readout (the mark and the LCD on one strip of glass) and the dial. The mark animates only under a mouse: on the deck, nothing moves by itself but the tape and the lights.
+Restraint is also subtraction. The player lost its battery icon, timecodes, scanlines, a BACK key and a keyboard legend because each one repeated something the screen, the LCD or the hold switch already said. Later it lost the file name beside the LCD (the screen names the study), the captions under the transport (▶ and ■ need no words), a maker's window that stood the full height of the deck (it became a nameplate, and then the left end of the LCD: the maker stays quiet inside the readout), the LCD's running clock and level meters (the tape already shows where the playhead is, so the LCD says only the state, the study's name and the take, as a CD player's display does), a FIND key (Find is on Home, and on /), the HOLD switch (Options › Sound and M already muted), the STOP key (hold the dial's centre) and the deck's key row (Menu and Source sit at the screen's top corners, and Options is on Menu). The deck keeps only what plays the tape: the readout and the dial. Then the player lost its frame (at 80% of the window it read as a page with a border, not an object), the status line on its screen and the maker's mark beside the LCD (Menu, Details and Source moved to the page's header, above the object), the LCD itself (the readout is printed into the pane) and the readout's transport chip (the dial's centre shows ▶ or ❚❚, and the playhead moves: a light beside the take is all the readout says about the state). The study's name is on show in one place: the readout. Screens you open on purpose about a study, Details and Home's Now playing, still name it; the pop-up over the screen shows only the volume.
 
-It is after a field recorder, not a copy of one, and its finish is after a click-wheel player's: a cool, bead-blasted silver with the dial in black (in dark, graphite with the dial in silver), so the one part the hand works is the one that stands out. Its parts are arranged around what this player does: it runs studies by itself, so PLAY is the largest key on the deck, at the centre of the dial that steps through them. It is printed in the same grey as every other legend. On the body, colour is a signal (the LCD's play dot, the playhead, the window's light), never a way to make a key look important.
+It is after a field recorder, not a copy of one, and its finish is after a click-wheel player's: brushed silver with the dial in black (in dark, graphite with the dial in silver), so the one part the hand works is the one that stands out. Its parts are arranged around what this player does: it runs studies by itself, so PLAY is the largest key on the deck, at the centre of the dial that steps through them. It is printed in the same grey as every other legend. On the body, colour is a signal (the light beside the take, the playhead), never a way to make a key look important.
 
 ### Physics carry the feel
 
@@ -60,7 +60,7 @@ Colour, centre, dialled; synthesized, motorized. Numbers carry units and real sy
 
 The player is built from a few materials, each a small group of `--device-*` tokens with a light and a dark value. Studies use the same tokens, so a study reads as a part of the same object in either theme. The greys are cool, a little blue, as anodized aluminium is. The dark player is a graphite body, not an inverted one: its keys are lighter than the plate, its engraving casts the other way, and its dial turns silver, so it still stands apart from the body.
 
-They combine in one order: **plate, then well, then part**. Wells are pressed into the plate; keys, LCDs, windows and collars sit in wells; caps sit in collars. The player sits in a frame; a second screen, LCD cells and dot-matrix strips sit behind a black bezel. Everything on a plate is sized in em from the plate's one font size, so the object scales as one piece, and radii nest as they go in: plate 1.25em, well 1.05em, key or LCD 0.7em, chip 0.4em.
+They combine in one order: **plate, then well, then part**. Wells are pressed into the plate; keys, LCDs, windows and collars sit in wells; caps sit in collars. The player is a pane of glass in a casing; LCD cells, dot-matrix strips and a study's own second screen sit behind a black bezel. Everything on a plate is sized in em from the plate's one font size, so the object scales as one piece, and radii nest as they go in: plate 1.25em, well 1.05em, key or LCD 0.7em, chip 0.4em.
 
 ### Plate
 
@@ -70,10 +70,9 @@ The body's bead-blasted finish: a vertical gradient, a lit top edge, and fine no
 | --- | --- | --- |
 | `--device-body` | `linear-gradient(180deg, #d9dce0 0%, #cdd0d5 55%, #c0c3c9 100%)` | `linear-gradient(180deg, #36383d 0%, #2f3135 55%, #282a2e 100%)` |
 | `--device-body-edge` | `inset 0 1px 0 rgb(255 255 255 / 0.75), inset 0 0 0 1px rgb(0 0 0 / 0.06)` | `inset 0 1px 0 rgb(255 255 255 / 0.09), inset 0 0 0 1px rgb(255 255 255 / 0.02)` |
-| `--device-body-shadow` | `0 1px 2px rgb(0 0 0 / 0.1), 0 18px 36px -18px rgb(0 0 0 / 0.28), 0 60px 100px -50px rgb(0 0 0 / 0.38)` | `0 1px 2px rgb(0 0 0 / 0.5), 0 18px 36px -18px rgb(0 0 0 / 0.7), 0 60px 100px -50px rgb(0 0 0 / 0.9)` |
 | `--device-grain` | `0.3` | `0.3` |
 
-Grain is `.device-grain` (in `globals.css`): a 160px tile of SVG `feTurbulence` noise (`baseFrequency 0.9`, two octaves, desaturated), blended `soft-light` at `--device-grain`. It goes on the plate only, as an absolutely positioned layer behind the content. `--device-body-shadow` is the player's own deep shadow; a study's plate takes a lighter one, the same in both themes.
+Grain is `.device-grain` (in `globals.css`): a 160px tile of SVG `feTurbulence` noise (`baseFrequency 0.9`, two octaves, desaturated), blended `soft-light` at `--device-grain`. It goes on the plate only, as an absolutely positioned layer behind the content. A study's plate takes a light drop shadow, the same in both themes, typed as the recipe below types it.
 
 Every study starts here:
 
@@ -86,14 +85,27 @@ Every study starts here:
 </div>
 ```
 
-### Frame and bezel
+### Casing and pane
 
-The frame is machined: a band a shade darker than the body in light (lighter in dark, so it still catches the light), lit along its top edge. It holds the player (`rounded-[34px] p-[5px]`, 46px and 8px on wide decks). The player is as tall as the window and 80% of its width, between 864px and 1200px (`max-w-[min(1200px,max(864px,80vw))]`), so narrower windows give it their whole width and a wide monitor leaves it an object on the desk, not a wall. It replaced a black bumper, whose stark outline round a white body was the most recognisable thing about the recorder it came from.
+The player is one object at its own proportions, 160 × 116, as large as the window allows up to 880 px wide (`.player` in `globals.css`); on phones it takes the whole space under the page's header, and held sideways it lies on its side, screen over tape at the left and readout over dial at the right. Menu (Back on a screen), Details and Source sit in that header, off the hardware.
+
+The casing is metal brushed along its width (an `feTurbulence` grain stretched 450 times longer than it is tall), lit from the upper left, with its 7px side wall showing below and a soft shadow on the page: silver in light, graphite in dark. Inside a 10px rim (12px on wide) it holds one pane of glass, pale in light and black in dark, with one diagonal sheen across it. The screen, the tape, the readout and the dial are regions of that pane; the dial goes through it in a ring of the casing's metal. The finish follows the site's theme, as the old body and dial did. Radii nest: casing 30px (36px on wide), pane 22px (26px).
 
 | Token | Light | Dark |
 | --- | --- | --- |
-| `--device-frame` | `linear-gradient(180deg, #c6c9ce 0%, #b9bcc2 55%, #adb0b6 100%)` | `linear-gradient(180deg, #484a4f 0%, #3d3f44 55%, #34363a 100%)` |
-| `--device-frame-edge` | `inset 0 1px 0 rgb(255 255 255 / 0.7), inset 0 0 0 1px rgb(0 0 0 / 0.08), 0 0 0 0.5px rgb(0 0 0 / 0.16)` | `inset 0 1px 0 rgb(255 255 255 / 0.14), inset 0 0 0 1px rgb(0 0 0 / 0.5), 0 0 0 0.5px rgb(0 0 0 / 0.8)` |
+| `--device-casing` | silver, `#e4e7ea → #d3d7dc → #c3c7cd`, lit at the upper left | graphite, `#4b4e54 → #3d4045 → #313338` |
+| `--device-casing-shadow` | a lit top edge, a 7px `#a7abb2` side wall, and two soft drops | the same, its wall `#24262a` |
+| `--device-casing-blend` | `overlay` (the brushed grain) | `soft-light` |
+| `--device-pane` | `linear-gradient(180deg, #f6f7f8 0%, #eceef1 100%)` | `linear-gradient(180deg, #0f1012 0%, #08090a 100%)` |
+| `--device-pane-edge`, `--device-pane-sheen` | its edge where it meets the casing, and the sheen breaking at 40% | the same, for black glass |
+| `--device-pane-panel` | `#f3f4f6`: Home, Find and Options take it, so they don't read as a sheet laid on the glass | `#0d0e10` |
+| `--device-ring`, `--device-ring-edge` | the casing's metal round the dial | graphite |
+
+**On the screen** (`[data-player-screen]` in `globals.css`), a study keeps its behaviour and loses what would make it a second device. Its `data-part="plate"` loses its background, shadow and grain, and the stage behind it goes clear, so its wells, keys and LCDs sit on the pane in the page's finish. A `data-part="bezel"` whose direct child is a `data-part="screen"` (Spool's window, Gradient Keys' preview, the Command Menu) loses its rim, the screen its ground and its `data-part="glass"`, so what it shows sits on the pane. Bezels round hardware readouts (drums, cells, a matrix, meter faces) stay. Nothing changes in a study's own file, and on its own page a study keeps its plate.
+
+**The readout** is printed into the pane in the page's ink: the study's name at 1.25em, medium, then a light and the take at 2.2em, medium, over `/ 24` at 1.45em in `muted`. The light is `--device-rec` with its glow while the tape plays and `--device-meter-off` otherwise.
+
+### Bezel
 
 A bezel is black, with a polished edge catching the light: round a second screen such as the Command Menu (`rounded-[1.5em] p-[0.4em]`), which shows the site's own ground under glass, and round LCD cells and dot-matrix strips set into the plate: `bg-(--device-rim) p-[0.3em]` with `shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)]` (the highlight drops to 0.06 in dark).
 
@@ -172,13 +184,13 @@ Black glass with a diagonal sheen: the gradient breaks hard at 47%, where the li
 | `--device-lcd-dim` | `rgb(255 255 255 / 0.64)` (6.6:1) | `rgb(255 255 255 / 0.62)` (7.5:1) |
 
 - **The chip** is `bg-white text-black rounded-[0.4em] px-[0.42em] py-[0.24em]`, a glyph and a word at 0.58 to 0.6em, semibold capitals tracked 0.02em. The glyph says the state before the word does: a red dot that pulses for play, record or recall; two bars for pause; a square for stop; a black dot for ready or loaded; an orange dot for a hand on it (TOUCH, edited) or a hand needed (an agent waiting for your OK); a red square for a fault (an agent's error), the stop's shape so it never reads as a run.
-- **Figures** are light (300), tabular, tracked −0.03em; units at 0.3em in `--device-lcd-dim`. The player's LCD shows the study's name at 1.05em under the chip and the take as a track number (`05 / 22`); a clock, where a study has one, reads minutes, seconds and frames at 25 fps (`00M 14S 06F`).
+- **Figures** are light (300), tabular, tracked −0.03em; units at 0.3em in `--device-lcd-dim`. A clock, where a study has one, reads minutes, seconds and frames at 25 fps (`00M 14S 06F`).
 - **Other faces of the same glass:** seven-segment cells over the faint 8 of their unlit segments (One-Time Code), and a dot matrix with ghost dots at 8% (Ticker).
 - **A cover** is a study's artwork: its take's waveform, the same seeded signature the tape prints, at nine bold bars in `--device-lcd-ink` on a 6px tile of the glass. Levels are lifted by their square root so quiet bars still draw at 34px. Covers start the rows in Find and head the info sheet; on Home, the cover of the take on the tape stands behind the menu at about 6%, fading out towards the words.
 
 ### Window
 
-Smoked glass set deeper than the LCD: the Tape Reels' transport. The player's Litt mark glows on the same terms at the left end of its readout's LCD, divided from the chip and the take by a hairline (`border-white/[0.08]`); on phones the readout is only the mark, with a red light that comes on while the tape plays. It rests on the brush-drawn poster and plays the mark's film only while a mouse or pen is over the readout, from the top each time; touch and reduced motion keep it still. A fine grille behind the glass (`radial-gradient(rgb(255 255 255/0.07) 0.7px, transparent 0.9px)` at 5px), a lamp's falloff, and a sheen over the top. Artwork that is black on white is inverted and screened onto it (`invert(1) contrast(1.25)`, `mix-blend-screen`), so the ink glows and the paper disappears.
+Smoked glass set deeper than the LCD: the Tape Reels' transport. A fine grille behind the glass (`radial-gradient(rgb(255 255 255/0.07) 0.7px, transparent 0.9px)` at 5px), a lamp's falloff, and a sheen over the top. Artwork that is black on white is inverted and screened onto it (`invert(1) contrast(1.25)`, `mix-blend-screen`), so the ink glows and the paper disappears.
 
 | Token | Light | Dark |
 | --- | --- | --- |
@@ -433,7 +445,7 @@ Plain, precise, British-spelled and quiet. Write it the way you would say it to 
 - **Capitals belong to the hardware.** Lettering on the body is set in capitals by CSS (`uppercase`, tracked); the source, the accessible name and the screen reader keep sentence case: `Hold to erase`. On the screen, capitals are kept to a firmware's menu (Home) and to small eyebrows and counts (`02 / 22 · ai`, `22 studies`); the status line and everything you read along stay in the page's sentence case.
 - **Labels say what happens.** "Copy command", then "Copied". Not "Submit" or "OK".
 - **British spelling, with -ize.** Colour, centre, dialled, travelling, favouring; but synthesized, motorized, organizing (Oxford spelling). A meter is the instrument; CSS keeps its own `color` and `center`.
-- **Say it once.** If the screen already says it, the LCD doesn't. Repeats are taken out, not restyled.
+- **Say it once.** If the screen already says it, the LCD doesn't. Repeats are taken out, not restyled. On the player, once means once among what is always on show: the readout names the study, and a screen opened on purpose about it (Details, Now playing) may name it again.
 - **Units and real symbols.** `−3.5 dB`, `−∞ dB`, `48 kHz · 24 bit`, `282 × 332`, `00M 14S 06F`: a true minus, a times sign, a middle dot, and a unit on every number.
 - **Parentheses for status.** "Carson (In progress)", with a blue dot.
 - **The recorder's world, in demos.** `take_04.wav`, Export, Slate, Scene A, Mix · take_04. The component stays general; its demo speaks the instrument's language.
@@ -466,4 +478,4 @@ What every study meets before it goes on the player. The player gives it a few s
 7. Make it accessible: native roles, one tab stop, focus that follows the hand, a live region, reduced motion.
 8. Size it to its container in em and check it at 282 × 332, on a 360px phone and in the 702 × 374 capture frame, in light and dark.
 9. Register it: an entry at the top of `src/registry/index.ts` (title, a plain description of 70 words or so, a one-line tagline, tags, the date, `status: "new"`, `background: "plain"`) and one line in `src/registry/previews.tsx`. Mark its parts with `data-part` and give it an entry in `src/registry/anatomy.ts`, with a line for any part that is particular to it.
-10. Run `npx tsc --noEmit`, `npx eslint src`, `npm run check:fit` and `npm run check:anatomy`. Find it on the player (`/`, type, Enter), with the tape playing, paused and stopped, and look at it before you commit. Write the commit message in the house voice.
+10. Run `npx tsc --noEmit`, `npx eslint src`, `npm run check:fit`, `npm run check:anatomy` and `npm run check:player`. Find it on the player (`/studies`, type, Enter), with the tape playing, paused and stopped, and look at it before you commit. Write the commit message in the house voice.
