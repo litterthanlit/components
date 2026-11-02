@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useEffectEvent, useId, useLayoutEffect, useRef, useState, type DragEvent, type KeyboardEvent, type PointerEvent } from "react";
 import { createSpring, focusQuietly, type Spring } from "@/design-system";
 import { hostTransport, play, type SoundName } from "@/lib/sound";
 
@@ -32,10 +32,18 @@ import { hostTransport, play, type SoundName } from "@/lib/sound";
  * palette as it is shown, so a new track recolours the whole trail over
  * 600 ms. The music is the waveform's envelope under the track's own beat:
  * a kick on every beat, a snare on two and four and hats on the eighths, at
- * a tempo seeded from its title. Each band rises at once and falls away, as
+ * a tempo seeded from its title. When a track's audio can be listened to (a
+ * local file, a path on this site, or a source sent with CORS), an analyser
+ * on the audio graph replaces the model: the bass is the kick, the mids the
+ * snare and the highs the hats, each taken as its rise over its own running
+ * average so the scope pumps on onsets, and the line across the screen is
+ * the music's own waveform. Each band rises at once and falls away, as
  * a meter's bar does; the bar under the playhead lifts with the level and
  * the playhead's glow swells. Paused, the trail fades out and the loop
  * stops; under reduced motion the screen holds a still of the music.
+ *
+ * Given `onLoad`, an Eject key opens a file picker and the plate takes audio
+ * files dropped on it; its light turns orange while a file is held over it.
  *
  * The waveform is one tab stop: arrows seek 5 s, Page Up and Down 30 s, Home
  * and End go to either end, and Space plays or pauses.
@@ -64,6 +72,13 @@ type NowPlayingProps = {
   autoPlay?: boolean;
   /** Seconds into the first track loaded. */
   startAt?: number;
+  /**
+   * Sent with every `src`. Absolute URLs are only analysed with it, and their server must answer with CORS
+   * headers: a browser silences cross-origin audio routed through an analyser without them.
+   */
+  crossOrigin?: "anonymous" | "use-credentials";
+  /** Audio files chosen with the Eject key or dropped on the plate. Without it, neither is offered. */
+  onLoad?: (files: File[]) => void;
   className?: string;
 };
 
@@ -163,6 +178,67 @@ function peaksOf(track: Track): number[] {
   });
 }
 
+/* --- Listening: an analyser on the audio graph --------------------------------- */
+
+/**
+ * Whether a source can be analysed without silencing it: a local file (blob:, data:), a path on this site,
+ * or anything sent with CORS. Decided from the string alone, so the server and the browser agree.
+ */
+const listenable = (src: string | undefined, crossOrigin?: string) =>
+  !!src && (!!crossOrigin || /^(blob:|data:)/.test(src) || (!src.startsWith("//") && !/^[a-z][a-z0-9+.-]*:/i.test(src)));
+
+type Ear = { context: AudioContext; analyser: AnalyserNode; spectrum: Uint8Array<ArrayBuffer>; wave: Uint8Array<ArrayBuffer>; slow: number[] };
+
+/** One graph per media element: a browser lets an element be a source only once, for good. */
+const ears = new WeakMap<HTMLMediaElement, Ear>();
+
+function earFor(el: HTMLMediaElement): Ear {
+  let ear = ears.get(el);
+  if (!ear) {
+    const context = new AudioContext();
+    const analyser = context.createAnalyser();
+    analyser.fftSize = 1024; // 512 bins of about 47 Hz at 48 kHz
+    analyser.smoothingTimeConstant = 0.55;
+    analyser.minDecibels = -85;
+    analyser.maxDecibels = -20;
+    context.createMediaElementSource(el).connect(analyser);
+    analyser.connect(context.destination);
+    ear = { context, analyser, spectrum: new Uint8Array(analyser.frequencyBinCount), wave: new Uint8Array(analyser.fftSize), slow: [0, 0, 0] };
+    ears.set(el, ear);
+  }
+  return ear;
+}
+
+const BANDS: [number, number][] = [
+  [35, 150], // the kick
+  [300, 2500], // the snare's body and crack
+  [5000, 12000], // the hats
+];
+
+/**
+ * The music as the analyser hears it, in the scope's terms. Each band is its loudness plus three times its
+ * rise over a running average of the last 0.4 s, so a sustained bass hums while a kick still punches.
+ */
+function listen(ear: Ear, dt: number) {
+  const { analyser, context, spectrum, wave, slow } = ear;
+  analyser.getByteFrequencyData(spectrum);
+  analyser.getByteTimeDomainData(wave);
+  const hz = context.sampleRate / analyser.fftSize;
+  const k = 1 - Math.exp(-dt / 0.4);
+  const [kick, snare, hat] = BANDS.map(([lo, hi], b) => {
+    const from = Math.max(1, Math.floor(lo / hz));
+    const to = Math.min(spectrum.length - 1, Math.ceil(hi / hz));
+    let sum = 0;
+    for (let i = from; i <= to; i++) sum += spectrum[i];
+    const v = sum / (to - from + 1) / 255;
+    slow[b] += (v - slow[b]) * k;
+    return Math.min(1, 0.4 * v + 3 * Math.max(0, v - slow[b]));
+  });
+  let power = 0;
+  for (let i = 0; i < wave.length; i++) power += ((wave[i] - 128) / 128) ** 2;
+  return { env: Math.min(1, Math.sqrt(power / wave.length) * 3.5), kick, snare, hat };
+}
+
 /* --- The scope: raw WebGL, two passes ------------------------------------------ */
 
 const VERTEX = `
@@ -181,6 +257,8 @@ uniform float uSnare;
 uniform float uHat;
 uniform float uEnv;
 uniform float uOn;
+uniform sampler2D uWave; // the music's own waveform, 1024 samples across, when an analyser hears it
+uniform float uReal;     // 1 when it does
 
 mat2 turn(float a) { float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
 
@@ -212,6 +290,8 @@ void main() {
   // The line across: the same bands as a trace in time, quieter towards the ends.
   float x = p.x;
   float y = (uKick * 0.5 * sin(x * 5.0 + uTime * 2.0) + uSnare * 0.3 * sin(x * 17.0 - uTime * 6.0) + uHat * 0.2 * sin(x * 41.0 + uTime * 13.0)) * 0.32;
+  float heard = (texture2D(uWave, vec2(uv.x, 0.5)).r - 0.5) * 0.9;
+  y = mix(y, heard, uReal);
   float line = glow(p.y - y, 0.005) * 0.6 * smoothstep(aspect * 0.5, aspect * 0.2, abs(x));
 
   float trace = uOn * (ring + line) * (0.45 + 0.55 * uEnv);
@@ -245,7 +325,7 @@ void main() {
 }
 `;
 
-type Frame = { time: number; kick: number; snare: number; hat: number; env: number; on: number; from: number[]; to: number[]; mix: number };
+type Frame = { time: number; kick: number; snare: number; hat: number; env: number; on: number; from: number[]; to: number[]; mix: number; wave: Uint8Array | null };
 
 function compile(gl: WebGLRenderingContext, type: number, source: string) {
   const shader = gl.createShader(type)!;
@@ -274,13 +354,24 @@ function createScope(canvas: HTMLCanvasElement) {
   const gl = context;
   const feedback = link(gl, FEEDBACK);
   const present = link(gl, PRESENT);
-  const fb = { prev: feedback.at("uPrev"), res: feedback.at("uRes"), time: feedback.at("uTime"), kick: feedback.at("uKick"), snare: feedback.at("uSnare"), hat: feedback.at("uHat"), env: feedback.at("uEnv"), on: feedback.at("uOn") };
+  const fb = { prev: feedback.at("uPrev"), res: feedback.at("uRes"), time: feedback.at("uTime"), kick: feedback.at("uKick"), snare: feedback.at("uSnare"), hat: feedback.at("uHat"), env: feedback.at("uEnv"), on: feedback.at("uOn"), wave: feedback.at("uWave"), real: feedback.at("uReal") };
   const pr = { light: present.at("uLight"), res: present.at("uRes"), from: present.at("uFrom"), to: present.at("uTo"), mix: present.at("uMix"), kick: present.at("uKick") };
 
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
   gl.enableVertexAttribArray(0);
   gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+  // The waveform, one row of 1024 samples, on its own unit.
+  const waveTexture = gl.createTexture();
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, waveTexture);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, 1, 1, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, new Uint8Array([128]));
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.activeTexture(gl.TEXTURE0);
 
   let targets: { texture: WebGLTexture; buffer: WebGLFramebuffer }[] = [];
   let read = 0;
@@ -327,6 +418,14 @@ function createScope(canvas: HTMLCanvasElement) {
     gl.uniform1f(fb.hat, f.hat);
     gl.uniform1f(fb.env, f.env);
     gl.uniform1f(fb.on, f.on);
+    gl.uniform1f(fb.real, f.wave ? 1 : 0);
+    gl.uniform1i(fb.wave, 1);
+    if (f.wave) {
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, waveTexture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, f.wave.length, 1, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, f.wave);
+      gl.activeTexture(gl.TEXTURE0);
+    }
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
     gl.useProgram(present.program);
@@ -368,7 +467,7 @@ function SkipGlyph({ back }: { back?: boolean }) {
   );
 }
 
-export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingChange, autoPlay = false, startAt = 0, className }: NowPlayingProps) {
+export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingChange, autoPlay = false, startAt = 0, crossOrigin, onLoad, className }: NowPlayingProps) {
   const [announcement, setAnnouncement] = useState("");
   const ids = useId();
   const current = tracks[track];
@@ -405,7 +504,7 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
   function duration() {
     const { tracks, track } = props.current;
     const a = audioRef.current;
-    return a && tracks[track].src && Number.isFinite(a.duration) && a.duration > 0 ? a.duration : tracks[track].duration;
+    return a && tracks[track].src && Number.isFinite(a.duration) && a.duration > 0 ? a.duration : tracks[track].duration || 1;
   }
 
   /** Seconds into the track, from whichever clock is running it. */
@@ -578,9 +677,11 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
   });
   const startAudio = useEffectEvent((on: boolean) => {
     const a = audioRef.current;
-    if (!a || !current.src) return;
-    if (on) a.play().catch(() => props.current.onPlayingChange(false));
-    else a.pause();
+    if (!a) return;
+    if (!current.src || !on) return a.pause();
+    // The graph is made on the first play, inside the press that asked for it, as a browser requires.
+    if (listenable(current.src, crossOrigin)) void earFor(a).context.resume();
+    a.play().catch(() => props.current.onPlayingChange(false));
   });
 
   useEffect(() => {
@@ -612,9 +713,12 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
   // The scope. One loop reads the music at the playhead, lets each band fall away as a meter's bar does,
   // lifts the bar under the playhead, swells its glow and draws the screen. Paused, it runs on with the
   // trace off until the trail has faded, then stops; a new track's palette sweeps in on the same loop.
-  const music = useEffectEvent(() => {
+  const music = useEffectEvent((dt: number) => {
     const { tracks, track } = props.current;
-    return { on: playing, track, ...bandsAt(position(), duration(), peaksOf(tracks[track]), bpmOf(tracks[track])) };
+    const a = audioRef.current;
+    const ear = a && playing && listenable(tracks[track].src, crossOrigin) ? ears.get(a) : undefined;
+    if (ear?.context.state === "running") return { on: playing, track, wave: ear.wave, ...listen(ear, dt) };
+    return { on: playing, track, wave: null, ...bandsAt(position(), duration(), peaksOf(tracks[track]), bpmOf(tracks[track])) };
   });
   useEffect(() => {
     const root = rootRef.current!;
@@ -628,7 +732,7 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
     const scope = createScope(canvas);
     scope?.resize();
     const still = reduced();
-    const first = music();
+    const first = music(0);
     const level = { kick: 0, snare: 0, hat: 0, env: 0, lv: 0 };
     const palette = { track: first.track, from: paletteOf(props.current.tracks[first.track]).flatMap(rgb), to: [] as number[], mix: 1 };
     palette.to = palette.from;
@@ -639,7 +743,7 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
     let last = 0;
 
     function step(dt: number) {
-      const m = music();
+      const m = music(dt);
       if (m.track !== palette.track) {
         const shown = palette.from.map((v, i) => v + (palette.to[i] - v) * palette.mix);
         palette.track = m.track;
@@ -661,7 +765,7 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
         at = next;
       }
       time += dt;
-      scope?.frame({ time, ...level, on: m.on || still ? 1 : 0, from: palette.from, to: palette.to, mix: palette.mix });
+      scope?.frame({ time, ...level, on: m.on || still ? 1 : 0, from: palette.from, to: palette.to, mix: palette.mix, wave: m.wave });
       return m.on || idle < FADE_OUT || palette.mix < 1;
     }
 
@@ -803,6 +907,37 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
     if (playing && position() >= duration()) ended();
   }
 
+  /* --- Loading ------------------------------------------------------------ */
+
+  const [holding, setHolding] = useState(false); // a file is held over the plate
+  const pickerRef = useRef<HTMLInputElement>(null);
+  const audioFiles = (list: FileList | null) => [...(list ?? [])].filter((f) => f.type.startsWith("audio/"));
+
+  function load(files: File[]) {
+    if (!onLoad || !files.length) return play("bump", { gain: 0.6 });
+    play("select", { gain: 0.5 });
+    onLoad(files);
+    setAnnouncement(files.length === 1 ? `Loading ${files[0].name}` : `Loading ${files.length} tracks`);
+  }
+
+  const dropProps = onLoad && {
+    onDragOver: (e: DragEvent) => {
+      if (!e.dataTransfer.types.includes("Files")) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      if (!holding) setHolding(true);
+    },
+    onDragLeave: (e: DragEvent) => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHolding(false);
+    },
+    onDrop: (e: DragEvent) => {
+      e.preventDefault();
+      setHolding(false);
+      touched.current = true;
+      load(audioFiles(e.dataTransfer.files));
+    },
+  };
+
   /* --- Render ------------------------------------------------------------- */
 
   return (
@@ -813,6 +948,7 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
       onPointerDownCapture={() => (touched.current = true)}
       onKeyDownCapture={() => (touched.current = true)}
       className={cx("@container w-full max-w-[380px] select-none", className)}
+      {...dropProps}
     >
       {/* A plate cut from the player's body: the same bead-blasted finish and lit top edge. */}
       <div data-part="plate" className="relative isolate flex animate-enter flex-col gap-[0.7em] overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
@@ -899,45 +1035,91 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
           </div>
         </div>
 
-        {/* The transport: previous and next round PLAY, a cap seated in a collar. */}
-        <div className="flex items-center justify-center gap-[0.9em]">
-          <button type="button" data-sound="key" aria-label="Previous track" onPointerDown={focusOnPress} onClick={previous} data-part="key" className="group/key h-[2.6em] w-[3.4em] rounded-[0.7em] outline-offset-2">
-            <span className={face}>
-              <SkipGlyph back />
-            </span>
-          </button>
+        {/* The transport: previous and next round PLAY, a cap seated in a collar, and Eject at the end. */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center">
+          <span />
+          <div className="flex items-center gap-[0.9em]">
+            <button type="button" data-sound="key" aria-label="Previous track" onPointerDown={focusOnPress} onClick={previous} data-part="key" className="group/key h-[2.6em] w-[3.4em] rounded-[0.7em] outline-offset-2">
+              <span className={face}>
+                <SkipGlyph back />
+              </span>
+            </button>
 
-          <button
-            type="button"
-            aria-label={playing ? "Pause" : "Play"}
-            onPointerDown={focusOnPress}
-            onClick={toggle}
-            data-part="collar"
-            className="group/key grid size-[3.7em] shrink-0 place-items-center rounded-full bg-black/[0.035] p-[0.26em] shadow-(--device-recess) outline-offset-2 dark:bg-black/30"
-          >
-            <span data-part="cap" className="grid size-full place-items-center rounded-full [background:var(--device-wheel-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
-              {playing ? (
-                <span aria-hidden data-part="lettering" className="flex h-[1em] gap-[0.22em]">
-                  <span className="w-[0.3em] rounded-[0.08em] bg-(--device-key-ink) drawn:bg-(--device-draw-ink)!" />
-                  <span className="w-[0.3em] rounded-[0.08em] bg-(--device-key-ink) drawn:bg-(--device-draw-ink)!" />
-                </span>
-              ) : (
-                <svg aria-hidden data-part="lettering" viewBox="0 0 16 16" className="ml-[0.12em] size-[1.25em] fill-(--device-rec)">
-                  <path d="M4.5 2.4 13.2 8l-8.7 5.6z" />
+            <button
+              type="button"
+              aria-label={playing ? "Pause" : "Play"}
+              onPointerDown={focusOnPress}
+              onClick={toggle}
+              data-part="collar"
+              className="group/key grid size-[3.7em] shrink-0 place-items-center rounded-full bg-black/[0.035] p-[0.26em] shadow-(--device-recess) outline-offset-2 dark:bg-black/30"
+            >
+              <span data-part="cap" className="grid size-full place-items-center rounded-full [background:var(--device-wheel-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
+                {playing ? (
+                  <span aria-hidden data-part="lettering" className="flex h-[1em] gap-[0.22em]">
+                    <span className="w-[0.3em] rounded-[0.08em] bg-(--device-key-ink) drawn:bg-(--device-draw-ink)!" />
+                    <span className="w-[0.3em] rounded-[0.08em] bg-(--device-key-ink) drawn:bg-(--device-draw-ink)!" />
+                  </span>
+                ) : (
+                  <svg aria-hidden data-part="lettering" viewBox="0 0 16 16" className="ml-[0.12em] size-[1.25em] fill-(--device-rec)">
+                    <path d="M4.5 2.4 13.2 8l-8.7 5.6z" />
+                  </svg>
+                )}
+              </span>
+            </button>
+
+            <button type="button" data-sound="key" aria-label="Next track" onPointerDown={focusOnPress} onClick={next} data-part="key" className="group/key h-[2.6em] w-[3.4em] rounded-[0.7em] outline-offset-2">
+              <span className={face}>
+                <SkipGlyph />
+              </span>
+            </button>
+          </div>
+
+          {onLoad && (
+            <button
+              type="button"
+              data-sound="key"
+              aria-label="Load audio files"
+              onPointerDown={focusOnPress}
+              onClick={() => pickerRef.current?.click()}
+              data-part="key"
+              className="group/key h-[2.6em] w-[2.6em] justify-self-end rounded-[0.7em] outline-offset-2"
+            >
+              <span className={cx(face, "relative")}>
+                {/* Orange while a file is held over the plate: a hand on it. Drawn, ink. */}
+                <span
+                  aria-hidden
+                  data-part="light"
+                  className={cx(
+                    "absolute inset-x-[32%] top-[0.4em] h-[0.22em] rounded-full",
+                    holding ? "bg-(--device-hold) shadow-[0_0_0.4em_var(--device-hold)] duration-0 drawn:bg-(--device-draw-ink)!" : "bg-(--device-meter-off) transition-[background-color,box-shadow] duration-(--duration-exit)",
+                  )}
+                />
+                <svg aria-hidden data-part="lettering" viewBox="0 0 16 16" className="mt-[0.35em] size-[0.95em] fill-current [filter:var(--device-engrave-glyph)] drawn:fill-(--device-draw-ink)!">
+                  <path d="M8 2.6 13.4 9H2.6z" />
+                  <rect x="2.6" y="10.8" width="10.8" height="2.2" rx="0.4" />
                 </svg>
-              )}
-            </span>
-          </button>
-
-          <button type="button" data-sound="key" aria-label="Next track" onPointerDown={focusOnPress} onClick={next} data-part="key" className="group/key h-[2.6em] w-[3.4em] rounded-[0.7em] outline-offset-2">
-            <span className={face}>
-              <SkipGlyph />
-            </span>
-          </button>
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
-      {current.src && <audio ref={audioRef} src={current.src} preload="metadata" onEnded={ended} />}
+      {/* One element for every track it can listen to, and another for those it can't: once routed through an
+          analyser, an element would silence a cross-origin source sent without CORS. */}
+      <audio key={listenable(current.src, crossOrigin) ? "heard" : "plain"} ref={audioRef} src={current.src} crossOrigin={crossOrigin} preload="metadata" onEnded={ended} />
+      {onLoad && (
+        <input
+          ref={pickerRef}
+          type="file"
+          accept="audio/*"
+          multiple
+          hidden
+          onChange={(e) => {
+            load(audioFiles(e.currentTarget.files));
+            e.currentTarget.value = "";
+          }}
+        />
+      )}
       <p id={`${ids}-seek`} className="sr-only">
         Arrow keys seek {SEEK} seconds, Page Up and Page Down {PAGE}. Space plays or pauses.
       </p>
@@ -957,16 +1139,56 @@ const SIDE_A: Track[] = [
   { title: "Room tone", artist: "The Detents", duration: 185, palette: PALETTES[3] },
 ];
 
+/** A file from this device as a track: its real length and its real waveform, decoded here. */
+async function trackOf(file: File, palette: [string, string, string]): Promise<Track> {
+  const src = URL.createObjectURL(file);
+  const title = file.name.replace(/\.[^.]+$/, "");
+  try {
+    const audio = await new OfflineAudioContext(1, 1, 44100).decodeAudioData(await file.arrayBuffer());
+    const data = audio.getChannelData(0);
+    const bins = 160;
+    const size = Math.floor(data.length / bins);
+    const raw = Array.from({ length: bins }, (_, b) => {
+      let peak = 0;
+      for (let i = b * size; i < (b + 1) * size; i += 16) peak = Math.max(peak, Math.abs(data[i]));
+      return peak;
+    });
+    const top = Math.max(...raw, 0.001);
+    // Lifted by the square root, as the player's covers are, so quiet passages still draw.
+    return { title, artist: "From this device", duration: audio.duration, src, palette, peaks: raw.map((v) => Math.max(0.12, Math.sqrt(v / top))) };
+  } catch {
+    return { title, artist: "From this device", duration: 0, src, palette };
+  }
+}
+
 export default function Demo() {
+  const [queue, setQueue] = useState(SIDE_A);
   const [track, setTrack] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const urls = useRef<string[]>([]);
+
+  useEffect(() => {
+    const made = urls.current;
+    return () => made.forEach((url) => URL.revokeObjectURL(url));
+  }, []);
+
+  async function load(files: File[]) {
+    const at = queue.length;
+    const added = await Promise.all(files.map((file, i) => trackOf(file, PALETTES[(at + i) % PALETTES.length])));
+    urls.current.push(...added.map((t) => t.src!));
+    setQueue((q) => [...q, ...added]);
+    setTrack(at);
+    setPlaying(true);
+  }
+
   return (
     <NowPlaying
-      tracks={SIDE_A}
+      tracks={queue}
       track={track}
       onTrackChange={setTrack}
       playing={playing}
       onPlayingChange={setPlaying}
+      onLoad={load}
       autoPlay
       // Two and a half seconds from the end, so the first four show the queue moving on.
       startAt={SIDE_A[0].duration - 2.5}
