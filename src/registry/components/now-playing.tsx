@@ -23,13 +23,19 @@ import { hostTransport, play, type SoundName } from "@/lib/sound";
  * they rise from flat as the strip powers up and re-form, left to right, into
  * the next track's waveform when the queue moves on.
  *
- * While it plays, a stereo meter on the glass reads the music with a
- * recorder's ballistics: bars rise at once and fall at 26 dB a second, and a
- * peak mark holds 900 ms before it falls at 12. Levels follow the waveform's
- * envelope under the track's own beat, a kick on every beat and a snare on
- * two and four at a tempo seeded from its title; the bar under the playhead
- * lifts with them and the playhead's glow swells. Paused, the meters fall
- * to rest and the loop stops.
+ * Above it, a scope plays the music on a screen behind a bezel, in raw
+ * WebGL. Each frame warps the last one (it drifts outward, turns and wavers,
+ * and pumps inward on the kick), fades it by 5%, and draws a fresh trace
+ * over it: a ring whose radius carries a band per drum, and a line across
+ * the screen. What builds up is the trail of the last second or so of music.
+ * The screen keeps one channel of light, mapped through the track's own
+ * palette as it is shown, so a new track recolours the whole trail over
+ * 600 ms. The music is the waveform's envelope under the track's own beat:
+ * a kick on every beat, a snare on two and four and hats on the eighths, at
+ * a tempo seeded from its title. Each band rises at once and falls away, as
+ * a meter's bar does; the bar under the playhead lifts with the level and
+ * the playhead's glow swells. Paused, the trail fades out and the loop
+ * stops; under reduced motion the screen holds a still of the music.
  *
  * The waveform is one tab stop: arrows seek 5 s, Page Up and Down 30 s, Home
  * and End go to either end, and Space plays or pauses.
@@ -43,6 +49,8 @@ export type Track = {
   src?: string;
   /** Levels from 0 to 1, any number of them; drawn as forty bars. Seeded from the title when left out. */
   peaks?: number[];
+  /** The scope's colours, dark to light, as hex. Picked from the title when left out. */
+  palette?: [string, string, string];
 };
 
 type NowPlayingProps = {
@@ -68,16 +76,14 @@ const FPS = 25;
 const SEEK = 5; // s per arrow
 const PAGE = 30; // s per Page Up or Down
 const RESTART = 3; // s into a track past which Previous restarts it rather than going back
-const FALL = 26; // dB a second a meter's bar drops
-const HOLD = 0.9; // s a peak mark waits before it falls
-const PEAK_FALL = 12; // dB a second
-const FLOOR = -60; // dB: the meter's bottom
+const BAND_FALL = 3.5; // a band's level drops by this much a second: a meter's bar, not a gate
+const FADE_OUT = 1.6; // s the scope runs on after a pause, until its trail has gone
+const RECOLOUR = 0.6; // s a new palette takes to sweep in
 
 const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(" ");
 const now = () => performance.now();
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const pad = (n: number) => String(n).padStart(2, "0");
-const grain = () => Math.random();
 
 /** FNV-1a over a title: the seed for a track's waveform and its tempo. */
 function seed(title: string) {
@@ -89,42 +95,37 @@ function seed(title: string) {
 /** A track's tempo, 84 to 131 BPM, the same every time it plays. */
 const bpmOf = (track: Track) => 84 + (seed(track.title) % 48);
 
-/** The meter's scale, spaced as a recorder's is: the top end gets the room. */
-const SCALE: [number, number][] = [
-  [-60, 0],
-  [-40, 0.2],
-  [-20, 0.4],
-  [-12, 0.6],
-  [-6, 0.8],
-  [0, 1],
-];
-function toScale(db: number) {
-  if (db <= SCALE[0][0]) return 0;
-  for (let i = 1; i < SCALE.length; i++) {
-    const [d1, f1] = SCALE[i];
-    const [d0, f0] = SCALE[i - 1];
-    if (db <= d1) return f0 + ((db - d0) / (d1 - d0)) * (f1 - f0);
-  }
-  return 1;
-}
-
 /**
- * The level of channel c, in dB, t seconds into a track: the waveform's envelope under its beat.
- * A kick on every beat, a snare on two and four (louder on the right), hats on the eighths, and grain.
+ * The music at t seconds into a track: the waveform's envelope, read between its bars' centres, and a band
+ * per drum, each a pulse that decays through its beat. A kick on every beat, a snare on two and four, hats on
+ * the eighths.
  */
-function levelAt(t: number, duration: number, peaks: number[], bpm: number, c: number) {
-  // The envelope: the waveform's bars, read between their centres.
+function bandsAt(t: number, duration: number, peaks: number[], bpm: number) {
   const x = Math.min(BARS - 1, Math.max(0, (t / duration) * (BARS - 1)));
   const i = Math.floor(x);
   const env = peaks[i] + (peaks[Math.min(BARS - 1, i + 1)] - peaks[i]) * (x - i);
   const beat = (t * bpm) / 60;
   const phase = beat % 1;
-  const kick = Math.exp(-phase * 7);
-  const snare = Math.floor(beat) % 2 === 1 ? Math.exp(-phase * 9) * (c ? 0.8 : 0.6) : 0;
-  const hats = Math.exp(-((beat * 2) % 1) * 16) * 0.18;
-  const amp = env * (0.42 + 0.5 * Math.max(kick, snare) + hats + grain() * 0.08);
-  return 20 * Math.log10(Math.max(0.001, amp)) - 1;
+  return {
+    env,
+    kick: Math.exp(-phase * 7) * env,
+    snare: Math.floor(beat) % 2 === 1 ? Math.exp(-phase * 9) * env : 0,
+    hat: Math.exp(-((beat * 2) % 1) * 16) * env,
+  };
 }
+
+/**
+ * The scope's palettes: the work behind the glass, so they keep their colours in both themes, and they stay
+ * clear of red, orange and the accent's blue, so the screen never reads as a signal.
+ */
+const PALETTES: [string, string, string][] = [
+  ["#0d4a43", "#3fd6a8", "#effcd9"], // aurora: deep teal, mint, a pale lime
+  ["#2c1457", "#9a6bff", "#f3ecff"], // ultraviolet
+  ["#063244", "#27c4d9", "#e3fcff"], // tide
+  ["#22340f", "#a6d94e", "#f8ffdc"], // moss
+];
+const paletteOf = (track: Track) => track.palette ?? PALETTES[seed(track.title) % PALETTES.length];
+const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
 
 /** Minutes and seconds, as a screen reader says them. */
 const spoken = (s: number) => `${Math.floor(s / 60)}:${pad(Math.floor(s % 60))}`;
@@ -160,6 +161,192 @@ function peaksOf(track: Track): number[] {
     const smooth = (v * 2 + (raw[i - 1] ?? v) + (raw[i + 1] ?? v)) / 4;
     return Math.round(Math.min(1, Math.max(0.12, smooth)) * 100) / 100;
   });
+}
+
+/* --- The scope: raw WebGL, two passes ------------------------------------------ */
+
+const VERTEX = `
+attribute vec2 aPos;
+void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
+`;
+
+/** Feedback: the last frame, warped and faded, under a fresh trace. One channel of light, in red. */
+const FEEDBACK = `
+precision mediump float;
+uniform sampler2D uPrev;
+uniform vec2 uRes;
+uniform float uTime;
+uniform float uKick;
+uniform float uSnare;
+uniform float uHat;
+uniform float uEnv;
+uniform float uOn;
+
+mat2 turn(float a) { float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
+
+// A soft line d from its centre, never thinner than about a pixel and a half.
+float glow(float d, float w) { w = max(w, 1.5 / uRes.y); return exp(-d * d / (w * w)); }
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / uRes;
+  float aspect = uRes.x / uRes.y;
+  vec2 p = (uv - 0.5) * vec2(aspect, 1.0);
+  float r = length(p);
+
+  // The warp. Reading from nearer the centre carries the trail outward; it turns slowly, a little more
+  // on the snare, wavers, and pumps on the kick.
+  vec2 q = turn(0.004 + 0.012 * sin(uTime * 0.21) + 0.05 * uSnare * (r - 0.25)) * p;
+  q *= 0.982 - 0.03 * uKick;
+  q += 0.0025 * vec2(sin(q.y * 11.0 + uTime * 1.1), cos(q.x * 9.0 - uTime * 1.3));
+  float last = texture2D(uPrev, q / vec2(aspect, 1.0) + 0.5).r;
+  // 5% a frame, less a step, so an 8-bit trail fades all the way out instead of sticking at a glow.
+  last = max(0.0, last * 0.95 - 0.006);
+
+  // The ring: its radius carries the music, a band per drum at its own count of lobes.
+  float a = atan(p.y, p.x);
+  float lobes = uKick * 0.06 * sin(3.0 * a + uTime * 1.7)
+              + uSnare * 0.045 * sin(7.0 * a - uTime * 4.3)
+              + uHat * 0.03 * sin(19.0 * a + uTime * 8.1);
+  float ring = glow(r - (0.17 + 0.06 * uEnv + 0.05 * uKick + lobes), 0.006 + 0.006 * uKick);
+
+  // The line across: the same bands as a trace in time, quieter towards the ends.
+  float x = p.x;
+  float y = (uKick * 0.5 * sin(x * 5.0 + uTime * 2.0) + uSnare * 0.3 * sin(x * 17.0 - uTime * 6.0) + uHat * 0.2 * sin(x * 41.0 + uTime * 13.0)) * 0.32;
+  float line = glow(p.y - y, 0.005) * 0.6 * smoothstep(aspect * 0.5, aspect * 0.2, abs(x));
+
+  float trace = uOn * (ring + line) * (0.45 + 0.55 * uEnv);
+  gl_FragColor = vec4(min(1.0, last + trace), 0.0, 0.0, 1.0);
+}
+`;
+
+/** Present: the light through the palette, from black, with the tube's falloff toward the corners. */
+const PRESENT = `
+precision mediump float;
+uniform sampler2D uLight;
+uniform vec2 uRes;
+uniform vec3 uFrom[3];
+uniform vec3 uTo[3];
+uniform float uMix;
+uniform float uKick;
+
+void main() {
+  vec2 uv = gl_FragCoord.xy / uRes;
+  float v = texture2D(uLight, uv).r;
+  float m = uMix * uMix * (3.0 - 2.0 * uMix);
+  vec3 c0 = mix(uFrom[0], uTo[0], m);
+  vec3 c1 = mix(uFrom[1], uTo[1], m);
+  vec3 c2 = mix(uFrom[2], uTo[2], m);
+  vec3 col = v < 0.3 ? mix(vec3(0.0), c0, v / 0.3) : v < 0.7 ? mix(c0, c1, (v - 0.3) / 0.4) : mix(c1, c2, (v - 0.7) / 0.3);
+  // The backlight thumps a little with the kick.
+  col += c0 * 0.08 * uKick;
+  vec2 e = (uv - 0.5) * vec2(1.0, 1.7);
+  col *= 1.0 - 0.55 * dot(e, e);
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+type Frame = { time: number; kick: number; snare: number; hat: number; env: number; on: number; from: number[]; to: number[]; mix: number };
+
+function compile(gl: WebGLRenderingContext, type: number, source: string) {
+  const shader = gl.createShader(type)!;
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  return shader;
+}
+
+function link(gl: WebGLRenderingContext, fragment: string) {
+  const program = gl.createProgram()!;
+  gl.attachShader(program, compile(gl, gl.VERTEX_SHADER, VERTEX));
+  gl.attachShader(program, compile(gl, gl.FRAGMENT_SHADER, fragment));
+  gl.bindAttribLocation(program, 0, "aPos");
+  gl.linkProgram(program);
+  const at = (name: string) => gl.getUniformLocation(program, name);
+  return { program, at };
+}
+
+/**
+ * A scope on a canvas the size of its box (up to 1.5× on dense displays). Feedback ping-pongs between two
+ * textures; the present pass maps the light to colour. Returns null without WebGL, and the screen stays black.
+ */
+function createScope(canvas: HTMLCanvasElement) {
+  const context = canvas.getContext("webgl", { antialias: false, alpha: false, preserveDrawingBuffer: true });
+  if (!context) return null;
+  const gl = context;
+  const feedback = link(gl, FEEDBACK);
+  const present = link(gl, PRESENT);
+  const fb = { prev: feedback.at("uPrev"), res: feedback.at("uRes"), time: feedback.at("uTime"), kick: feedback.at("uKick"), snare: feedback.at("uSnare"), hat: feedback.at("uHat"), env: feedback.at("uEnv"), on: feedback.at("uOn") };
+  const pr = { light: present.at("uLight"), res: present.at("uRes"), from: present.at("uFrom"), to: present.at("uTo"), mix: present.at("uMix"), kick: present.at("uKick") };
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+  let targets: { texture: WebGLTexture; buffer: WebGLFramebuffer }[] = [];
+  let read = 0;
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    const density = Math.min(devicePixelRatio, 1.5);
+    canvas.width = Math.max(1, Math.round(rect.width * density));
+    canvas.height = Math.max(1, Math.round(rect.height * density));
+    targets.forEach((t) => {
+      gl.deleteTexture(t.texture);
+      gl.deleteFramebuffer(t.buffer);
+    });
+    targets = [0, 1].map(() => {
+      const texture = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, canvas.width, canvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      const buffer = gl.createFramebuffer()!;
+      gl.bindFramebuffer(gl.FRAMEBUFFER, buffer);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+      gl.clearColor(0, 0, 0, 1);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      return { texture, buffer };
+    });
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+
+  function frame(f: Frame) {
+    if (!targets.length) return;
+    const write = 1 - read;
+    gl.useProgram(feedback.program);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, targets[write].buffer);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, targets[read].texture);
+    gl.uniform1i(fb.prev, 0);
+    gl.uniform2f(fb.res, canvas.width, canvas.height);
+    gl.uniform1f(fb.time, f.time);
+    gl.uniform1f(fb.kick, f.kick);
+    gl.uniform1f(fb.snare, f.snare);
+    gl.uniform1f(fb.hat, f.hat);
+    gl.uniform1f(fb.env, f.env);
+    gl.uniform1f(fb.on, f.on);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    gl.useProgram(present.program);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.bindTexture(gl.TEXTURE_2D, targets[write].texture);
+    gl.uniform1i(pr.light, 0);
+    gl.uniform2f(pr.res, canvas.width, canvas.height);
+    gl.uniform3fv(pr.from, f.from);
+    gl.uniform3fv(pr.to, f.to);
+    gl.uniform1f(pr.mix, f.mix);
+    gl.uniform1f(pr.kick, f.kick);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    read = write;
+  }
+
+  return {
+    resize,
+    frame,
+    dispose: () => gl.getExtension("WEBGL_lose_context")?.loseContext(),
+  };
 }
 
 /** Focus that follows the hand: no ring, and the keys pick up where the hand left off. */
@@ -201,8 +388,8 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
   const dragging = useRef<number | null>(null); // the pointer scrubbing the waveform
   const visible = useRef(true);
   const wake = useRef<(() => void) | null>(null); // restarts the frame loop when the strip scrolls back into view
-  const wakeMeters = useRef<(() => void) | null>(null); // and the meters'
-  const meters = useRef({ shown: [FLOOR, FLOOR], peak: [FLOOR, FLOOR], held: [0, 0], at: -1 });
+  const wakeScope = useRef<(() => void) | null>(null); // and the scope's
+  const screenRef = useRef<HTMLSpanElement>(null);
   const touched = useRef(false); // a hand has worked it: it may sound while the host is paused
   // Props the loops and the spring read when they fire, rather than when they were made.
   const props = useRef({ tracks, track, onTrackChange, onPlayingChange, startAt });
@@ -422,61 +609,95 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
     };
   }, [playing, track]);
 
-  // The meters: the music's level at the playhead, with a recorder's ballistics. While playing they read
-  // the track; paused, they fall to rest and the loop stops. The bar under the playhead lifts with the level,
-  // and the playhead's glow swells with it.
-  const sample = useEffectEvent((c: number) => {
+  // The scope. One loop reads the music at the playhead, lets each band fall away as a meter's bar does,
+  // lifts the bar under the playhead, swells its glow and draws the screen. Paused, it runs on with the
+  // trace off until the trail has faded, then stops; a new track's palette sweeps in on the same loop.
+  const music = useEffectEvent(() => {
     const { tracks, track } = props.current;
-    return levelAt(position(), duration(), peaksOf(tracks[track]), bpmOf(tracks[track]), c);
+    return { on: playing, track, ...bandsAt(position(), duration(), peaksOf(tracks[track]), bpmOf(tracks[track])) };
   });
   useEffect(() => {
-    if (reduced()) return;
     const root = rootRef.current!;
-    const rows = [...root.querySelectorAll<HTMLElement>("[data-meter]")];
+    const host = screenRef.current!;
     const bars = [...barsRef.current!.querySelectorAll<HTMLElement>("[data-bar]")];
-    const m = meters.current;
+    // Made here rather than rendered: the cleanup loses its context for good, so every mount needs its own.
+    const canvas = document.createElement("canvas");
+    // Drawn, the screen keeps a quiet grayscale of its trail, as Gradient Keys' does.
+    canvas.className = "block size-full drawn:opacity-60!";
+    host.append(canvas);
+    const scope = createScope(canvas);
+    scope?.resize();
+    const still = reduced();
+    const first = music();
+    const level = { kick: 0, snare: 0, hat: 0, env: 0, lv: 0 };
+    const palette = { track: first.track, from: paletteOf(props.current.tracks[first.track]).flatMap(rgb), to: [] as number[], mix: 1 };
+    palette.to = palette.from;
+    let time = 0;
+    let idle = FADE_OUT;
+    let at = -1;
     let raf = 0;
     let last = 0;
 
-    const frame = (t: number) => {
-      raf = 0;
-      const dt = last ? Math.min(0.1, (t - last) / 1000) : 1 / 60;
-      last = t;
-      let resting = !playing;
-      for (let c = 0; c < 2; c++) {
-        m.shown[c] = Math.max(FLOOR, m.shown[c] - FALL * dt);
-        if (playing) m.shown[c] = Math.max(m.shown[c], sample(c));
-        if (m.shown[c] >= m.peak[c]) {
-          m.peak[c] = m.shown[c];
-          m.held[c] = 0;
-        } else if ((m.held[c] += dt) > HOLD) m.peak[c] = Math.max(m.shown[c], m.peak[c] - PEAK_FALL * dt);
-        rows[c].style.setProperty("--l", toScale(m.shown[c]).toFixed(3));
-        rows[c].style.setProperty("--pk", toScale(m.peak[c]).toFixed(3));
-        if (m.peak[c] > FLOOR) resting = false;
+    function step(dt: number) {
+      const m = music();
+      if (m.track !== palette.track) {
+        const shown = palette.from.map((v, i) => v + (palette.to[i] - v) * palette.mix);
+        palette.track = m.track;
+        palette.from = shown;
+        palette.to = paletteOf(props.current.tracks[m.track]).flatMap(rgb);
+        palette.mix = still ? 1 : 0;
       }
-      root.style.setProperty("--lv", toScale(Math.max(m.shown[0], m.shown[1])).toFixed(3));
+      palette.mix = Math.min(1, palette.mix + dt / RECOLOUR);
+      idle = m.on ? 0 : idle + dt;
+      for (const band of ["kick", "snare", "hat"] as const) level[band] = Math.max(m.on ? m[band] : 0, level[band] - BAND_FALL * dt);
+      level.env = m.on ? m.env : Math.max(0, level.env - BAND_FALL * dt);
+      level.lv = Math.max(m.on ? 0.42 * m.env + 0.5 * Math.max(m.kick, m.snare) : 0, level.lv - BAND_FALL * dt);
+      root.style.setProperty("--lv", Math.min(1, level.lv).toFixed(3));
       // The bar the playhead is on: the last one it has reached.
-      const at = playing ? passed(head.current!.value / 1000) - 1 : -1;
-      if (at !== m.at) {
-        if (m.at >= 0) delete bars[m.at].dataset.at;
-        if (at >= 0) bars[at].dataset.at = "";
-        m.at = at;
+      const next = m.on ? passed(head.current!.value / 1000) - 1 : -1;
+      if (next !== at) {
+        if (at >= 0) delete bars[at].dataset.at;
+        if (next >= 0) bars[next].dataset.at = "";
+        at = next;
       }
-      if (resting || !visible.current) {
-        last = 0;
-        return;
-      }
-      raf = requestAnimationFrame(frame);
+      time += dt;
+      scope?.frame({ time, ...level, on: m.on || still ? 1 : 0, from: palette.from, to: palette.to, mix: palette.mix });
+      return m.on || idle < FADE_OUT || palette.mix < 1;
+    }
+
+    /** Reduced motion: no loop, a still of the music built up over a second. */
+    function hold() {
+      for (let i = 0; i < 60; i++) step(1 / 60);
+      root.style.setProperty("--lv", "0");
+    }
+
+    function frame(t: number) {
+      raf = 0;
+      const dt = last ? Math.min(0.05, (t - last) / 1000) : 1 / 60;
+      last = t;
+      if (step(dt) && visible.current) raf = requestAnimationFrame(frame);
+      else last = 0;
+    }
+
+    wakeScope.current = () => {
+      if (still) hold();
+      else if (!raf && visible.current) raf = requestAnimationFrame(frame);
     };
-    wakeMeters.current = () => {
-      if (!raf) raf = requestAnimationFrame(frame);
-    };
-    wakeMeters.current();
+    const resize = new ResizeObserver(() => {
+      scope?.resize();
+      if (still) hold();
+      else wakeScope.current?.();
+    });
+    resize.observe(canvas);
     return () => {
       cancelAnimationFrame(raf);
-      wakeMeters.current = null;
+      resize.disconnect();
+      wakeScope.current = null;
+      scope?.dispose();
+      canvas.remove();
     };
-  }, [playing]);
+  }, []);
+  useEffect(() => wakeScope.current?.(), [playing, track]);
 
   // Off screen, the frame loop rests; the clock keeps time.
   useEffect(() => {
@@ -484,7 +705,7 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
       visible.current = entry.isIntersecting;
       if (visible.current) {
         wake.current?.();
-        wakeMeters.current?.();
+        wakeScope.current?.();
       }
     });
     observer.observe(rootRef.current!);
@@ -597,6 +818,14 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
       <div data-part="plate" className="relative isolate flex animate-enter flex-col gap-[0.7em] overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
+        {/* The screen: the scope behind glass, in a black bezel. */}
+        <div data-part="bezel" className="rounded-[1.05em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
+          <div data-part="screen" className="relative aspect-[3/1] rounded-[0.75em] bg-black">
+            <span ref={screenRef} aria-hidden className="absolute inset-0 overflow-hidden rounded-[inherit]" />
+            <span aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
+          </div>
+        </div>
+
         {/* The LCD: the state, the track and the clock. The clock is written by the playhead's spring. */}
         <div aria-hidden data-part="lcd" className="flex min-w-0 flex-col gap-[0.45em] overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.6em] pt-[0.6em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)">
           <div className="flex items-center gap-[0.5em]">
@@ -628,16 +857,6 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
                 ))}
               </span>
             </span>
-          </div>
-          {/* The meters, left over right. Drawn: the track a hairline, the lit bar its ticks in ink, the peak mark a line of ink. */}
-          <div className="flex flex-col gap-[0.3em] pt-[0.1em]">
-            {[0, 1].map((c) => (
-              <span key={c} data-meter className="relative h-[0.42em]">
-                <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/15 drawn:bg-(--device-draw-line)!" />
-                <span className="meter-ticks absolute inset-0 [clip-path:inset(0_calc(100%_-_var(--l,0)_*_100%)_0_0)] drawn:[background:repeating-linear-gradient(90deg,var(--device-draw-ink)_0_1px,transparent_1px_3px)]!" />
-                <span className="absolute -inset-y-[12%] left-[calc(var(--pk,0)_*_100%_-_1px)] w-[2px] rounded-[1px] bg-current drawn:bg-(--device-draw-ink)!" />
-              </span>
-            ))}
           </div>
         </div>
 
@@ -732,10 +951,10 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
 /* --- Demo: side A, from the last seconds of its first track ----------------- */
 
 const SIDE_A: Track[] = [
-  { title: "Low thock", artist: "The Detents", duration: 211 },
-  { title: "Over centre", artist: "The Detents", duration: 178 },
-  { title: "Unity gain", artist: "The Detents", duration: 252 },
-  { title: "Room tone", artist: "The Detents", duration: 185 },
+  { title: "Low thock", artist: "The Detents", duration: 211, palette: PALETTES[2] },
+  { title: "Over centre", artist: "The Detents", duration: 178, palette: PALETTES[1] },
+  { title: "Unity gain", artist: "The Detents", duration: 252, palette: PALETTES[0] },
+  { title: "Room tone", artist: "The Detents", duration: 185, palette: PALETTES[3] },
 ];
 
 export default function Demo() {

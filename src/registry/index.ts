@@ -26,8 +26,8 @@ export const registry: RegistryEntry[] = [
     slug: "now-playing",
     title: "Now Playing",
     description:
-      "A music player's now-playing strip: the track on an LCD, its waveform pressed into the plate as a scrubber with a red playhead, and previous and next round PLAY. Time belongs to the media clock, a real audio element when a track has a source; one spring draws the playhead, the passed bars and the clock without re-rendering. The hand's seeks land at once and click through the bars; a new track's waveform re-forms from left to right.",
-    tagline: "A queue on the player's glass, with its waveform as the scrubber.",
+      "A music player's now-playing strip: a scope on a screen behind glass, the track on an LCD, its waveform pressed into the plate as a scrubber with a red playhead, and previous and next round PLAY. The scope is raw WebGL feedback: each frame warps and fades the last under a fresh trace, a ring and a line that carry the beat, so trails bloom outward and pump on the kick, in the track's own palette. Time belongs to the media clock, a real audio element when a track has a source.",
+    tagline: "A queue with a scope that plays the music, and its waveform as the scrubber.",
     tags: ["sound", "media", "pointer", "a11y"],
     date: "2026-11-02",
     status: "new",
