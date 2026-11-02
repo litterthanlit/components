@@ -686,7 +686,7 @@ export function Spool({ frames, value, onChange, label, aspect = 3 / 4, bare = f
 
   // Height is what a stage is short of, and the frames are a share of the screen's height. So on a
   // stage 36rem wide or more, the LCD and the key stand in a column beside the screen, not under it,
-  // and the screen takes the deck's whole height: the frames come out about a quarter taller.
+  // and the screen takes the deck's whole height, widening to 16:9 for landscape frames.
   return (
     <div ref={rootRef} {...capture} className={cx("flex flex-col gap-[0.7em] @[36rem]:flex-row", className)}>
       <div data-part="bezel" className="min-w-0 rounded-[0.7em] @[36rem]:flex-1 bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
@@ -694,7 +694,7 @@ export function Spool({ frames, value, onChange, label, aspect = 3 / 4, bare = f
           {...slider}
           data-hold
           data-part="screen"
-          className="relative block aspect-[4/3] cursor-pointer touch-none rounded-[0.45em] outline-offset-2 [background:var(--device-window)] [-webkit-touch-callout:none]"
+          className="relative block aspect-[4/3] @[36rem]:aspect-[16/9] cursor-pointer touch-none rounded-[0.45em] outline-offset-2 [background:var(--device-window)] [-webkit-touch-callout:none]"
         >
           {canvasHost}
           {/* The glass: a sheen where the light catches it, and its edge. */}
@@ -1121,28 +1121,44 @@ export function SpoolFullscreen({ frames: own = [], aspect = 16 / 9 }: { frames?
   );
 }
 
-/** The study on its plate. It plays `frames` if it's given any, and the painted roll if not. */
+/** Where the deck sets its LCD and key beside the screen, and the screen turns landscape: 36rem. */
+const WIDE = 576;
+
+/**
+ * The study on its plate. It plays `frames` if it's given any, and the painted roll if not: portrait
+ * frames on a narrow stage, landscape ones where the deck is wide.
+ */
 export default function Demo({ frames: own = [] }: { frames?: readonly SpoolFrame[] }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  // Unknown until measured, so the frames aren't cropped to one shape and then the other.
+  const [wide, setWide] = useState<boolean | null>(null);
   const [painted, setPainted] = useState<SpoolFrame[]>([]);
   const [value, setValue] = useState(0);
   const mine = own.length > 0;
+  const aspect = wide ? 16 / 9 : 3 / 4;
 
   useEffect(() => {
-    if (mine) return;
+    const observer = new ResizeObserver(([entry]) => setWide(entry.contentRect.width >= WIDE));
+    observer.observe(rootRef.current!);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (mine || wide === null) return;
     let live = true;
-    develop(3 / 4).then((roll) => live && setPainted(roll));
+    develop(aspect).then((roll) => live && setPainted(roll));
     return () => {
       live = false;
     };
-  }, [mine]);
+  }, [mine, wide, aspect]);
 
   // Stacked, the deck is held to 380px: any wider and it's too tall for the stages, until there's
   // room to set the LCD and the key beside the screen.
   return (
-    <div className="@container w-full max-w-[620px] select-none">
+    <div ref={rootRef} className="@container w-full max-w-[760px] select-none">
       <div data-part="plate" className="relative isolate @max-[36rem]:mx-auto @max-[36rem]:max-w-[380px] animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
-        <Spool label="Roll 04" frames={mine ? own : painted} value={value} onChange={setValue} rehearse />
+        <Spool label="Roll 04" aspect={aspect} frames={wide === null ? [] : mine ? own : painted} value={value} onChange={setValue} rehearse />
       </div>
     </div>
   );
