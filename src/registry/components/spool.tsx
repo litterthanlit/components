@@ -687,8 +687,8 @@ export function Spool({ frames, value, onChange, label, aspect = 3 / 4, bare = f
   // Height is what a stage is short of, and the frames are a share of the screen's height. So on a
   // stage 36rem wide or more, the LCD and the key stand in a column beside the screen, not under it,
   // and the screen takes the deck's whole height, widening to 16:9 for landscape frames. On the
-  // player the screen's ground is gone, and an LCD the deck's height would stand alone on the glass,
-  // so the column sinks to the bottom corner: the LCD down to its content, three lines of title.
+  // player the screen's ground is gone and a column would stand alone on the glass, so it goes: the
+  // screen is all there is, and a word in its corner says to hold it.
   return (
     <div ref={rootRef} {...capture} className={cx("flex flex-col gap-[0.7em] @[36rem]:flex-row", className)}>
       <div data-part="bezel" className="min-w-0 rounded-[0.7em] @[36rem]:flex-1 bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
@@ -699,17 +699,29 @@ export function Spool({ frames, value, onChange, label, aspect = 3 / 4, bare = f
           className="relative block aspect-[4/3] @[36rem]:aspect-[16/9] cursor-pointer touch-none rounded-[0.45em] outline-offset-2 [background:var(--device-window)] [-webkit-touch-callout:none]"
         >
           {canvasHost}
+          {/* On the player, where the LCD and key are gone: a word in the corner, printed on the glass in the
+              player's own muted ink. It comes up 1.2 s after the hand lets go, and goes the moment it holds. */}
+          <span
+            aria-hidden
+            data-on={mode !== "hand" || undefined}
+            className="pointer-events-none absolute bottom-[0.9em] right-[1em] hidden items-center gap-[0.45em] text-muted opacity-0 transition-opacity duration-(--duration-exit) data-on:opacity-100 data-on:delay-[1200ms] data-on:duration-700 starting:data-on:opacity-0 motion-reduce:transition-none @[36rem]:player:flex"
+          >
+            <span className="grid size-[1em] place-items-center rounded-full border border-current/45">
+              <span className="size-[0.32em] animate-pulse rounded-full bg-current" />
+            </span>
+            <span className="text-[0.72em] font-medium uppercase leading-none tracking-[0.12em]">Hold</span>
+          </span>
           {/* The glass: a sheen where the light catches it, and its edge. */}
           <span aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
         </div>
       </div>
 
-      <div className="flex items-stretch gap-[0.55em] @[36rem]:w-[10em] @[36rem]:shrink-0 @[36rem]:flex-col @[36rem]:player:justify-end">
+      <div className="flex items-stretch gap-[0.55em] @[36rem]:w-[10em] @[36rem]:shrink-0 @[36rem]:flex-col @[36rem]:player:hidden">
         {/* The LCD: the loop writes the frame at the gate, so it counts through the frames with the clicks. */}
         <div
           aria-hidden
           data-part="lcd"
-          className="flex h-[3.3em] min-w-0 flex-1 flex-col @[36rem]:h-auto @[36rem]:player:flex-none @[36rem]:player:gap-[0.9em] justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.5em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
+          className="flex h-[3.3em] min-w-0 flex-1 flex-col @[36rem]:h-auto justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.5em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
         >
           <span className="flex items-center justify-between gap-[0.5em]">
             <span data-part="chip" className="inline-flex items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
@@ -724,7 +736,7 @@ export function Spool({ frames, value, onChange, label, aspect = 3 / 4, bare = f
             </span>
             <span ref={counterRef} className="text-[0.62em] leading-none tabular-nums text-(--device-lcd-dim)" />
           </span>
-          <span ref={titleRef} className="truncate text-[1.05em] font-light leading-none tracking-[-0.01em] @[36rem]:not-player:line-clamp-5 @[36rem]:player:line-clamp-3 @[36rem]:whitespace-normal @[36rem]:text-[0.95em] @[36rem]:leading-[1.2]" />
+          <span ref={titleRef} className="truncate text-[1.05em] font-light leading-none tracking-[-0.01em] @[36rem]:line-clamp-5 @[36rem]:whitespace-normal @[36rem]:text-[0.95em] @[36rem]:leading-[1.2]" />
         </div>
 
         {/* The key: a second place to hold it, with the speed lights across its top. The screen is the control, so the key is the hand's alone. */}
@@ -1158,7 +1170,7 @@ export default function Demo({ frames: own = [] }: { frames?: readonly SpoolFram
   // room to set the LCD and the key beside the screen.
   return (
     <div ref={rootRef} className="@container w-full max-w-[760px] select-none">
-      <div data-part="plate" className="relative isolate @max-[36rem]:mx-auto @max-[36rem]:max-w-[380px] animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
+      <div data-part="plate" className="relative isolate @max-[36rem]:mx-auto @max-[36rem]:max-w-[380px] @[36rem]:player:mx-auto @[36rem]:player:max-w-[620px] animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
         <Spool label="Roll 04" aspect={aspect} frames={wide === null ? [] : mine ? own : painted} value={value} onChange={setValue} rehearse />
       </div>
