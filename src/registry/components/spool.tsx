@@ -684,27 +684,44 @@ export function Spool({ frames, value, onChange, label, aspect = 3 / 4, bare = f
     );
   }
 
+  // Height is what a stage is short of, and the frames are a share of the screen's height. So on a
+  // stage 36rem wide or more, the LCD and the key stand in a column beside the screen, not under it,
+  // and the screen takes the deck's whole height, widening to 16:9 for landscape frames. On the
+  // player the screen's ground is gone and a column would stand alone on the glass, so it goes: the
+  // screen is all there is, and a word in its corner says to hold it.
   return (
-    <div ref={rootRef} {...capture} className={cx("flex flex-col gap-[0.7em]", className)}>
-      <div data-part="bezel" className="rounded-[0.7em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
+    <div ref={rootRef} {...capture} className={cx("flex flex-col gap-[0.7em] @[36rem]:flex-row", className)}>
+      <div data-part="bezel" className="min-w-0 rounded-[0.7em] @[36rem]:flex-1 bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
         <div
           {...slider}
           data-hold
           data-part="screen"
-          className="relative block aspect-[4/3] cursor-pointer touch-none rounded-[0.45em] outline-offset-2 [background:var(--device-window)] [-webkit-touch-callout:none]"
+          className="relative block aspect-[4/3] @[36rem]:aspect-[16/9] cursor-pointer touch-none rounded-[0.45em] outline-offset-2 [background:var(--device-window)] [-webkit-touch-callout:none]"
         >
           {canvasHost}
+          {/* On the player, where the LCD and key are gone: a word in the corner, printed on the glass in the
+              player's own muted ink. It comes up 1.2 s after the hand lets go, and goes the moment it holds. */}
+          <span
+            aria-hidden
+            data-on={mode !== "hand" || undefined}
+            className="pointer-events-none absolute bottom-[0.9em] right-[1em] hidden items-center gap-[0.45em] text-muted opacity-0 transition-opacity duration-(--duration-exit) data-on:opacity-100 data-on:delay-[1200ms] data-on:duration-700 starting:data-on:opacity-0 motion-reduce:transition-none @[36rem]:player:flex"
+          >
+            <span className="grid size-[1em] place-items-center rounded-full border border-current/45">
+              <span className="size-[0.32em] animate-pulse rounded-full bg-current" />
+            </span>
+            <span className="text-[0.72em] font-medium uppercase leading-none tracking-[0.12em]">Hold</span>
+          </span>
           {/* The glass: a sheen where the light catches it, and its edge. */}
           <span aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
         </div>
       </div>
 
-      <div className="flex items-stretch gap-[0.55em]">
+      <div className="flex items-stretch gap-[0.55em] @[36rem]:w-[10em] @[36rem]:shrink-0 @[36rem]:flex-col @[36rem]:player:hidden">
         {/* The LCD: the loop writes the frame at the gate, so it counts through the frames with the clicks. */}
         <div
           aria-hidden
           data-part="lcd"
-          className="flex h-[3.3em] min-w-0 flex-1 flex-col justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.5em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
+          className="flex h-[3.3em] min-w-0 flex-1 flex-col @[36rem]:h-auto justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.5em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
         >
           <span className="flex items-center justify-between gap-[0.5em]">
             <span data-part="chip" className="inline-flex items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
@@ -719,11 +736,11 @@ export function Spool({ frames, value, onChange, label, aspect = 3 / 4, bare = f
             </span>
             <span ref={counterRef} className="text-[0.62em] leading-none tabular-nums text-(--device-lcd-dim)" />
           </span>
-          <span ref={titleRef} className="truncate text-[1.05em] font-light leading-none tracking-[-0.01em]" />
+          <span ref={titleRef} className="truncate text-[1.05em] font-light leading-none tracking-[-0.01em] @[36rem]:line-clamp-5 @[36rem]:whitespace-normal @[36rem]:text-[0.95em] @[36rem]:leading-[1.2]" />
         </div>
 
         {/* The key: a second place to hold it, with the speed lights across its top. The screen is the control, so the key is the hand's alone. */}
-        <div aria-hidden data-hold data-pressed={pressed || undefined} {...hold} data-part="key" className="group/key w-[4.6em] shrink-0 cursor-pointer touch-none rounded-[0.7em] [-webkit-touch-callout:none]">
+        <div aria-hidden data-hold data-pressed={pressed || undefined} {...hold} data-part="key" className="group/key w-[4.6em] shrink-0 @[36rem]:h-[3.3em] @[36rem]:w-full cursor-pointer touch-none rounded-[0.7em] [-webkit-touch-callout:none]">
           <span className="relative grid h-full place-items-center rounded-[0.7em] text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-data-pressed/key:translate-y-[2px] group-data-pressed/key:shadow-(--device-key-shadow-pressed) group-data-pressed/key:duration-75">
             <span className="absolute inset-x-[20%] top-[0.5em] flex h-[0.24em] gap-[0.16em]">
               {Array.from({ length: LIGHTS }, (_, i) => (
@@ -1118,23 +1135,44 @@ export function SpoolFullscreen({ frames: own = [], aspect = 16 / 9 }: { frames?
   );
 }
 
-export default function Demo() {
-  const [frames, setFrames] = useState<SpoolFrame[]>([]);
+/** Where the deck sets its LCD and key beside the screen, and the screen turns landscape: 36rem. */
+const WIDE = 576;
+
+/**
+ * The study on its plate. It plays `frames` if it's given any, and the painted roll if not: portrait
+ * frames on a narrow stage, landscape ones where the deck is wide.
+ */
+export default function Demo({ frames: own = [] }: { frames?: readonly SpoolFrame[] }) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  // Unknown until measured, so the frames aren't cropped to one shape and then the other.
+  const [wide, setWide] = useState<boolean | null>(null);
+  const [painted, setPainted] = useState<SpoolFrame[]>([]);
   const [value, setValue] = useState(0);
+  const mine = own.length > 0;
+  const aspect = wide ? 16 / 9 : 3 / 4;
 
   useEffect(() => {
+    const observer = new ResizeObserver(([entry]) => setWide(entry.contentRect.width >= WIDE));
+    observer.observe(rootRef.current!);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (mine || wide === null) return;
     let live = true;
-    develop(3 / 4).then((roll) => live && setFrames(roll));
+    develop(aspect).then((roll) => live && setPainted(roll));
     return () => {
       live = false;
     };
-  }, []);
+  }, [mine, wide, aspect]);
 
+  // Stacked, the deck is held to 380px: any wider and it's too tall for the stages, until there's
+  // room to set the LCD and the key beside the screen.
   return (
-    <div className="@container w-full max-w-[380px] select-none">
-      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
+    <div ref={rootRef} className="@container w-full max-w-[760px] select-none">
+      <div data-part="plate" className="relative isolate @max-[36rem]:mx-auto @max-[36rem]:max-w-[380px] @[36rem]:player:mx-auto @[36rem]:player:max-w-[620px] animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
-        <Spool label="Roll 04" frames={frames} value={value} onChange={setValue} rehearse />
+        <Spool label="Roll 04" aspect={aspect} frames={wide === null ? [] : mine ? own : painted} value={value} onChange={setValue} rehearse />
       </div>
     </div>
   );
