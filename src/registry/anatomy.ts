@@ -76,6 +76,11 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     screen: { name: "Screen", note: "The site's own ground under glass: its canvas and type, and the accent bar gliding on a spring between rows." },
     glass: { note: "The screen's sheen, and the backlight's bloom as it wakes." },
   },
+  "now-playing": {
+    well: { name: "Waveform", note: "The track's forty bars pressed into the plate as its scrubber: lit once the playhead has passed them, re-forming on their own springs when the queue moves on." },
+    light: { tokens: ["--device-rec"], note: "The playhead, red as the tape's: one spring in permille of the track draws it, the passed bars and the clock together." },
+    lcd: { note: "The state's chip, the track and a clock in minutes, seconds and frames, written by the playhead's spring rather than by React." },
+  },
   "copy-button": {
     lcd: { note: "A character LCD. Copied, the command leaves in a wave from right to left, each character scrambling through the half-width katakana in an HD44780's ROM; it decodes back in from the left." },
     lettering: { name: "Glyphs", tokens: ["--device-key-ink", "--device-engrave-glyph"], note: "The copy mark and the check share the key's face and cross-fade; the check draws itself in over 400 ms." },
