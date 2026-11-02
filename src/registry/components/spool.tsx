@@ -684,9 +684,12 @@ export function Spool({ frames, value, onChange, label, aspect = 3 / 4, bare = f
     );
   }
 
+  // Height is what a stage is short of, and the frames are a share of the screen's height. So on a
+  // stage 36rem wide or more, the LCD and the key stand in a column beside the screen, not under it,
+  // and the screen takes the deck's whole height: the frames come out about a quarter taller.
   return (
-    <div ref={rootRef} {...capture} className={cx("flex flex-col gap-[0.7em]", className)}>
-      <div data-part="bezel" className="rounded-[0.7em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
+    <div ref={rootRef} {...capture} className={cx("flex flex-col gap-[0.7em] @[36rem]:flex-row", className)}>
+      <div data-part="bezel" className="min-w-0 rounded-[0.7em] @[36rem]:flex-1 bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
         <div
           {...slider}
           data-hold
@@ -699,12 +702,12 @@ export function Spool({ frames, value, onChange, label, aspect = 3 / 4, bare = f
         </div>
       </div>
 
-      <div className="flex items-stretch gap-[0.55em]">
+      <div className="flex items-stretch gap-[0.55em] @[36rem]:w-[10em] @[36rem]:shrink-0 @[36rem]:flex-col">
         {/* The LCD: the loop writes the frame at the gate, so it counts through the frames with the clicks. */}
         <div
           aria-hidden
           data-part="lcd"
-          className="flex h-[3.3em] min-w-0 flex-1 flex-col justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.5em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
+          className="flex h-[3.3em] min-w-0 flex-1 flex-col @[36rem]:h-auto justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.5em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
         >
           <span className="flex items-center justify-between gap-[0.5em]">
             <span data-part="chip" className="inline-flex items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
@@ -719,11 +722,11 @@ export function Spool({ frames, value, onChange, label, aspect = 3 / 4, bare = f
             </span>
             <span ref={counterRef} className="text-[0.62em] leading-none tabular-nums text-(--device-lcd-dim)" />
           </span>
-          <span ref={titleRef} className="truncate text-[1.05em] font-light leading-none tracking-[-0.01em]" />
+          <span ref={titleRef} className="truncate text-[1.05em] font-light leading-none tracking-[-0.01em] @[36rem]:line-clamp-5 @[36rem]:whitespace-normal @[36rem]:text-[0.95em] @[36rem]:leading-[1.2]" />
         </div>
 
         {/* The key: a second place to hold it, with the speed lights across its top. The screen is the control, so the key is the hand's alone. */}
-        <div aria-hidden data-hold data-pressed={pressed || undefined} {...hold} data-part="key" className="group/key w-[4.6em] shrink-0 cursor-pointer touch-none rounded-[0.7em] [-webkit-touch-callout:none]">
+        <div aria-hidden data-hold data-pressed={pressed || undefined} {...hold} data-part="key" className="group/key w-[4.6em] shrink-0 @[36rem]:h-[3.3em] @[36rem]:w-full cursor-pointer touch-none rounded-[0.7em] [-webkit-touch-callout:none]">
           <span className="relative grid h-full place-items-center rounded-[0.7em] text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-data-pressed/key:translate-y-[2px] group-data-pressed/key:shadow-(--device-key-shadow-pressed) group-data-pressed/key:duration-75">
             <span className="absolute inset-x-[20%] top-[0.5em] flex h-[0.24em] gap-[0.16em]">
               {Array.from({ length: LIGHTS }, (_, i) => (
@@ -1133,9 +1136,11 @@ export default function Demo({ frames: own = [] }: { frames?: readonly SpoolFram
     };
   }, [mine]);
 
+  // Stacked, the deck is held to 380px: any wider and it's too tall for the stages, until there's
+  // room to set the LCD and the key beside the screen.
   return (
-    <div className="@container w-full max-w-[380px] select-none">
-      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
+    <div className="@container w-full max-w-[620px] select-none">
+      <div data-part="plate" className="relative isolate @max-[36rem]:mx-auto @max-[36rem]:max-w-[380px] animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
         <Spool label="Roll 04" frames={mine ? own : painted} value={value} onChange={setValue} rehearse />
       </div>
