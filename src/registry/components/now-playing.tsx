@@ -23,6 +23,14 @@ import { hostTransport, play, type SoundName } from "@/lib/sound";
  * they rise from flat as the strip powers up and re-form, left to right, into
  * the next track's waveform when the queue moves on.
  *
+ * While it plays, a stereo meter on the glass reads the music with a
+ * recorder's ballistics: bars rise at once and fall at 26 dB a second, and a
+ * peak mark holds 900 ms before it falls at 12. Levels follow the waveform's
+ * envelope under the track's own beat, a kick on every beat and a snare on
+ * two and four at a tempo seeded from its title; the bar under the playhead
+ * lifts with them and the playhead's glow swells. Paused, the meters fall
+ * to rest and the loop stops.
+ *
  * The waveform is one tab stop: arrows seek 5 s, Page Up and Down 30 s, Home
  * and End go to either end, and Space plays or pauses.
  */
@@ -60,11 +68,63 @@ const FPS = 25;
 const SEEK = 5; // s per arrow
 const PAGE = 30; // s per Page Up or Down
 const RESTART = 3; // s into a track past which Previous restarts it rather than going back
+const FALL = 26; // dB a second a meter's bar drops
+const HOLD = 0.9; // s a peak mark waits before it falls
+const PEAK_FALL = 12; // dB a second
+const FLOOR = -60; // dB: the meter's bottom
 
 const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(" ");
 const now = () => performance.now();
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const pad = (n: number) => String(n).padStart(2, "0");
+const grain = () => Math.random();
+
+/** FNV-1a over a title: the seed for a track's waveform and its tempo. */
+function seed(title: string) {
+  let h = 2166136261;
+  for (const ch of title) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return h >>> 0;
+}
+
+/** A track's tempo, 84 to 131 BPM, the same every time it plays. */
+const bpmOf = (track: Track) => 84 + (seed(track.title) % 48);
+
+/** The meter's scale, spaced as a recorder's is: the top end gets the room. */
+const SCALE: [number, number][] = [
+  [-60, 0],
+  [-40, 0.2],
+  [-20, 0.4],
+  [-12, 0.6],
+  [-6, 0.8],
+  [0, 1],
+];
+function toScale(db: number) {
+  if (db <= SCALE[0][0]) return 0;
+  for (let i = 1; i < SCALE.length; i++) {
+    const [d1, f1] = SCALE[i];
+    const [d0, f0] = SCALE[i - 1];
+    if (db <= d1) return f0 + ((db - d0) / (d1 - d0)) * (f1 - f0);
+  }
+  return 1;
+}
+
+/**
+ * The level of channel c, in dB, t seconds into a track: the waveform's envelope under its beat.
+ * A kick on every beat, a snare on two and four (louder on the right), hats on the eighths, and grain.
+ */
+function levelAt(t: number, duration: number, peaks: number[], bpm: number, c: number) {
+  // The envelope: the waveform's bars, read between their centres.
+  const x = Math.min(BARS - 1, Math.max(0, (t / duration) * (BARS - 1)));
+  const i = Math.floor(x);
+  const env = peaks[i] + (peaks[Math.min(BARS - 1, i + 1)] - peaks[i]) * (x - i);
+  const beat = (t * bpm) / 60;
+  const phase = beat % 1;
+  const kick = Math.exp(-phase * 7);
+  const snare = Math.floor(beat) % 2 === 1 ? Math.exp(-phase * 9) * (c ? 0.8 : 0.6) : 0;
+  const hats = Math.exp(-((beat * 2) % 1) * 16) * 0.18;
+  const amp = env * (0.42 + 0.5 * Math.max(kick, snare) + hats + grain() * 0.08);
+  return 20 * Math.log10(Math.max(0.001, amp)) - 1;
+}
 
 /** Minutes and seconds, as a screen reader says them. */
 const spoken = (s: number) => `${Math.floor(s / 60)}:${pad(Math.floor(s % 60))}`;
@@ -82,9 +142,8 @@ function peaksOf(track: Track): number[] {
       return Math.round(Math.min(1, Math.max(0, ...peaks.slice(from, to))) * 100) / 100;
     });
   }
-  // FNV-1a over the title seeds a small xorshift, so the same track always draws the same waveform, on the server too.
-  let h = 2166136261;
-  for (const ch of track.title) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  // The title seeds a small xorshift, so the same track always draws the same waveform, on the server too.
+  let h = seed(track.title) | 1;
   const next = () => {
     h ^= h << 13;
     h ^= h >>> 17;
@@ -142,6 +201,8 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
   const dragging = useRef<number | null>(null); // the pointer scrubbing the waveform
   const visible = useRef(true);
   const wake = useRef<(() => void) | null>(null); // restarts the frame loop when the strip scrolls back into view
+  const wakeMeters = useRef<(() => void) | null>(null); // and the meters'
+  const meters = useRef({ shown: [FLOOR, FLOOR], peak: [FLOOR, FLOOR], held: [0, 0], at: -1 });
   const touched = useRef(false); // a hand has worked it: it may sound while the host is paused
   // Props the loops and the spring read when they fire, rather than when they were made.
   const props = useRef({ tracks, track, onTrackChange, onPlayingChange, startAt });
@@ -361,11 +422,70 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
     };
   }, [playing, track]);
 
+  // The meters: the music's level at the playhead, with a recorder's ballistics. While playing they read
+  // the track; paused, they fall to rest and the loop stops. The bar under the playhead lifts with the level,
+  // and the playhead's glow swells with it.
+  const sample = useEffectEvent((c: number) => {
+    const { tracks, track } = props.current;
+    return levelAt(position(), duration(), peaksOf(tracks[track]), bpmOf(tracks[track]), c);
+  });
+  useEffect(() => {
+    if (reduced()) return;
+    const root = rootRef.current!;
+    const rows = [...root.querySelectorAll<HTMLElement>("[data-meter]")];
+    const bars = [...barsRef.current!.querySelectorAll<HTMLElement>("[data-bar]")];
+    const m = meters.current;
+    let raf = 0;
+    let last = 0;
+
+    const frame = (t: number) => {
+      raf = 0;
+      const dt = last ? Math.min(0.1, (t - last) / 1000) : 1 / 60;
+      last = t;
+      let resting = !playing;
+      for (let c = 0; c < 2; c++) {
+        m.shown[c] = Math.max(FLOOR, m.shown[c] - FALL * dt);
+        if (playing) m.shown[c] = Math.max(m.shown[c], sample(c));
+        if (m.shown[c] >= m.peak[c]) {
+          m.peak[c] = m.shown[c];
+          m.held[c] = 0;
+        } else if ((m.held[c] += dt) > HOLD) m.peak[c] = Math.max(m.shown[c], m.peak[c] - PEAK_FALL * dt);
+        rows[c].style.setProperty("--l", toScale(m.shown[c]).toFixed(3));
+        rows[c].style.setProperty("--pk", toScale(m.peak[c]).toFixed(3));
+        if (m.peak[c] > FLOOR) resting = false;
+      }
+      root.style.setProperty("--lv", toScale(Math.max(m.shown[0], m.shown[1])).toFixed(3));
+      // The bar the playhead is on: the last one it has reached.
+      const at = playing ? passed(head.current!.value / 1000) - 1 : -1;
+      if (at !== m.at) {
+        if (m.at >= 0) delete bars[m.at].dataset.at;
+        if (at >= 0) bars[at].dataset.at = "";
+        m.at = at;
+      }
+      if (resting || !visible.current) {
+        last = 0;
+        return;
+      }
+      raf = requestAnimationFrame(frame);
+    };
+    wakeMeters.current = () => {
+      if (!raf) raf = requestAnimationFrame(frame);
+    };
+    wakeMeters.current();
+    return () => {
+      cancelAnimationFrame(raf);
+      wakeMeters.current = null;
+    };
+  }, [playing]);
+
   // Off screen, the frame loop rests; the clock keeps time.
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => {
       visible.current = entry.isIntersecting;
-      if (visible.current) wake.current?.();
+      if (visible.current) {
+        wake.current?.();
+        wakeMeters.current?.();
+      }
     });
     observer.observe(rootRef.current!);
     return () => observer.disconnect();
@@ -509,6 +629,16 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
               </span>
             </span>
           </div>
+          {/* The meters, left over right. Drawn: the track a hairline, the lit bar its ticks in ink, the peak mark a line of ink. */}
+          <div className="flex flex-col gap-[0.3em] pt-[0.1em]">
+            {[0, 1].map((c) => (
+              <span key={c} data-meter className="relative h-[0.42em]">
+                <span className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-white/15 drawn:bg-(--device-draw-line)!" />
+                <span className="meter-ticks absolute inset-0 [clip-path:inset(0_calc(100%_-_var(--l,0)_*_100%)_0_0)] drawn:[background:repeating-linear-gradient(90deg,var(--device-draw-ink)_0_1px,transparent_1px_3px)]!" />
+                <span className="absolute -inset-y-[12%] left-[calc(var(--pk,0)_*_100%_-_1px)] w-[2px] rounded-[1px] bg-current drawn:bg-(--device-draw-ink)!" />
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* The waveform, pressed into the plate: a slider over the track. Bars the playhead has passed are lit. */}
@@ -537,7 +667,7 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
                 key={i}
                 aria-hidden
                 data-bar
-                className="w-[1.4%] rounded-full bg-(--device-meter-off) data-played:bg-(--device-meter-on) drawn:bg-(--device-draw-line)! drawn:data-played:bg-(--device-draw-ink)!"
+                className="w-[1.4%] rounded-full bg-(--device-meter-off) data-at:[scale:1_calc(1+var(--lv,0)*0.45)] data-played:bg-(--device-meter-on) drawn:bg-(--device-draw-line)! drawn:data-played:bg-(--device-draw-ink)!"
                 style={{ height: "max(0.2em, calc(var(--h, 0) * 100%))" }}
               />
             ))}
@@ -545,7 +675,7 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
             <span
               aria-hidden
               data-part="light"
-              className="absolute -inset-y-[0.2em] left-(--p,0%) -ml-px w-[2px] rounded-full bg-(--device-rec) shadow-[0_0_0.45em_var(--device-rec)] drawn:bg-(--device-rec)!"
+              className="absolute -inset-y-[0.2em] left-(--p,0%) -ml-px w-[2px] rounded-full bg-(--device-rec) shadow-[0_0_calc(0.3em+var(--lv,0)*0.5em)_var(--device-rec)] drawn:bg-(--device-rec)!"
             />
           </div>
         </div>
