@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
+import { spoolRoll } from "./spool-roll";
 
 /**
  * Lazily-loaded demos, keyed by registry slug. Each demo is its own chunk,
@@ -10,7 +11,8 @@ import type { ComponentType } from "react";
 const loading = () => <div className="size-6 animate-pulse rounded-full bg-line" />;
 
 export const previews: Record<string, ComponentType> = {
-  spool: dynamic(() => import("./components/spool"), { loading }),
+  // Spool plays the photographs in public/spool/ rather than its painted roll.
+  spool: dynamic(() => import("./components/spool").then(({ default: Spool }) => function SpoolPreview() { return <Spool frames={spoolRoll} />; }), { loading }),
   "gradient-keys": dynamic(() => import("./components/gradient-keys"), { loading }),
   "agent-indicators": dynamic(() => import("./components/agent-indicators"), { loading }),
   "agent-status": dynamic(() => import("./components/agent-status"), { loading }),

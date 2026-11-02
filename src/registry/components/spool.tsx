@@ -1118,23 +1118,26 @@ export function SpoolFullscreen({ frames: own = [], aspect = 16 / 9 }: { frames?
   );
 }
 
-export default function Demo() {
-  const [frames, setFrames] = useState<SpoolFrame[]>([]);
+/** The study on its plate. It plays `frames` if it's given any, and the painted roll if not. */
+export default function Demo({ frames: own = [] }: { frames?: readonly SpoolFrame[] }) {
+  const [painted, setPainted] = useState<SpoolFrame[]>([]);
   const [value, setValue] = useState(0);
+  const mine = own.length > 0;
 
   useEffect(() => {
+    if (mine) return;
     let live = true;
-    develop(3 / 4).then((roll) => live && setFrames(roll));
+    develop(3 / 4).then((roll) => live && setPainted(roll));
     return () => {
       live = false;
     };
-  }, []);
+  }, [mine]);
 
   return (
     <div className="@container w-full max-w-[380px] select-none">
       <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
-        <Spool label="Roll 04" frames={frames} value={value} onChange={setValue} rehearse />
+        <Spool label="Roll 04" frames={mine ? own : painted} value={value} onChange={setValue} rehearse />
       </div>
     </div>
   );
