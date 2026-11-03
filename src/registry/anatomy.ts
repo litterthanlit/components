@@ -71,7 +71,7 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
   },
   visualizer: {
     bezel: { note: "Black, with a polished edge, round the display: glass set into the whole plate." },
-    lcd: { name: "Display", note: "A scope in raw WebGL feedback, playing a beat of its own, shown only through round dots lit or not against an ordered dither over ghosts at 8%; a hand backlights the dots under it." },
+    screen: { name: "Display", note: "A scope in raw WebGL feedback, playing a beat of its own, shown only through round dots lit or not against an ordered dither over ghosts at 8%; a hand backlights the dots under it." },
     glass: { note: "The display's sheen and edge, over the dots." },
   },
   "gradient-keys": {

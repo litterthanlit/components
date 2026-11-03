@@ -80,7 +80,9 @@ float scope(vec2 p, float reach) {
 void main() {
   vec2 uv = gl_FragCoord.xy / uRes;
   float aspect = uRes.x / uRes.y;
-  vec2 p = (uv - 0.5) * vec2(aspect, 1.0);
+  // Units of the screen's shorter side, so a scene fits a tall phone's screen as it does a wide one.
+  vec2 span = vec2(aspect, 1.0) / min(aspect, 1.0);
+  vec2 p = (uv - 0.5) * span;
   float r = length(p);
   vec2 q;
   float trace;
@@ -90,7 +92,7 @@ void main() {
     q = turn(0.004 + 0.012 * sin(uTime * 0.21) + 0.05 * uSnare * (r - 0.25)) * p;
     q *= 0.982 - 0.03 * uKick;
     q += 0.0025 * vec2(sin(q.y * 11.0 + uTime * 1.1), cos(q.x * 9.0 - uTime * 1.3));
-    trace = ring(p, 0.2) + scope(p, aspect * 0.42);
+    trace = ring(p, 0.2) + scope(p, span.x * 0.42);
   } else if (uScene < 1.5) {
     // Tunnel: nested hexagons, evenly spaced in log radius so they read as depth, streaming outward as the
     // drive advances. Drawn, not grown from the feedback, which would smear them into a filled hexagon.
@@ -116,7 +118,7 @@ void main() {
     trace += smoothstep(uRes.y * 0.03, 0.0, abs(distance(gl_FragCoord.xy, uRipple.xy) - rad)) * exp(-uRipple.z * 2.2);
   }
 
-  float last = texture2D(uPrev, q / vec2(aspect, 1.0) + 0.5).r;
+  float last = texture2D(uPrev, q / span + 0.5).r;
   // 7% a frame, less a step, so an 8-bit trail fades all the way out instead of sticking at a glow. At 5%
   // the trail filled the screen edge to edge and the shapes were lost in it.
   last = max(0.0, last * 0.93 - 0.008);
@@ -531,12 +533,14 @@ export default function Demo() {
   }
 
   return (
-    <div ref={rootRef} onPointerDownCapture={() => setPaused(false)} className="@container w-full max-w-[480px] select-none">
-      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
+    // On the player the visualizer is the whole screen: it fills the stage's padded box, and the Slab takes away
+    // its plate, its bezel's rim and its glass, so the dots sit straight on the player's own glass.
+    <div ref={rootRef} onPointerDownCapture={() => setPaused(false)} className="@container w-full max-w-[480px] select-none player:absolute player:inset-6 player:w-auto player:max-w-none">
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] player:h-full player:p-0 text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
-        {/* The display: the whole plate, behind a black bezel. A press steps to the next scene. */}
-        <div data-part="bezel" className="rounded-[1.05em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
+        {/* The display: the whole plate, behind a black bezel; on the player, the whole screen. A press steps to the next scene. */}
+        <div data-part="bezel" className="rounded-[1.05em] bg-(--device-rim) p-[0.3em] player:h-full player:p-0 shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
           <button
             type="button"
             aria-label={`Visualizer, ${NAMES[ORDER[at]]}. Change scene`}
@@ -545,8 +549,9 @@ export default function Demo() {
             onKeyUp={(e) => checkFocus(e.currentTarget)}
             onBlur={() => setFocused(false)}
             onClick={next}
-            data-part="lcd"
-            className="relative block aspect-[4/3] w-full cursor-pointer rounded-[0.75em] text-(--device-lcd-ink) outline-offset-2 [background:var(--device-lcd)] [-webkit-touch-callout:none]"
+            data-part="screen"
+            // On the player the dots take the page's ink, as the Slab's readout does, so they read on its pale glass.
+            className="relative block aspect-[4/3] w-full cursor-pointer rounded-[0.75em] text-(--device-lcd-ink) outline-offset-2 [background:var(--device-lcd)] [-webkit-touch-callout:none] player:aspect-auto player:h-full player:text-ink"
           >
             <span className="absolute inset-0 overflow-hidden rounded-[inherit]">
               <Visualizer scene={ORDER[at]} active={focused} paused={paused} />
