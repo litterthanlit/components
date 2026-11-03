@@ -49,6 +49,7 @@ function demo(load: () => Promise<Module>): Demo {
 }
 
 export const previews: Record<string, Demo> = {
+  visualizer: demo(() => import("./components/visualizer")),
   "file-browser": demo(() => import("./components/file-browser")),
   // Spool plays the photographs in public/spool/ rather than its painted roll.
   spool: demo(() =>
@@ -73,7 +74,6 @@ export const previews: Record<string, Demo> = {
   "agent-shapes": demo(() => import("./components/agent-shapes")),
   "agent-run": demo(() => import("./components/agent-run")),
   "agent-loaders": demo(() => import("./components/agent-loaders")),
-  "dither-card": demo(() => import("./components/dither-card")),
   "spotlight-card": demo(() => import("./components/spotlight-card")),
   "toast-stack": demo(() => import("./components/toast-stack")),
   "hold-to-confirm": demo(() => import("./components/hold-to-confirm")),

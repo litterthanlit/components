@@ -69,9 +69,10 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     window: { note: "Smoked glass for the tuner's needle and the reels that write to tape." },
     well: { name: "Wells", note: "Pressed into the plate: one for the indicator in use, one under each of the six, and a recess for every step light." },
   },
-  "dither-card": {
-    key: { note: "A key with a screen in its face: only the face sinks, so the hit area never moves under the finger." },
-    lcd: { name: "Screens", note: "Raw WebGL at half resolution in three-tone ordered dither, scaled up pixel for pixel; a hand lights the screen under it." },
+  visualizer: {
+    bezel: { note: "Black, with a polished edge, round the display: glass set into the whole plate." },
+    screen: { name: "Display", note: "A scope in raw WebGL feedback, playing a beat of its own, shown only through round dots lit or not against an ordered dither over ghosts at 8%; a hand backlights the dots under it." },
+    glass: { note: "The display's sheen and edge, over the dots." },
   },
   "gradient-keys": {
     screen: { note: "Long exposures in traditional Japanese palettes: noise sweeping across as it flows along. The work, so it keeps its own colours in both themes." },
