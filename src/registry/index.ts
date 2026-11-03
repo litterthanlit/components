@@ -26,8 +26,8 @@ export const registry: RegistryEntry[] = [
     slug: "now-playing",
     title: "Now Playing",
     description:
-      "A music player after a hi-fi deck's display: a spectrum analyser on a dot matrix, 32 columns in the LCD's ink with a meter's ballistics and peak dots that hold, over a slim waveform that scrubs the track. With real audio, an analyser on the audio graph fills the columns; otherwise the track's own beat does. Eject loads files from this device, and their real waveform becomes the scrubber.",
-    tagline: "A hi-fi deck's spectrum display, on the player's glass.",
+      "A music player whose display is a scope on a dot matrix. Raw WebGL feedback draws four scenes, a press on the display stepping through them: Halo, Tunnel, Spectrum and Prism. The light is shown only through dots in the LCD's ink, each lit or not against an ordered dither, so trails thin out rather than grey. With real audio, an analyser drives it; Eject loads files from this device, and a slim waveform scrubs the track.",
+    tagline: "Visualizers through a dot matrix, on the player's glass.",
     tags: ["sound", "media", "pointer", "a11y"],
     date: "2026-11-02",
     status: "new",

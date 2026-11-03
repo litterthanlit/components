@@ -79,9 +79,9 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
   "now-playing": {
     well: { name: "Waveform", note: "The track's forty bars pressed into the plate as a slim scrubber: lit once the playhead has passed them, re-forming on their own springs when the queue moves on." },
     light: { tokens: ["--device-rec"], note: "The playhead, red as the tape's: one spring in permille of the track draws it, the passed bars and the clock together." },
-    lcd: { note: "The track, its artist and a clock in minutes, seconds and frames, written by the playhead's spring rather than by React." },
-    bezel: { note: "Black, with a polished edge, round the display: a strip of glass set into the plate." },
-    matrix: { name: "Spectrum", note: "Thirty-two columns of twelve dots, spaced by ratio from 30 Hz to 16 kHz: they rise at once, fall at 26 dB a second, and a peak dot holds 900 ms." },
+    lcd: { name: "LCDs", note: "The display, where the scope shows through the matrix, and the small LCD with the track, its artist and a clock the playhead's spring writes." },
+    bezel: { note: "Black, with a polished edge, round the display: glass set into the plate." },
+    matrix: { name: "Scope", note: "WebGL feedback in four scenes, a press stepping through them, shown only through dots every 3 CSS px: each lit or not against a 4 × 4 ordered dither, in the LCD's ink over ghosts at 8%." },
     glass: { note: "The display's sheen, over the dots." },
   },
   "copy-button": {
