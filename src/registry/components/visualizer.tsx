@@ -159,10 +159,10 @@ void main() {
 /* --- Helpers -------------------------------------------------------------- */
 
 const SCENES = { halo: 0, tunnel: 1, prism: 2 } as const;
-export type DitherScene = keyof typeof SCENES;
+export type VisualizerScene = keyof typeof SCENES;
 
 /** Each scene's own tempo, so a change of scene is a change of groove. */
-const BPM: Record<DitherScene, number> = { halo: 104, tunnel: 122, prism: 92 };
+const BPM: Record<VisualizerScene, number> = { halo: 104, tunnel: 122, prism: 92 };
 const WARM = 90; // frames of music run at mount, so a screen opens on a trail rather than a blank
 
 /**
@@ -207,10 +207,10 @@ function compile(gl: WebGLRenderingContext, type: number, source: string) {
   return shader;
 }
 
-/* --- DitherField ---------------------------------------------------------- */
+/* --- Visualizer ----------------------------------------------------------- */
 
-type DitherFieldProps = {
-  scene?: DitherScene;
+type VisualizerProps = {
+  scene?: VisualizerScene;
   /** CSS px between the matrix's dots. */
   pitch?: number;
   /** Light the field from its centre without a hand on it: keyboard focus, a selection. Turning it on sends a ring. */
@@ -226,7 +226,7 @@ type DitherFieldProps = {
  * `color` on a clear ground: set the ink with a text colour, and whatever is behind it is the ground. It only
  * animates while on screen, holds a still under reduced motion, and follows theme changes.
  */
-export function DitherField({ scene = "halo", pitch = 3, active = false, paused = false, className = "" }: DitherFieldProps) {
+export function Visualizer({ scene = "halo", pitch = 3, active = false, paused = false, className = "" }: VisualizerProps) {
   const hostRef = useRef<HTMLSpanElement>(null);
   // Bridges from React props into the render loop, so a change never restarts it.
   const activeRef = useRef(active);
@@ -494,8 +494,8 @@ export function DitherField({ scene = "halo", pitch = 3, active = false, paused 
 
 /* --- Demo: the visualizer, filling the plate ------------------------------ */
 
-const ORDER: DitherScene[] = ["halo", "tunnel", "prism"];
-const NAMES: Record<DitherScene, string> = { halo: "Halo", tunnel: "Tunnel", prism: "Prism" };
+const ORDER: VisualizerScene[] = ["halo", "tunnel", "prism"];
+const NAMES: Record<VisualizerScene, string> = { halo: "Halo", tunnel: "Tunnel", prism: "Prism" };
 
 export default function Demo() {
   const [at, setAt] = useState(0);
@@ -549,7 +549,7 @@ export default function Demo() {
             className="relative block aspect-[4/3] w-full cursor-pointer rounded-[0.75em] text-(--device-lcd-ink) outline-offset-2 [background:var(--device-lcd)] [-webkit-touch-callout:none]"
           >
             <span className="absolute inset-0 overflow-hidden rounded-[inherit]">
-              <DitherField scene={ORDER[at]} active={focused} paused={paused} />
+              <Visualizer scene={ORDER[at]} active={focused} paused={paused} />
             </span>
             {/* The glass: its sheen and its edge, over the dots. */}
             <span aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
