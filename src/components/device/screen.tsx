@@ -43,13 +43,21 @@ export function appZoom({ w, h }: { w: number; h: number }) {
  * A running study, filling the screen at a zoom that fits it. It carries the
  * transport as `data-transport`, so a study that makes sound can tell whether
  * the tape is playing (see `hostTransport` in lib/sound).
+ *
+ * The screen is measured here, outside the take, so a new take (or a
+ * replay) mounts at the right zoom on its first frame; measured inside it,
+ * every take spent a frame blank waiting for its ResizeObserver.
  */
-export function AppStage({ study, from, transport }: { study: Study; from: number; transport: Transport }) {
+export function AppStage({ study, replay, from, transport }: { study: Study; replay: number; from: number; transport: Transport }) {
   const box = useRef<HTMLDivElement>(null);
   const size = useBoxSize(box);
   return (
-    <div ref={box} data-app data-transport={transport} className="take-in absolute inset-0" style={{ "--from": from } as CSSProperties}>
-      {size && <Preview slug={study.slug} background={study.background} zoom={appZoom(size)} className="h-full" />}
+    <div ref={box} data-app data-transport={transport} className="absolute inset-0">
+      {size && (
+        <div key={`${study.slug}:${replay}`} className="take-in absolute inset-0" style={{ "--from": from } as CSSProperties}>
+          <Preview slug={study.slug} background={study.background} zoom={appZoom(size)} className="h-full" />
+        </div>
+      )}
     </div>
   );
 }

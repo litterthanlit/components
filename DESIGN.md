@@ -305,7 +305,7 @@ On the page, objects get a ring, not a box: `shadow-sm`, `shadow-md` and `shadow
 - Exits are quicker than entrances; hover in at enter speed and out at exit speed, so the interface never lags the pointer.
 - A hardware key goes down in 75ms. A flat control takes `active:scale-[0.97]`. Never animate from `scale(0)`: start at 0.95 or more, with opacity.
 - Motors that move one after another wait longer than a stagger: 120ms between a desk's knobs, 0.12s between faders joining playback, 45ms between counter drums.
-- The player: a take comes in from the side it was dialled from (`take-in`, 320ms, 2.5% and a 6px blur); a dialled study opens once the hand rests for 450ms; the HUD fades 1.1s after the last change.
+- The player: a take comes in from the side it was dialled from (`take-in`, 210ms, 2% from half lit, no blur); the dial runs round from the last study to the first; a dialled study opens at once and, while the dial keeps turning, every 90ms, quiet until the dial has rested 300ms; every study's code is fetched ahead, the neighbours first, so a take opens on its first frame; the HUD fades 1.1s after the last change.
 - Reduced motion: transitions collapse to instant, motors `jump()` instead of travelling, rehearsals and ghosts never start, loops stop, autoplay media shows a still.
 
 ### Springs

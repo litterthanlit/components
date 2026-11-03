@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "file-browser",
+    title: "File Browser",
+    description:
+      "A folder of takes on the player's screen, with Quick Look. Space slides a preview in from the right, and the selected take plays: a red playhead crosses its waveform and the readout counts the time. One spring drives the accent bar and a column of previews inside the pane, so as the bar glides down a row the next take rises into view at the same speed. A listbox with one tab stop.",
+    tagline: "A file list with Quick Look that rides the selection.",
+    tags: ["input", "motion", "a11y", "sound"],
+    date: "2026-11-01",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "spool",
     title: "Spool",
     description:
@@ -260,16 +271,6 @@ export const registry: RegistryEntry[] = [
     tags: ["input", "motion", "a11y"],
     date: "2026-09-10",
     background: "grid",
-  },
-  {
-    slug: "magnetic-button",
-    title: "Magnetic Button",
-    description:
-      "A button that leans toward the cursor while its label travels a little further, giving a sense of depth. Springs back with pure CSS.",
-    tagline: "A button with a little gravity.",
-    tags: ["button", "pointer", "motion"],
-    date: "2026-09-05",
-    background: "glow",
   },
   {
     slug: "copy-button",

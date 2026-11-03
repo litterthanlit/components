@@ -1,39 +1,83 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import type { ComponentType } from "react";
+import { Suspense, lazy, useState, type ComponentType } from "react";
 import { spoolRoll } from "./spool-roll";
 
 /**
  * Lazily-loaded demos, keyed by registry slug. Each demo is its own chunk,
- * so the home page only pays for what scrolls into view.
+ * so a page only pays for what it shows.
+ *
+ * Each one is `next/dynamic` stripped down to what the player needs: a
+ * chunk that has come in renders on its first frame, with no Suspense
+ * fallback in between. React.lazy alone suspends on the first render of
+ * every new instance even when the module is already loaded, and the
+ * player mounts a new instance on every step of the dial, so each step
+ * flashed the loading dot before the study. `preload` fetches a chunk
+ * ahead of time; the player warms the neighbours of the take on screen,
+ * then every study once the page is idle.
  */
-const loading = () => <div className="size-6 animate-pulse rounded-full bg-line" />;
+type Module = { default: ComponentType };
+export type Demo = ComponentType & { preload: () => Promise<unknown> };
 
-export const previews: Record<string, ComponentType> = {
+const loading = <div className="size-6 animate-pulse rounded-full bg-line" />;
+
+function demo(load: () => Promise<Module>): Demo {
+  let ready: ComponentType | undefined;
+  let pending: Promise<Module> | undefined;
+  const preload = () =>
+    (pending ??= load().then(
+      (mod) => {
+        ready = mod.default;
+        return mod;
+      },
+      (error: unknown) => {
+        pending = undefined; // a dropped connection shouldn't break the study for good
+        throw error;
+      },
+    ));
+  const Lazy = lazy(preload);
+  function Loaded() {
+    // Chosen once per mount: swapping Lazy for the module mid-life would remount the study.
+    const [Component] = useState<ComponentType>(() => ready ?? Lazy);
+    return (
+      <Suspense fallback={loading}>
+        <Component />
+      </Suspense>
+    );
+  }
+  return Object.assign(Loaded, { preload });
+}
+
+export const previews: Record<string, Demo> = {
+  "file-browser": demo(() => import("./components/file-browser")),
   // Spool plays the photographs in public/spool/ rather than its painted roll.
-  spool: dynamic(() => import("./components/spool").then(({ default: Spool }) => function SpoolPreview() { return <Spool frames={spoolRoll} />; }), { loading }),
-  "gradient-keys": dynamic(() => import("./components/gradient-keys"), { loading }),
-  "agent-indicators": dynamic(() => import("./components/agent-indicators"), { loading }),
-  "agent-status": dynamic(() => import("./components/agent-status"), { loading }),
-  "command-menu": dynamic(() => import("./components/command-menu"), { loading }),
-  fader: dynamic(() => import("./components/fader"), { loading }),
-  switch: dynamic(() => import("./components/switch"), { loading }),
-  "one-time-code": dynamic(() => import("./components/one-time-code"), { loading }),
-  ticker: dynamic(() => import("./components/ticker"), { loading }),
-  "step-sequencer": dynamic(() => import("./components/step-sequencer"), { loading }),
-  knob: dynamic(() => import("./components/knob"), { loading }),
-  "tape-reels": dynamic(() => import("./components/tape-reels"), { loading }),
-  "vu-meter": dynamic(() => import("./components/vu-meter"), { loading }),
-  "agent-shapes": dynamic(() => import("./components/agent-shapes"), { loading }),
-  "agent-run": dynamic(() => import("./components/agent-run"), { loading }),
-  "agent-loaders": dynamic(() => import("./components/agent-loaders"), { loading }),
-  "dither-card": dynamic(() => import("./components/dither-card"), { loading }),
-  "spotlight-card": dynamic(() => import("./components/spotlight-card"), { loading }),
-  "toast-stack": dynamic(() => import("./components/toast-stack"), { loading }),
-  "hold-to-confirm": dynamic(() => import("./components/hold-to-confirm"), { loading }),
-  "number-ticker": dynamic(() => import("./components/number-ticker"), { loading }),
-  "segmented-control": dynamic(() => import("./components/segmented-control"), { loading }),
-  "magnetic-button": dynamic(() => import("./components/magnetic-button"), { loading }),
-  "copy-button": dynamic(() => import("./components/copy-button"), { loading }),
+  spool: demo(() =>
+    import("./components/spool").then(({ default: Spool }) => ({
+      default: function SpoolPreview() {
+        return <Spool frames={spoolRoll} />;
+      },
+    })),
+  ),
+  "gradient-keys": demo(() => import("./components/gradient-keys")),
+  "agent-indicators": demo(() => import("./components/agent-indicators")),
+  "agent-status": demo(() => import("./components/agent-status")),
+  "command-menu": demo(() => import("./components/command-menu")),
+  fader: demo(() => import("./components/fader")),
+  switch: demo(() => import("./components/switch")),
+  "one-time-code": demo(() => import("./components/one-time-code")),
+  ticker: demo(() => import("./components/ticker")),
+  "step-sequencer": demo(() => import("./components/step-sequencer")),
+  knob: demo(() => import("./components/knob")),
+  "tape-reels": demo(() => import("./components/tape-reels")),
+  "vu-meter": demo(() => import("./components/vu-meter")),
+  "agent-shapes": demo(() => import("./components/agent-shapes")),
+  "agent-run": demo(() => import("./components/agent-run")),
+  "agent-loaders": demo(() => import("./components/agent-loaders")),
+  "dither-card": demo(() => import("./components/dither-card")),
+  "spotlight-card": demo(() => import("./components/spotlight-card")),
+  "toast-stack": demo(() => import("./components/toast-stack")),
+  "hold-to-confirm": demo(() => import("./components/hold-to-confirm")),
+  "number-ticker": demo(() => import("./components/number-ticker")),
+  "segmented-control": demo(() => import("./components/segmented-control")),
+  "copy-button": demo(() => import("./components/copy-button")),
 };

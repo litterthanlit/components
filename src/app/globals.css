@@ -63,16 +63,19 @@ h3 {
   mix-blend-mode: soft-light;
   opacity: var(--device-grain);
 }
-/* A take coming onto the screen: in from the side it was dialled from. */
+/* A take coming onto the screen: in from the side it was dialled from. It
+   starts half lit, so a dial spun through several takes a second shows each
+   one rather than a blank screen, and without a blur: a filter over the whole
+   screen (WebGL and canvas studies among it) cost frames and hid the study
+   for most of the entrance. */
 @keyframes take-in {
   from {
-    opacity: 0;
-    transform: translateX(calc(var(--from, 1) * 2.5%));
-    filter: blur(6px);
+    opacity: 0.5;
+    transform: translateX(calc(var(--from, 1) * 2%));
   }
 }
 .take-in {
-  animation: take-in 320ms var(--ease-out) both;
+  animation: take-in var(--duration-enter) var(--ease-out) both;
 }
 /* Level meter segments: thin bars, as printed on the reference's LCD panel. */
 .meter-ticks {
