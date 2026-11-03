@@ -7,14 +7,18 @@ import { hostTransport, play } from "@/lib/sound";
 /*
  * Project links as keys with a screen in each face, after a launcher's LCD
  * keys. Each screen runs a creature (a butterfly that flaps, a jellyfish that
- * pulses, a flower that turns) in three-tone ordered dither: a Bayer 8×8
- * threshold resolves every cell to the glass, a mid tone or the ink, which
- * doubles the steps a two-tone dither can show.
+ * pulses, a flower that turns) on a dot matrix: a round dot every 3 CSS px,
+ * each lit or not against a Bayer 8×8 threshold, so shades are drawn by how
+ * many dots are lit, and unlit dots stay as ghosts at 8%, so the grid itself
+ * always shows, as it does on Now Playing's display.
  *
- * The field is raw WebGL drawn a cell per 2 CSS px and scaled up pixel for
- * pixel, so a screen costs a few thousand fragments a frame. It draws in the
- * LCD's ink on a clear ground, so the glass behind it shows through, and it
- * stays monochrome like every light on the body. A hand lights the screen
+ * It is raw WebGL in two passes. The field (the creature, the light under
+ * the hand and the ring from a press) is drawn once per dot into a small
+ * texture, so a screen still costs a few thousand of its expensive
+ * fragments a frame; a cheap second pass draws each dot round at the
+ * screen's own resolution. It draws in the LCD's ink on a clear ground, so
+ * the glass behind it shows through, and it stays monochrome like every
+ * light on the body. A hand lights the screen
  * under it and quickens the creature about fourfold, a press sinks the key
  * 2px with a click and sends a ring through the dots, and keyboard focus
  * lights it from the centre with a ring of its own. The loop writes uniforms,
@@ -29,7 +33,8 @@ attribute vec2 aPos;
 void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
 `;
 
-const FRAGMENT = `
+/** The field, one fragment per dot: red is whether the dot is lit, green the light and the ring over it. */
+const FIELD = `
 #ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
 #else
@@ -42,7 +47,6 @@ uniform vec2 uMouse;
 uniform float uHover;
 uniform vec3 uRipple;   // xy = origin (px), z = age in seconds (<0: none)
 uniform float uPattern;
-uniform vec3 uInk;
 
 float bayer2(vec2 a) { a = floor(a); return fract(dot(a, vec2(0.5, a.y * 0.75))); }
 float bayer4(vec2 a) { return bayer2(0.5 * a) * 0.25 + bayer2(a); }
@@ -166,15 +170,32 @@ void main() {
     ring = smoothstep(uRes.y * 0.03, 0.0, rd) * exp(-uRipple.z * 2.2);
   }
 
-  float threshold = bayer8(px);
-  float level = clamp(v + light * 0.55 + ring, 0.0, 1.0);
-  // Three tones: 0 glass, 1 mid, 2 ink.
-  float scaled = level * 2.0;
-  float tone = min(2.0, floor(scaled) + step(threshold, fract(scaled)));
-  // The ink is solid; the mid tone is a tint of it that the light brightens, so a solid run of it
-  // still reads as a tint; and the light backs the glass faintly, as a lamp behind an LCD would.
-  float alpha = tone > 1.5 ? 1.0 : tone > 0.5 ? mix(0.3, 0.55, max(light, ring)) : light * 0.07;
-  gl_FragColor = vec4(uInk * alpha, alpha); // premultiplied
+  // The light lifts the field only a little, so the creature keeps its shape under it; most of the
+  // light goes to the ghosts, as a backlight would.
+  float level = clamp(v + light * 0.18 + ring, 0.0, 1.0);
+  float lit = step(bayer8(px) + 0.02, level);
+  gl_FragColor = vec4(lit, max(light, ring), 0.0, 1.0);
+}
+`;
+
+/**
+ * The dots: each a round dot at its cell's centre, its edge softened over a device pixel. Lit dots are the
+ * ink; unlit ones are ghosts at 8%, a little brighter under the light, as a lamp behind an LCD would make them.
+ */
+const DOTS = `
+precision mediump float;
+uniform sampler2D uField;
+uniform vec2 uCells;  // the field's size, in dots
+uniform float uPitch; // device px between dots
+uniform vec3 uInk;
+
+void main() {
+  vec2 cell = floor(gl_FragCoord.xy / uPitch);
+  vec4 f = texture2D(uField, (cell + 0.5) / uCells);
+  float d = length(gl_FragCoord.xy - (cell + 0.5) * uPitch);
+  float disc = clamp(uPitch * 0.36 + 0.5 - d, 0.0, 1.0);
+  float a = disc * (f.r > 0.5 ? 1.0 : 0.08 + 0.22 * f.g);
+  gl_FragColor = vec4(uInk * a, a); // premultiplied
 }
 `;
 
@@ -225,8 +246,8 @@ function compile(gl: WebGLRenderingContext, type: number, source: string) {
 
 type DitherFieldProps = {
   pattern?: DitherPattern;
-  /** Size of one dither cell in CSS px. */
-  pixel?: number;
+  /** CSS px between the matrix's dots. */
+  pitch?: number;
   /** Light the field from its centre without a hand on it: keyboard focus, a selection, a demo's ghost. Turning it on sends a ring. */
   active?: boolean;
   /** Hold the creature still. The light and a ring still play out. */
@@ -235,14 +256,15 @@ type DitherFieldProps = {
 };
 
 /**
- * A dither field on a canvas drawn at 1/`pixel` resolution and scaled up with
- * `image-rendering: pixelated`, so even a large screen costs only tens of
- * thousands of fragments a frame. Raw WebGL, no library. It draws in its CSS
+ * A dither field on a dot matrix: the field drawn once per dot, then each dot
+ * drawn round at the canvas's own resolution (up to 1.5× on dense displays),
+ * so even a large screen costs only tens of thousands of the field's
+ * fragments a frame. Raw WebGL, no library. It draws in its CSS
  * `color` on a clear ground: set the ink with a text colour, and whatever is
  * behind it is the ground. It only animates while on screen, holds still
  * under reduced motion, and follows theme changes.
  */
-export function DitherField({ pattern = "butterfly", pixel = 2, active = false, paused = false, className = "" }: DitherFieldProps) {
+export function DitherField({ pattern = "butterfly", pitch = 3, active = false, paused = false, className = "" }: DitherFieldProps) {
   const hostRef = useRef<HTMLSpanElement>(null);
   // Bridges from React props into the render loop, so a change never restarts it.
   const activeRef = useRef(active);
@@ -268,28 +290,44 @@ export function DitherField({ pattern = "butterfly", pixel = 2, active = false, 
     // Drawn, the dots keep the LCD's light ink whichever finish the study is in (so switching finish
     // never leaves them the drawing's dark ink on dark glass), and the canvas flips them to dark ink on
     // the light ground; in dark they stay light. A touch more than the generic half opacity, as they are the screen's content.
-    canvas.className = "block size-full [image-rendering:pixelated] drawn:text-(--device-lcd-ink)! drawn:opacity-70! drawn:invert! drawn:dark:invert-0!";
+    canvas.className = "block size-full drawn:text-(--device-lcd-ink)! drawn:opacity-70! drawn:invert! drawn:dark:invert-0!";
     host.append(canvas);
     const context = canvas.getContext("webgl", { antialias: false, alpha: true, premultipliedAlpha: true, preserveDrawingBuffer: true });
     if (!context) return () => canvas.remove(); // Whatever is behind shows through as a quiet fallback.
     const gl = context;
 
-    const program = gl.createProgram()!;
-    gl.attachShader(program, compile(gl, gl.VERTEX_SHADER, VERTEX));
-    gl.attachShader(program, compile(gl, gl.FRAGMENT_SHADER, FRAGMENT));
-    gl.linkProgram(program);
-    gl.useProgram(program);
+    function link(fragment: string) {
+      const program = gl.createProgram()!;
+      gl.attachShader(program, compile(gl, gl.VERTEX_SHADER, VERTEX));
+      gl.attachShader(program, compile(gl, gl.FRAGMENT_SHADER, fragment));
+      gl.bindAttribLocation(program, 0, "aPos");
+      gl.linkProgram(program);
+      return program;
+    }
+    const fieldProgram = link(FIELD);
+    const dotsProgram = link(DOTS);
 
     const buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-    const aPos = gl.getAttribLocation(program, "aPos");
-    gl.enableVertexAttribArray(aPos);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-    const u = (name: string) => gl.getUniformLocation(program, name);
-    const uRes = u("uRes"), uTime = u("uTime"), uMouse = u("uMouse"), uHover = u("uHover");
-    const uRipple = u("uRipple"), uPattern = u("uPattern"), uInk = u("uInk");
+    const f = (name: string) => gl.getUniformLocation(fieldProgram, name);
+    const uRes = f("uRes"), uTime = f("uTime"), uMouse = f("uMouse"), uHover = f("uHover"), uRipple = f("uRipple"), uPattern = f("uPattern");
+    const d = (name: string) => gl.getUniformLocation(dotsProgram, name);
+    const uField = d("uField"), uCells = d("uCells"), uPitch = d("uPitch"), uInk = d("uInk");
+
+    // The field's texture, one texel per dot, read back exactly.
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const target = gl.createFramebuffer();
+    const cells = [1, 1];
+    let density = 1;
 
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
     const state = {
@@ -302,24 +340,51 @@ export function DitherField({ pattern = "butterfly", pixel = 2, active = false, 
       raf: 0,
       last: 0,
     };
-    const centre = (): [number, number] => [canvas.width / 2, canvas.height / 2];
+    // The field's coordinates are dots: the hand, the ring and the centre are all measured in them.
+    const centre = (): [number, number] => [cells[0] / 2, cells[1] / 2];
 
-    const setInk = () => gl.uniform3fv(uInk, readColor(canvas, "color", [0.96, 0.96, 0.96]));
+    const setInk = () => {
+      gl.useProgram(dotsProgram);
+      gl.uniform3fv(uInk, readColor(canvas, "color", [0.96, 0.96, 0.96]));
+    };
 
     function resize() {
       const rect = canvas.getBoundingClientRect();
-      canvas.width = Math.max(1, Math.round(rect.width / pixel));
-      canvas.height = Math.max(1, Math.round(rect.height / pixel));
-      gl.viewport(0, 0, canvas.width, canvas.height);
-      gl.uniform2f(uRes, canvas.width, canvas.height);
+      density = Math.min(devicePixelRatio, 1.5);
+      canvas.width = Math.max(1, Math.round(rect.width * density));
+      canvas.height = Math.max(1, Math.round(rect.height * density));
+      const step = pitch * density;
+      cells[0] = Math.ceil(canvas.width / step);
+      cells[1] = Math.ceil(canvas.height / step);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, cells[0], cells[1], 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, target);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+      gl.useProgram(fieldProgram);
+      gl.uniform2f(uRes, cells[0], cells[1]);
+      gl.useProgram(dotsProgram);
+      gl.uniform2f(uCells, cells[0], cells[1]);
+      gl.uniform1f(uPitch, step);
+      gl.uniform1i(uField, 0);
       if (!state.hoverTarget) state.mouse = centre();
     }
 
     function draw() {
+      // The field, once per dot, into the texture.
+      gl.useProgram(fieldProgram);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, target);
+      gl.viewport(0, 0, cells[0], cells[1]);
       gl.uniform1f(uTime, state.time);
       gl.uniform2fv(uMouse, state.mouse);
       gl.uniform1f(uHover, state.hover);
       gl.uniform3fv(uRipple, state.ripple);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      // The dots, round, at the canvas's resolution.
+      gl.useProgram(dotsProgram);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
 
@@ -361,8 +426,8 @@ export function DitherField({ pattern = "butterfly", pixel = 2, active = false, 
     function toLocal(event: PointerEvent): [number, number] {
       const rect = canvas.getBoundingClientRect();
       return [
-        ((event.clientX - rect.left) / rect.width) * canvas.width,
-        (1 - (event.clientY - rect.top) / rect.height) * canvas.height,
+        ((event.clientX - rect.left) / rect.width) * cells[0],
+        (1 - (event.clientY - rect.top) / rect.height) * cells[1],
       ];
     }
 
@@ -407,6 +472,7 @@ export function DitherField({ pattern = "butterfly", pixel = 2, active = false, 
       start();
     };
 
+    gl.useProgram(fieldProgram);
     gl.uniform1f(uPattern, PATTERNS[pattern]);
     setInk();
     resize();
@@ -425,7 +491,7 @@ export function DitherField({ pattern = "butterfly", pixel = 2, active = false, 
       gl.getExtension("WEBGL_lose_context")?.loseContext();
       canvas.remove();
     };
-  }, [pattern, pixel]);
+  }, [pattern, pitch]);
 
   return <span ref={hostRef} aria-hidden className={`block size-full ${className}`} />;
 }

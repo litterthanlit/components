@@ -202,8 +202,8 @@ export const registry: RegistryEntry[] = [
     slug: "dither-card",
     title: "Dither Card",
     description:
-      "Project links as keys with a screen in each face, after a launcher's LCD keys. Each screen runs a creature in three-tone ordered dither: a butterfly that flaps, a jellyfish that pulses, a flower that turns. A hand lights the screen under it and quickens it; a press sinks the key 2px with a click and sends a ring through the dots; keyboard focus lights it from the centre. Raw WebGL at half resolution, scaled up pixel for pixel.",
-    tagline: "Project keys with a dithered creature on every screen.",
+      "Project links as keys with a screen in each face, after a launcher's LCD keys. Each screen runs a creature on a dot matrix: a butterfly that flaps, a jellyfish that pulses, a flower that turns, in round dots of the LCD's ink, each lit or not against an ordered dither, over a grid of ghosts. A hand backlights the screen under it and quickens it; a press sinks the key 2px with a click and sends a ring through the dots. Raw WebGL in two passes: the field once per dot, then the dots.",
+    tagline: "Project keys with a creature in dots on every screen.",
     tags: ["surface", "pointer", "sound", "webgl"],
     date: "2026-10-02",
     status: "new",
