@@ -1,28 +1,25 @@
 "use client";
 
-import { useEffect, useEffectEvent, useId, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { focusQuietly } from "@/design-system";
 import { hostTransport, play } from "@/lib/sound";
 
 /*
- * Project links as keys with a screen in each face, after a launcher's LCD
- * keys. Each screen runs one of Now Playing's scopes (Halo, a ring and a line
- * pumping with the beat; Tunnel, hexagons streaming outward; Prism, the trace
- * folded six ways) on its dot matrix: a round dot every 3 CSS px, each lit
- * or not against a 4 × 4 ordered dither, over ghosts at 8%, so the grid
- * itself always shows.
+ * A visualizer on a dot matrix, filling the plate behind a black bezel: a
+ * round dot every 3 CSS px in the LCD's ink, each lit or not against a 4 × 4
+ * ordered dither, over ghosts at 8%, so the grid itself always shows.
  *
- * Each scope is raw WebGL feedback: every frame warps and fades the last
- * under a fresh trace, and the dots show the trail. There is no audio, so
- * each screen plays a beat of its own, a kick, a snare on two and four and
- * hats, at its own tempo (104, 122 and 92 BPM), so three screens side by
- * side never pulse together. It draws in the LCD's ink on a clear ground,
- * so the glass behind it shows through, and it stays monochrome like every
- * light on the body. A hand backlights the screen under it and quickens its
- * beat, a press sinks the key 2px with a click and sends a ring through the
- * trail, and keyboard focus lights it from the centre with a ring of its
- * own. The loop writes uniforms, never React state, runs only while a screen
- * is on the page, and holds a still under reduced motion.
+ * Behind the dots is a scope in raw WebGL feedback: every frame warps and
+ * fades the last under a fresh trace, and the dots show the trail. It plays
+ * a beat of its own (a kick on every beat, a snare on two and four, hats on
+ * the eighths, under a slow swell), and each scene has its own tempo: Halo,
+ * a ring and a line pumping with the beat, at 104 BPM; Tunnel, hexagons
+ * streaming outward, at 122; Prism, the trace folded six ways, at 92. A
+ * press steps to the next scene and sends a ring through the trail, which
+ * dissolves into the new scene rather than cutting to it. A hand backlights
+ * the dots under it and quickens the beat; keyboard focus lights it from the
+ * centre. The loop writes uniforms, never React state, runs only while the
+ * screen is on the page, and holds a still under reduced motion.
  */
 
 /* --- Shaders -------------------------------------------------------------- */
@@ -120,8 +117,8 @@ void main() {
   }
 
   float last = texture2D(uPrev, q / vec2(aspect, 1.0) + 0.5).r;
-  // 7% a frame, less a step, so an 8-bit trail fades all the way out instead of sticking at a glow. Faster
-  // than Now Playing's 5%: on a small square screen a longer trail fills it edge to edge.
+  // 7% a frame, less a step, so an 8-bit trail fades all the way out instead of sticking at a glow. At 5%
+  // the trail filled the screen edge to edge and the shapes were lost in it.
   last = max(0.0, last * 0.93 - 0.008);
   gl_FragColor = vec4(min(1.0, last + trace), 0.0, 0.0, 1.0);
 }
@@ -164,7 +161,7 @@ void main() {
 const SCENES = { halo: 0, tunnel: 1, prism: 2 } as const;
 export type DitherScene = keyof typeof SCENES;
 
-/** Each scene's own tempo, so three screens side by side never pulse together. */
+/** Each scene's own tempo, so a change of scene is a change of groove. */
 const BPM: Record<DitherScene, number> = { halo: 104, tunnel: 122, prism: 92 };
 const WARM = 90; // frames of music run at mount, so a screen opens on a trail rather than a blank
 
@@ -216,7 +213,7 @@ type DitherFieldProps = {
   scene?: DitherScene;
   /** CSS px between the matrix's dots. */
   pitch?: number;
-  /** Light the field from its centre without a hand on it: keyboard focus, a selection, a demo's ghost. Turning it on sends a ring. */
+  /** Light the field from its centre without a hand on it: keyboard focus, a selection. Turning it on sends a ring. */
   active?: boolean;
   /** Hold the scope still. The light and a ring still play out over it. */
   paused?: boolean;
@@ -234,12 +231,21 @@ export function DitherField({ scene = "halo", pitch = 3, active = false, paused 
   // Bridges from React props into the render loop, so a change never restarts it.
   const activeRef = useRef(active);
   const pausedRef = useRef(paused);
+  const sceneRef = useRef(scene);
   const wakeRef = useRef<(ring: boolean) => void>(() => {});
+  const resceneRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     pausedRef.current = paused;
     wakeRef.current(false);
   }, [paused]);
+
+  // A new scene takes over the running trail, so it dissolves in rather than cutting.
+  useEffect(() => {
+    if (scene === sceneRef.current) return;
+    sceneRef.current = scene;
+    resceneRef.current();
+  }, [scene]);
 
   useEffect(() => {
     const rising = active && !activeRef.current;
@@ -287,7 +293,6 @@ export function DitherField({ scene = "halo", pitch = 3, active = false, paused 
     let read = 0;
 
     const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const bpm = BPM[scene];
     const state = {
       time: 0,
       drive: 0,
@@ -333,7 +338,6 @@ export function DitherField({ scene = "halo", pitch = 3, active = false, paused 
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.useProgram(feedback);
       gl.uniform2f(fb.res, canvas.width, canvas.height);
-      gl.uniform1f(fb.scene, SCENES[scene]);
       gl.uniform1i(fb.prev, 0);
       gl.useProgram(dots);
       gl.uniform2f(dp.res, canvas.width, canvas.height);
@@ -347,7 +351,7 @@ export function DitherField({ scene = "halo", pitch = 3, active = false, paused 
     /** One step of the music and the trail. */
     function advance(dt: number) {
       state.time += dt * (1 + state.hover * 0.8); // a hand quickens the beat
-      const m = beat(state.time, bpm);
+      const m = beat(state.time, BPM[sceneRef.current]);
       state.drive += dt * (0.3 + 1.6 * m.kick);
       const write = 1 - read;
       gl.useProgram(feedback);
@@ -359,6 +363,7 @@ export function DitherField({ scene = "halo", pitch = 3, active = false, paused 
       gl.uniform1f(fb.hat, m.hat);
       gl.uniform1f(fb.env, m.env);
       gl.uniform1f(fb.drive, state.drive);
+      gl.uniform1f(fb.scene, SCENES[sceneRef.current]);
       gl.uniform3fv(fb.ripple, state.ripple);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       read = write;
@@ -454,8 +459,13 @@ export function DitherField({ scene = "halo", pitch = 3, active = false, paused 
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
     wakeRef.current = (ring) => {
-      if (ring && !reduced) state.ripple = [...centre(), 0];
+      if (ring && !reduced && state.ripple[2] < 0) state.ripple = [...centre(), 0];
       start();
+    };
+    // Under reduced motion there is no loop to carry the new scene in: build its still at once.
+    resceneRef.current = () => {
+      if (reduced) for (let i = 0; i < WARM; i++) advance(1 / 60);
+      wakeRef.current(true);
     };
 
     setInk();
@@ -472,120 +482,34 @@ export function DitherField({ scene = "halo", pitch = 3, active = false, paused 
       host.removeEventListener("pointerleave", onLeave);
       host.removeEventListener("pointerdown", onDown);
       wakeRef.current = () => {};
+      resceneRef.current = () => {};
       gl.getExtension("WEBGL_lose_context")?.loseContext();
       canvas.remove();
     };
-  }, [scene, pitch]);
+    // The scene is read through its ref, so a change never rebuilds the context or drops the trail.
+  }, [pitch]);
 
   return <span ref={hostRef} aria-hidden className={`block size-full ${className}`} />;
 }
 
-/* --- DitherCard: a project key -------------------------------------------- */
+/* --- Demo: the visualizer, filling the plate ------------------------------ */
 
-type DitherCardProps = {
-  title: string;
-  /** Said to screen readers as the link's description. */
-  description: string;
-  meta?: string;
-  href: string;
-  scene?: DitherScene;
-  /** Light the screen from its centre without a hand on it: a selection, or a demo's ghost. */
-  active?: boolean;
-  /** Hold the scope still. */
-  paused?: boolean;
-};
+const ORDER: DitherScene[] = ["halo", "tunnel", "prism"];
+const NAMES: Record<DitherScene, string> = { halo: "Halo", tunnel: "Tunnel", prism: "Prism" };
 
-/**
- * A project link as a key with a screen in its face. The face sinks 2px onto
- * its base under the finger and clicks; the screen runs a scope on a dot
- * matrix in the LCD's ink. Keyboard focus lights the screen from the centre; focus that
- * followed a press doesn't.
- */
-export function DitherCard({ title, description, meta, href, scene = "halo", active = false, paused = false }: DitherCardProps) {
+export default function Demo() {
+  const [at, setAt] = useState(0);
+  const [paused, setPaused] = useState(true); // the screen holds its first frame until power-up
   const [focused, setFocused] = useState(false);
-  const descriptionId = useId();
+  const [said, setSaid] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+
   // Checked again on key up: the first key after a quiet press brings the ring back.
   const checkFocus = (el: HTMLElement) => setFocused(el.matches(":focus-visible") && !el.hasAttribute("data-quiet"));
 
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      draggable={false}
-      data-sound="key"
-      aria-describedby={descriptionId}
-      onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
-      onFocus={(e) => checkFocus(e.currentTarget)}
-      onKeyUp={(e) => checkFocus(e.currentTarget)}
-      onBlur={() => setFocused(false)}
-      className="group/key flex min-w-0 flex-col items-center gap-[0.6em] rounded-[0.7em] outline-offset-2 [-webkit-touch-callout:none]"
-    >
-      {/* The key. Only its face sinks, so the hit area never moves under the finger. */}
-      <span data-part="key" className="block w-full rounded-[0.7em] p-[0.32em] [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
-        {/* The screen set into the face: the field draws on a clear ground, so this is its glass. */}
-        <span data-part="lcd" className="relative block aspect-square rounded-[0.4em] text-(--device-lcd-ink) [background:var(--device-lcd)]">
-          <span className="absolute inset-0 overflow-hidden rounded-[inherit]">
-            <DitherField scene={scene} active={focused || active} paused={paused} />
-          </span>
-          {/* The glass's edge, over the dots. */}
-          <span aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] shadow-(--device-lcd-edge)" />
-        </span>
-      </span>
-      <span data-part="lettering" className="flex max-w-full items-baseline gap-[0.6em] text-[0.6em] font-semibold uppercase leading-none tracking-[0.16em] [text-shadow:var(--device-engrave)]">
-        <span className="min-w-0 truncate text-(--device-label)">{title}</span>
-        {meta && <span className="shrink-0 tabular-nums text-(--device-label-quiet) drawn:opacity-70!">{meta}</span>}
-      </span>
-      <span id={descriptionId} hidden>
-        {description}
-      </span>
-      <span className="sr-only">(opens in a new tab)</span>
-    </a>
-  );
-}
-
-/* --- Demo: a launcher's keys, one project on each ------------------------- */
-
-const PROJECTS: { title: string; description: string; year: string; href: string; scene: DitherScene }[] = [
-  { title: "Wavr", description: "Shader code in, motion graphics out.", year: "2026", href: "https://litt.design", scene: "halo" },
-  { title: "Carson", description: "Learn a layout by wrecking one.", year: "2026", href: "https://litt.design", scene: "tunnel" },
-  { title: "litt.works", description: "Prints and long-form pieces.", year: "2024–26", href: "https://litt.design", scene: "prism" },
-];
-const FIRST = 350; // ms from power-up to the ghost's first key
-const STEP = 1400; // ms on each key after that, so all three are lit inside 4 s
-
-const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-export default function Demo() {
-  const [at, setAt] = useState(0); // the project on the readout
-  const [lit, setLit] = useState(-1); // the key the ghost is on
-  const [ghost, setGhost] = useState(false);
-  const [paused, setPaused] = useState(true); // the screens hold their first frame until power-up
-  const rootRef = useRef<HTMLDivElement>(null);
-  const touched = useRef(false); // a hand has been here: the ghost doesn't come back
-
-  /** Real input takes over from the ghost, for good, and wakes the screens. */
-  function takeOver() {
-    if (touched.current) return;
-    touched.current = true;
-    setGhost(false);
-    setLit(-1);
-    setPaused(false);
-  }
-
-  /** A hand on a key. Chrome also sends moves as the study slides in under a resting cursor; those don't count. */
-  function onKeyMove(e: ReactPointerEvent<HTMLLIElement>, i: number) {
-    if (e.pointerType === "mouse" && !e.movementX && !e.movementY) return;
-    takeOver();
-    setAt(i);
-  }
-
-  // Power up: the screens run and the ghost walks the keys, unless the host's tape is stopped; then follow its PLAY.
-  // Under reduced motion each screen holds its first frame and there is no ghost.
+  // Power up: the screen runs unless the host's tape is stopped; then it follows the host's PLAY. A hand wakes it too.
   const powerUp = useEffectEvent(() => {
-    if (touched.current || hostTransport(rootRef.current) === "stop") return;
-    setPaused(false);
-    if (!reducedMotion()) setGhost(true);
+    if (hostTransport(rootRef.current) !== "stop") setPaused(false);
   });
   useEffect(() => {
     const root = rootRef.current;
@@ -599,55 +523,42 @@ export default function Demo() {
     };
   }, []);
 
-  // The ghost: a beat after power-up it lights the first key, then each next one in turn, and each
-  // screen rings as it lands. A quiet tick for each, while the host's tape plays.
-  useEffect(() => {
-    if (!ghost) return;
-    const root = rootRef.current;
-    const id = setTimeout(
-      () => {
-        const next = (lit + 1) % PROJECTS.length;
-        setLit(next);
-        setAt(next);
-        if (hostTransport(root) === "play") play("tick", { gain: 0.4, pitch: 0.94 + next * 0.06 });
-      },
-      lit === -1 ? FIRST : STEP,
-    );
-    return () => clearTimeout(id);
-  }, [ghost, lit]);
-
-  const project = PROJECTS[at];
+  function next() {
+    const n = (at + 1) % ORDER.length;
+    play("toggle");
+    setAt(n);
+    setSaid(NAMES[ORDER[n]]);
+  }
 
   return (
-    <div ref={rootRef} onPointerDownCapture={takeOver} onKeyDownCapture={takeOver} onFocusCapture={takeOver} className="@container w-full max-w-[480px] select-none">
-      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)] @[26rem]:p-[1.1em]">
+    <div ref={rootRef} onPointerDownCapture={() => setPaused(false)} className="@container w-full max-w-[480px] select-none">
+      <div data-part="plate" className="relative isolate animate-enter overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
-        {/* The readout: the year and the project in a line, for the key under the hand or the ghost. */}
-        <div
-          aria-hidden
-          data-part="lcd"
-          className="flex h-[3.3em] flex-col justify-between overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.5em] pt-[0.55em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)"
-        >
-          <span data-part="chip" className="inline-flex items-center gap-[0.35em] self-start rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
-            {/* Drawn, the ghost's pulse stays red, a signal; idle it is an unlit ring. */}
-            <span className={ghost ? "size-[0.55em] animate-pulse rounded-full bg-(--device-rec) motion-reduce:animate-none drawn:bg-(--device-rec)!" : "size-[0.55em] rounded-full bg-black drawn:border"} />
-            <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em] tabular-nums">{project.year}</span>
-          </span>
-          <span key={at} className="animate-enter truncate text-[1.05em] font-light leading-none tracking-[-0.01em]">
-            {project.description}
-          </span>
+        {/* The display: the whole plate, behind a black bezel. A press steps to the next scene. */}
+        <div data-part="bezel" className="rounded-[1.05em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
+          <button
+            type="button"
+            aria-label={`Visualizer, ${NAMES[ORDER[at]]}. Change scene`}
+            onPointerDown={(e) => e.button === 0 && focusQuietly(e.currentTarget)}
+            onFocus={(e) => checkFocus(e.currentTarget)}
+            onKeyUp={(e) => checkFocus(e.currentTarget)}
+            onBlur={() => setFocused(false)}
+            onClick={next}
+            data-part="lcd"
+            className="relative block aspect-[4/3] w-full cursor-pointer rounded-[0.75em] text-(--device-lcd-ink) outline-offset-2 [background:var(--device-lcd)] [-webkit-touch-callout:none]"
+          >
+            <span className="absolute inset-0 overflow-hidden rounded-[inherit]">
+              <DitherField scene={ORDER[at]} active={focused} paused={paused} />
+            </span>
+            {/* The glass: its sheen and its edge, over the dots. */}
+            <span aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
+          </button>
         </div>
-
-        {/* The keys, one project on each. */}
-        <ul aria-label="Projects" className="mt-[0.8em] grid grid-cols-3 gap-[0.55em]">
-          {PROJECTS.map((p, i) => (
-            <li key={p.title} className="min-w-0" onPointerMove={(e) => onKeyMove(e, i)} onFocus={() => setAt(i)}>
-              <DitherCard title={p.title} description={p.description} href={p.href} scene={p.scene} active={lit === i} paused={paused} />
-            </li>
-          ))}
-        </ul>
       </div>
+      <p role="status" aria-live="polite" className="sr-only">
+        {said}
+      </p>
     </div>
   );
 }

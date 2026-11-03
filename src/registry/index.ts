@@ -23,17 +23,6 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
-    slug: "now-playing",
-    title: "Now Playing",
-    description:
-      "A music player whose display is a scope on a dot matrix. Raw WebGL feedback draws four scenes, a press on the display stepping through them: Halo, Tunnel, Spectrum and Prism. The light is shown only through dots in the LCD's ink, each lit or not against an ordered dither, so trails thin out rather than grey. With real audio, an analyser drives it; Eject loads files from this device, and a slim waveform scrubs the track.",
-    tagline: "Visualizers through a dot matrix, on the player's glass.",
-    tags: ["sound", "media", "pointer", "a11y"],
-    date: "2026-11-02",
-    status: "new",
-    background: "plain",
-  },
-  {
     slug: "gradient-keys",
     title: "Gradient Keys",
     description:
@@ -202,8 +191,8 @@ export const registry: RegistryEntry[] = [
     slug: "dither-card",
     title: "Dither Card",
     description:
-      "Project links as keys with a screen in each face, after a launcher's LCD keys. Each screen runs one of Now Playing's scopes on its dot matrix: Halo, a ring pumping with the beat; Tunnel, hexagons streaming outward; Prism, the trace folded six ways. With no audio, each plays a beat of its own at its own tempo. A hand backlights the screen under it and quickens its beat; a press sinks the key 2px with a click and sends a ring through the trail.",
-    tagline: "Project keys with a scope in dots on every screen.",
+      "A visualizer on a dot matrix, filling the plate behind a black bezel: round dots of the LCD's ink, each lit or not against an ordered dither, over a grid of ghosts. Behind them, raw WebGL feedback warps and fades each frame under a fresh trace of a beat it plays itself. A press steps through three scenes, a pumping ring, a tunnel of hexagons and a six-way prism, each at its own tempo; a hand backlights the dots and quickens the beat.",
+    tagline: "A visualizer in dots, behind glass.",
     tags: ["surface", "pointer", "sound", "webgl"],
     date: "2026-10-02",
     status: "new",
