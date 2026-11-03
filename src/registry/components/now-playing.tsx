@@ -5,9 +5,10 @@ import { createSpring, focusQuietly, type Spring } from "@/design-system";
 import { hostTransport, play, type SoundName } from "@/lib/sound";
 
 /*
- * A music player's now-playing strip, built from the player's own parts: the
- * track on an LCD, its waveform pressed into a well as a scrubber with a red
- * playhead, and a transport of two keys round a cap seated in a collar.
+ * A music player that is mostly its visualizer: a scope on a screen behind
+ * glass takes most of the plate, over a slim waveform pressed into a well as
+ * the scrubber, with a red playhead, and one row of controls: PLAY, a cap
+ * seated in a collar; the track and its clock on a small LCD; Next; Eject.
  *
  * Time belongs to the media clock, not to React. With a `src`, a track plays
  * through a real <audio> element and its currentTime is the clock; without
@@ -109,7 +110,6 @@ const HEAD_SPRING = { stiffness: 170, damping: 26 }; // the playhead, in permill
 const FPS = 25;
 const SEEK = 5; // s per arrow
 const PAGE = 30; // s per Page Up or Down
-const RESTART = 3; // s into a track past which Previous restarts it rather than going back
 const BAND_FALL = 3.5; // a band's level drops by this much a second: a meter's bar, not a gate
 const FADE_OUT = 1.6; // s the scope runs on after a pause, until its trail has gone
 const RECOLOUR = 0.6; // s a new palette takes to sweep in
@@ -564,10 +564,10 @@ const focusOnPress = (e: PointerEvent<HTMLElement>) => {
 const face =
   "grid size-full place-items-center rounded-[0.7em] text-(--device-key-ink) [background:var(--device-key-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75";
 
-/** Previous and next: a bar and a triangle, printed on the key. */
-function SkipGlyph({ back }: { back?: boolean }) {
+/** Next: a triangle and a bar, printed on the key. */
+function SkipGlyph() {
   return (
-    <svg aria-hidden data-part="lettering" viewBox="0 0 16 16" className={cx("size-[1.05em] fill-current [filter:var(--device-engrave-glyph)] drawn:fill-(--device-draw-ink)!", back && "-scale-x-100")}>
+    <svg aria-hidden data-part="lettering" viewBox="0 0 16 16" className="size-[1.05em] fill-current [filter:var(--device-engrave-glyph)] drawn:fill-(--device-draw-ink)!">
       <path d="M3 3.2 10.6 8 3 12.8z" />
       <rect x="11.2" y="3.2" width="1.9" height="9.6" rx="0.4" />
     </svg>
@@ -967,13 +967,6 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
     setAnnouncement(playing ? "Paused" : `Playing ${current.title}, ${current.artist}`);
   }
 
-  function previous() {
-    if (position() > RESTART) return seek(0, false);
-    if (track === 0) return play("bump", { gain: 0.6 });
-    onTrackChange(track - 1);
-    setAnnouncement(`${tracks[track - 1].title}, ${tracks[track - 1].artist}`);
-  }
-
   function next() {
     if (track === tracks.length - 1) return play("bump", { gain: 0.6 });
     onTrackChange(track + 1);
@@ -1087,7 +1080,7 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
       <div data-part="plate" className="relative isolate flex animate-enter flex-col gap-[0.7em] overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
-        {/* The screen: the scope behind glass, in a black bezel. A press steps through its scenes. */}
+        {/* The screen: the scope behind glass, in a black bezel. It is most of the plate. A press steps through its scenes. */}
         <div data-part="bezel" className="rounded-[1.05em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
           <button
             type="button"
@@ -1095,48 +1088,14 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
             onPointerDown={focusOnPress}
             onClick={nextScene}
             data-part="screen"
-            className="relative block aspect-[3/1] w-full cursor-pointer rounded-[0.75em] bg-black outline-offset-2"
+            className="relative block aspect-[3/2] w-full cursor-pointer rounded-[0.75em] bg-black outline-offset-2"
           >
             <span ref={screenRef} aria-hidden className="absolute inset-0 overflow-hidden rounded-[inherit]" />
             <span aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
           </button>
         </div>
 
-        {/* The LCD: the state, the track and the clock. The clock is written by the playhead's spring. */}
-        <div aria-hidden data-part="lcd" className="flex min-w-0 flex-col gap-[0.45em] overflow-hidden rounded-[0.7em] px-[0.8em] pb-[0.6em] pt-[0.6em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)">
-          <div className="flex items-center gap-[0.5em]">
-            <span data-part="chip" className="inline-flex items-center gap-[0.35em] rounded-[0.4em] bg-white px-[0.42em] py-[0.24em] text-black">
-              {playing ? (
-                <span className="size-[0.55em] animate-pulse rounded-full bg-(--device-rec) drawn:bg-(--device-rec)!" />
-              ) : (
-                <span className="flex h-[0.55em] gap-[0.12em]">
-                  <span className="w-[0.17em] bg-current drawn:bg-(--device-draw-ink)!" />
-                  <span className="w-[0.17em] bg-current drawn:bg-(--device-draw-ink)!" />
-                </span>
-              )}
-              <span className="text-[0.58em] font-semibold uppercase leading-none tracking-[0.02em]">{playing ? "Play" : "Pause"}</span>
-            </span>
-            <span className="ml-auto text-[0.66em] tabular-nums text-(--device-lcd-dim) drawn:text-[color-mix(in_oklab,var(--device-draw-ink)_70%,transparent)]!">
-              {pad(track + 1)} / {pad(tracks.length)}
-            </span>
-          </div>
-          <div className="flex min-w-0 flex-col gap-[0.3em]">
-            <span className="truncate text-[1.05em] font-light leading-[1.1] tracking-[-0.01em]">{current.title}</span>
-            <span className="flex items-baseline gap-[0.6em]">
-              <span className="min-w-0 flex-1 truncate text-[0.72em] leading-none text-(--device-lcd-dim) drawn:text-[color-mix(in_oklab,var(--device-draw-ink)_70%,transparent)]!">{naming ? sceneName : current.artist}</span>
-              <span ref={clockRef} className="shrink-0 text-[0.78em] font-light leading-none tabular-nums tracking-[-0.02em]">
-                {(["M", "S", "F"] as const).map((unit, i) => (
-                  <span key={unit} className={i ? "ml-[0.3em]" : undefined}>
-                    <span data-figure>00</span>
-                    <span className="text-[0.7em] text-(--device-lcd-dim) drawn:text-[color-mix(in_oklab,var(--device-draw-ink)_70%,transparent)]!">{unit}</span>
-                  </span>
-                ))}
-              </span>
-            </span>
-          </div>
-        </div>
-
-        {/* The waveform, pressed into the plate: a slider over the track. Bars the playhead has passed are lit. */}
+        {/* The waveform, pressed into the plate: a slim slider over the track. Bars the playhead has passed are lit. */}
         <div
           ref={sliderRef}
           role="slider"
@@ -1154,65 +1113,72 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
           onPointerUp={onPointerEnd}
           onPointerCancel={onPointerEnd}
           data-part="well"
-          className="relative h-[3.6em] cursor-pointer touch-none rounded-[1.05em] bg-(--device-well) shadow-(--device-recess) outline-offset-2"
+          className="relative h-[2.2em] cursor-pointer touch-none rounded-[0.7em] bg-(--device-well) shadow-(--device-recess) outline-offset-2"
         >
-          <div ref={barsRef} className="absolute inset-x-[0.85em] inset-y-[0.6em] flex items-center justify-between">
+          <div ref={barsRef} className="absolute inset-x-[0.7em] inset-y-[0.45em] flex items-center justify-between">
             {peaks.map((_, i) => (
               <span
                 key={i}
                 aria-hidden
                 data-bar
                 className="w-[1.4%] rounded-full bg-(--device-meter-off) data-at:[scale:1_calc(1+var(--lv,0)*0.45)] data-played:bg-(--device-meter-on) drawn:bg-(--device-draw-line)! drawn:data-played:bg-(--device-draw-ink)!"
-                style={{ height: "max(0.2em, calc(var(--h, 0) * 100%))" }}
+                style={{ height: "max(0.18em, calc(var(--h, 0) * 100%))" }}
               />
             ))}
             {/* The playhead: red, as the tape's is, and lit. */}
             <span
               aria-hidden
               data-part="light"
-              className="absolute -inset-y-[0.2em] left-(--p,0%) -ml-px w-[2px] rounded-full bg-(--device-rec) shadow-[0_0_calc(0.3em+var(--lv,0)*0.5em)_var(--device-rec)] drawn:bg-(--device-rec)!"
+              className="absolute -inset-y-[0.15em] left-(--p,0%) -ml-px w-[2px] rounded-full bg-(--device-rec) shadow-[0_0_calc(0.3em+var(--lv,0)*0.5em)_var(--device-rec)] drawn:bg-(--device-rec)!"
             />
           </div>
         </div>
 
-        {/* The transport: previous and next round PLAY, a cap seated in a collar, and Eject at the end. */}
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center">
-          <span />
-          <div className="flex items-center gap-[0.9em]">
-            <button type="button" data-sound="key" aria-label="Previous track" onPointerDown={focusOnPress} onClick={previous} data-part="key" className="group/key h-[2.6em] w-[3.4em] rounded-[0.7em] outline-offset-2">
-              <span className={face}>
-                <SkipGlyph back />
-              </span>
-            </button>
+        {/* One row: PLAY, the track on a small LCD, Next and Eject. */}
+        <div className="flex items-center gap-[0.5em]">
+          <button
+            type="button"
+            aria-label={playing ? "Pause" : "Play"}
+            onPointerDown={focusOnPress}
+            onClick={toggle}
+            data-part="collar"
+            className="group/key grid size-[3em] shrink-0 place-items-center rounded-full bg-black/[0.035] p-[0.22em] shadow-(--device-recess) outline-offset-2 dark:bg-black/30"
+          >
+            <span data-part="cap" className="grid size-full place-items-center rounded-full [background:var(--device-wheel-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
+              {playing ? (
+                <span aria-hidden data-part="lettering" className="flex h-[0.85em] gap-[0.2em]">
+                  <span className="w-[0.26em] rounded-[0.08em] bg-(--device-key-ink) drawn:bg-(--device-draw-ink)!" />
+                  <span className="w-[0.26em] rounded-[0.08em] bg-(--device-key-ink) drawn:bg-(--device-draw-ink)!" />
+                </span>
+              ) : (
+                <svg aria-hidden data-part="lettering" viewBox="0 0 16 16" className="ml-[0.1em] size-[1.05em] fill-(--device-rec)">
+                  <path d="M4.5 2.4 13.2 8l-8.7 5.6z" />
+                </svg>
+              )}
+            </span>
+          </button>
 
-            <button
-              type="button"
-              aria-label={playing ? "Pause" : "Play"}
-              onPointerDown={focusOnPress}
-              onClick={toggle}
-              data-part="collar"
-              className="group/key grid size-[3.7em] shrink-0 place-items-center rounded-full bg-black/[0.035] p-[0.26em] shadow-(--device-recess) outline-offset-2 dark:bg-black/30"
-            >
-              <span data-part="cap" className="grid size-full place-items-center rounded-full [background:var(--device-wheel-face)] shadow-(--device-key-shadow) transition-[transform,box-shadow] duration-(--duration-exit) ease-out group-active/key:translate-y-[2px] group-active/key:shadow-(--device-key-shadow-pressed) group-active/key:duration-75">
-                {playing ? (
-                  <span aria-hidden data-part="lettering" className="flex h-[1em] gap-[0.22em]">
-                    <span className="w-[0.3em] rounded-[0.08em] bg-(--device-key-ink) drawn:bg-(--device-draw-ink)!" />
-                    <span className="w-[0.3em] rounded-[0.08em] bg-(--device-key-ink) drawn:bg-(--device-draw-ink)!" />
+          {/* The LCD: the track, then the artist (or, for a moment, the scene) and the clock. The spring writes the clock. */}
+          <div aria-hidden data-part="lcd" className="flex h-[3em] min-w-0 flex-1 flex-col justify-center gap-[0.35em] overflow-hidden rounded-[0.7em] px-[0.7em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)">
+            <span className="truncate text-[0.92em] font-light leading-none tracking-[-0.01em]">{current.title}</span>
+            <span className="flex items-baseline gap-[0.5em]">
+              <span className="min-w-0 flex-1 truncate text-[0.66em] leading-none text-(--device-lcd-dim) drawn:text-[color-mix(in_oklab,var(--device-draw-ink)_70%,transparent)]!">{naming ? sceneName : current.artist}</span>
+              <span ref={clockRef} className="shrink-0 text-[0.66em] font-light leading-none tabular-nums tracking-[-0.02em]">
+                {(["M", "S", "F"] as const).map((unit, i) => (
+                  <span key={unit} className={i ? "ml-[0.25em]" : undefined}>
+                    <span data-figure>00</span>
+                    <span className="text-[0.75em] text-(--device-lcd-dim) drawn:text-[color-mix(in_oklab,var(--device-draw-ink)_70%,transparent)]!">{unit}</span>
                   </span>
-                ) : (
-                  <svg aria-hidden data-part="lettering" viewBox="0 0 16 16" className="ml-[0.12em] size-[1.25em] fill-(--device-rec)">
-                    <path d="M4.5 2.4 13.2 8l-8.7 5.6z" />
-                  </svg>
-                )}
+                ))}
               </span>
-            </button>
-
-            <button type="button" data-sound="key" aria-label="Next track" onPointerDown={focusOnPress} onClick={next} data-part="key" className="group/key h-[2.6em] w-[3.4em] rounded-[0.7em] outline-offset-2">
-              <span className={face}>
-                <SkipGlyph />
-              </span>
-            </button>
+            </span>
           </div>
+
+          <button type="button" data-sound="key" aria-label="Next track" onPointerDown={focusOnPress} onClick={next} data-part="key" className="group/key h-[3em] w-[2.6em] shrink-0 rounded-[0.7em] outline-offset-2">
+            <span className={face}>
+              <SkipGlyph />
+            </span>
+          </button>
 
           {onLoad && (
             <button
@@ -1222,7 +1188,7 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
               onPointerDown={focusOnPress}
               onClick={() => pickerRef.current?.click()}
               data-part="key"
-              className="group/key h-[2.6em] w-[2.6em] justify-self-end rounded-[0.7em] outline-offset-2"
+              className="group/key h-[3em] w-[2.6em] shrink-0 rounded-[0.7em] outline-offset-2"
             >
               <span className={cx(face, "relative")}>
                 {/* Orange while a file is held over the plate: a hand on it. Drawn, ink. */}

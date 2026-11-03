@@ -77,9 +77,9 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
     glass: { note: "The screen's sheen, and the backlight's bloom as it wakes." },
   },
   "now-playing": {
-    well: { name: "Waveform", note: "The track's forty bars pressed into the plate as its scrubber: lit once the playhead has passed them, re-forming on their own springs when the queue moves on." },
+    well: { name: "Waveform", note: "The track's forty bars pressed into the plate as a slim scrubber: lit once the playhead has passed them, re-forming on their own springs when the queue moves on." },
     light: { tokens: ["--device-rec"], note: "The playhead, red as the tape's: one spring in permille of the track draws it, the passed bars and the clock together." },
-    lcd: { note: "The state's chip, the track and a clock in minutes, seconds and frames, written by the playhead's spring rather than by React." },
+    lcd: { note: "The track, its artist and a clock in minutes, seconds and frames, written by the playhead's spring rather than by React." },
     bezel: { note: "Black, with a polished edge, round the scope: a second screen set into the plate." },
     screen: { name: "Scope", note: "WebGL feedback in four scenes, a press stepping through them: each frame warps and fades the last under a fresh trace of the beat. One channel of light, coloured by the track's palette as it is shown, so it keeps its colours in both themes." },
     glass: { note: "The screen's sheen, breaking hard at 38%, over the trail." },
