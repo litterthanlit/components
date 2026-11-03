@@ -31,7 +31,7 @@ import { hostTransport, play, type SoundName } from "@/lib/sound";
  * over it: a ring whose radius carries a band per drum, and a line across
  * the screen. What builds up is the trail of the last second or so of music.
  * The trail is one channel of light, and it is shown only through a dot
- * matrix: a dot every 3 CSS px in the LCD's ink, over ghosts at 8%. Each dot
+ * matrix: a dot every 2 CSS px in the LCD's ink, over ghosts at 8%. Each dot
  * reads the light at its centre and is either lit or not, as a matrix's dots
  * are; shades come from a 4 × 4 ordered dither across the dots, so a fading
  * trail thins out rather than greys. The music is the waveform's envelope under the track's own beat:
@@ -113,7 +113,7 @@ const SEEK = 5; // s per arrow
 const PAGE = 30; // s per Page Up or Down
 const BAND_FALL = 3.5; // a band's level drops by this much a second: a meter's bar, not a gate
 const FADE_OUT = 1.6; // s the scope runs on after a pause, until its trail has gone
-const PITCH = 3; // CSS px between the matrix's dots
+const PITCH = 2; // CSS px between the matrix's dots
 
 const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(" ");
 const now = () => performance.now();
@@ -399,10 +399,12 @@ void main() {
   vec2 centre = (cell + 0.5) * uPitch;
   float v = pow(texture2D(uLight, centre / uRes).r, 0.8);
   float lit = step(bayer4(cell) + 0.04, v);
-  // A round dot, its edge softened over about a device pixel.
+  // A round dot, its edge softened over about a device pixel. Under 3 device px a round dot is a pixel
+  // anti-aliased to half strength, so there each dot is one whole pixel, at the cell's corner.
   float d = length(gl_FragCoord.xy - centre);
   float r = uPitch * 0.36;
-  float disc = clamp(r + 0.5 - d, 0.0, 1.0);
+  vec2 inCell = gl_FragCoord.xy - cell * uPitch;
+  float disc = uPitch < 3.0 ? step(inCell.x, 1.0) * step(inCell.y, 1.0) : clamp(r + 0.5 - d, 0.0, 1.0);
   float a = disc * mix(0.08, 1.0, lit);
   gl_FragColor = vec4(uInk * a, a);
 }
