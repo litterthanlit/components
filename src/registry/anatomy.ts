@@ -64,7 +64,7 @@ export const anatomy: Record<string, Partial<Record<string, Partial<PartInfo>>>>
   },
   "dither-card": {
     key: { note: "A key with a screen in its face: only the face sinks, so the hit area never moves under the finger." },
-    lcd: { name: "Screens", note: "A dot matrix in raw WebGL: the field drawn once per dot, then each dot round, lit or not against an ordered dither over ghosts at 8%; a hand backlights the screen under it." },
+    lcd: { name: "Screens", note: "A scope in raw WebGL feedback, playing a beat of its own, shown through round dots lit or not against an ordered dither over ghosts at 8%; a hand backlights the screen under it." },
   },
   "gradient-keys": {
     screen: { note: "Long exposures in traditional Japanese palettes: noise sweeping across as it flows along. The work, so it keeps its own colours in both themes." },
