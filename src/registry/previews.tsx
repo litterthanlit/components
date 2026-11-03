@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, lazy, useState, type ComponentType } from "react";
+import { spoolRoll } from "./spool-roll";
 
 /**
  * Lazily-loaded demos, keyed by registry slug. Each demo is its own chunk,
@@ -49,7 +50,14 @@ function demo(load: () => Promise<Module>): Demo {
 
 export const previews: Record<string, Demo> = {
   "file-browser": demo(() => import("./components/file-browser")),
-  spool: demo(() => import("./components/spool")),
+  // Spool plays the photographs in public/spool/ rather than its painted roll.
+  spool: demo(() =>
+    import("./components/spool").then(({ default: Spool }) => ({
+      default: function SpoolPreview() {
+        return <Spool frames={spoolRoll} />;
+      },
+    })),
+  ),
   "gradient-keys": demo(() => import("./components/gradient-keys")),
   "agent-indicators": demo(() => import("./components/agent-indicators")),
   "agent-status": demo(() => import("./components/agent-status")),

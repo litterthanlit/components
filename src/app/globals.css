@@ -12,6 +12,10 @@
    drawing's own rules below are !important, so a study's win with a `!`:
    drawn:bg-(--device-draw-ink)! */
 @custom-variant drawn (&:where([data-finish="drawing"] *));
+/* A study on the Slab's screen, where its plate and its screen's ground are
+   gone (below). A study whose layout leans on that ground sets itself
+   differently there with player:, as Spool stacks its deck. */
+@custom-variant player (&:where([data-player-screen] *));
 
 html {
   background: var(--canvas);
