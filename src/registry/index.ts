@@ -26,8 +26,8 @@ export const registry: RegistryEntry[] = [
     slug: "now-playing",
     title: "Now Playing",
     description:
-      "A music player that is mostly its visualizer. A scope fills a screen behind glass in raw WebGL feedback, in four scenes a press steps through: Halo, Tunnel, Spectrum and Prism, each warping the last frame under a fresh trace of the beat, in the track's own palette. Below it, a slim waveform scrubs the track. With real audio, an analyser drives the scope; Eject loads files from this device.",
-    tagline: "A visualizer with a player attached.",
+      "A music player after a hi-fi deck's display: a spectrum analyser on a dot matrix, 32 columns in the LCD's ink with a meter's ballistics and peak dots that hold, over a slim waveform that scrubs the track. With real audio, an analyser on the audio graph fills the columns; otherwise the track's own beat does. Eject loads files from this device, and their real waveform becomes the scrubber.",
+    tagline: "A hi-fi deck's spectrum display, on the player's glass.",
     tags: ["sound", "media", "pointer", "a11y"],
     date: "2026-11-02",
     status: "new",

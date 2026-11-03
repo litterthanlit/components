@@ -5,8 +5,8 @@ import { createSpring, focusQuietly, type Spring } from "@/design-system";
 import { hostTransport, play, type SoundName } from "@/lib/sound";
 
 /*
- * A music player that is mostly its visualizer: a scope on a screen behind
- * glass takes most of the plate, over a slim waveform pressed into a well as
+ * A music player after a hi-fi deck's display: a spectrum analyser on a dot
+ * matrix behind a black bezel, over a slim waveform pressed into a well as
  * the scrubber, with a red playhead, and one row of controls: PLAY, a cap
  * seated in a collar; the track and its clock on a small LCD; Next; Eject.
  *
@@ -24,31 +24,17 @@ import { hostTransport, play, type SoundName } from "@/lib/sound";
  * they rise from flat as the strip powers up and re-form, left to right, into
  * the next track's waveform when the queue moves on.
  *
- * Above it, a scope plays the music on a screen behind a bezel, in raw
- * WebGL. Each frame warps the last one (it drifts outward, turns and wavers,
- * and pumps inward on the kick), fades it by 5%, and draws a fresh trace
- * over it: a ring whose radius carries a band per drum, and a line across
- * the screen. What builds up is the trail of the last second or so of music.
- * The screen keeps one channel of light, mapped through the track's own
- * palette as it is shown, so a new track recolours the whole trail over
- * 600 ms. The music is the waveform's envelope under the track's own beat:
- * a kick on every beat, a snare on two and four and hats on the eighths, at
- * a tempo seeded from its title. When a track's audio can be listened to (a
- * local file, a path on this site, or a source sent with CORS), an analyser
- * on the audio graph replaces the model: the bass is the kick, the mids the
- * snare and the highs the hats, each taken as its rise over its own running
- * average so the scope pumps on onsets, and the line across the screen is
- * the music's own waveform. Each band rises at once and falls away, as
- * a meter's bar does; the bar under the playhead lifts with the level and
- * the playhead's glow swells. Paused, the trail fades out and the loop
- * stops; under reduced motion the screen holds a still of the music.
- *
- * The scope has four scenes, and a press on the screen steps through them:
- * Halo, the ring and the line; Tunnel, hexagons rushing outward and turning
- * on the snare; Spectrum, 32 bars whose trails rise off them like flames;
- * and Prism, the trace and its history folded six ways. Each is a warp and a
- * trace in the same feedback pass, so a change dissolves through the trail.
- * The LCD shows the scene's name in place of the artist for 1.5 s.
+ * The matrix is 32 columns of twelve dots, in the LCD's ink over ghosts at
+ * 8%, with a meter's ballistics: a column rises at once and falls at 26 dB a
+ * second, and a peak dot holds 900 ms before it falls at 12 dB a second.
+ * Its bands are spaced by ratio from 30 Hz to 16 kHz. When a track's audio
+ * can be listened to (a local file, a path on this site, or a source sent
+ * with CORS), an analyser on the audio graph fills them; otherwise a model
+ * does: the waveform's envelope under the track's own beat, a kick on every
+ * beat, a snare on two and four and hats on the eighths, at a tempo seeded
+ * from its title. The same level lifts the bar under the playhead and
+ * swells its glow. Paused, the columns fall to rest and the loop stops;
+ * under reduced motion the matrix holds a still of the music.
  *
  * Given `onLoad`, an Eject key opens a file picker and the plate takes audio
  * files dropped on it; its light turns orange while a file is held over it.
@@ -65,19 +51,16 @@ export type Track = {
   src?: string;
   /** Levels from 0 to 1, any number of them; drawn as forty bars. Seeded from the title when left out. */
   peaks?: number[];
-  /** The scope's colours, dark to light, as hex. Picked from the title when left out. */
-  palette?: [string, string, string];
 };
 
-export type Scene = "halo" | "tunnel" | "spectrum" | "prism";
-const SCENES: { id: Scene; name: string }[] = [
-  { id: "halo", name: "Halo" },
-  { id: "tunnel", name: "Tunnel" },
-  { id: "spectrum", name: "Spectrum" },
-  { id: "prism", name: "Prism" },
-];
-const SPECTRUM = 64; // bands handed to the scope, spaced by ratio from 30 Hz to 16 kHz
-const SHOW_SCENE = 1500; // ms the LCD names a new scene
+const COLS = 32; // the matrix's bands, spaced by ratio from 30 Hz to 16 kHz
+const ROWS = 12;
+const FALL = 0.65; // of the matrix's height a second: 26 dB on its 40 dB scale
+const HOLD = 0.9; // s a peak dot waits before it falls
+const PEAK_FALL = 0.3; // 12 dB a second
+
+/** The matrix's dots, on a 4-unit pitch, row 0 at the bottom. Integers, so the server and the browser agree. */
+const DOTS = Array.from({ length: COLS * ROWS }, (_, i) => ({ c: i % COLS, r: Math.floor(i / COLS), x: (i % COLS) * 4 + 2, y: (ROWS - 1 - Math.floor(i / COLS)) * 4 + 2 }));
 
 type NowPlayingProps = {
   tracks: Track[];
@@ -95,8 +78,6 @@ type NowPlayingProps = {
    * headers: a browser silences cross-origin audio routed through an analyser without them.
    */
   crossOrigin?: "anonymous" | "use-credentials";
-  /** The scope's scene at first; a press on the screen steps through them. */
-  defaultScene?: Scene;
   /** Audio files chosen with the Eject key or dropped on the plate. Without it, neither is offered. */
   onLoad?: (files: File[]) => void;
   className?: string;
@@ -110,9 +91,7 @@ const HEAD_SPRING = { stiffness: 170, damping: 26 }; // the playhead, in permill
 const FPS = 25;
 const SEEK = 5; // s per arrow
 const PAGE = 30; // s per Page Up or Down
-const BAND_FALL = 3.5; // a band's level drops by this much a second: a meter's bar, not a gate
-const FADE_OUT = 1.6; // s the scope runs on after a pause, until its trail has gone
-const RECOLOUR = 0.6; // s a new palette takes to sweep in
+const BAND_FALL = 3.5; // the playhead's level drops by this much a second: a meter's bar, not a gate
 
 const cx = (...parts: (string | false | undefined)[]) => parts.filter(Boolean).join(" ");
 const now = () => performance.now();
@@ -147,19 +126,6 @@ function bandsAt(t: number, duration: number, peaks: number[], bpm: number) {
     hat: Math.exp(-((beat * 2) % 1) * 16) * env,
   };
 }
-
-/**
- * The scope's palettes: the work behind the glass, so they keep their colours in both themes, and they stay
- * clear of red, orange and the accent's blue, so the screen never reads as a signal.
- */
-const PALETTES: [string, string, string][] = [
-  ["#0d4a43", "#3fd6a8", "#effcd9"], // aurora: deep teal, mint, a pale lime
-  ["#2c1457", "#9a6bff", "#f3ecff"], // ultraviolet
-  ["#063244", "#27c4d9", "#e3fcff"], // tide
-  ["#22340f", "#a6d94e", "#f8ffdc"], // moss
-];
-const paletteOf = (track: Track) => track.palette ?? PALETTES[seed(track.title) % PALETTES.length];
-const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
 
 /** Minutes and seconds, as a screen reader says them. */
 const spoken = (s: number) => `${Math.floor(s / 60)}:${pad(Math.floor(s % 60))}`;
@@ -235,7 +201,7 @@ const BANDS: [number, number][] = [
 ];
 
 /**
- * The music as the analyser hears it, in the scope's terms. Each band is its loudness plus three times its
+ * The music as the analyser hears it, in the model's terms. Each band is its loudness plus three times its
  * rise over a running average of the last 0.4 s, so a sustained bass hums while a kick still punches.
  */
 function listen(ear: Ear, dt: number) {
@@ -258,12 +224,12 @@ function listen(ear: Ear, dt: number) {
   return { env: Math.min(1, Math.sqrt(power / wave.length) * 3.5), kick, snare, hat };
 }
 
-/** The analyser's bins as the scope's 64 bands, spaced by ratio, each the loudest bin it covers. */
+/** The analyser's bins as the matrix's bands, spaced by ratio, each the loudest bin it covers. */
 function heardSpectrum(ear: Ear, out: Uint8Array) {
   const hz = ear.context.sampleRate / ear.analyser.fftSize;
-  for (let i = 0; i < SPECTRUM; i++) {
-    const lo = Math.max(1, Math.floor((30 * (16000 / 30) ** (i / SPECTRUM)) / hz));
-    const hi = Math.max(lo, Math.min(ear.spectrum.length - 1, Math.floor((30 * (16000 / 30) ** ((i + 1) / SPECTRUM)) / hz)));
+  for (let i = 0; i < COLS; i++) {
+    const lo = Math.max(1, Math.floor((30 * (16000 / 30) ** (i / COLS)) / hz));
+    const hi = Math.max(lo, Math.min(ear.spectrum.length - 1, Math.floor((30 * (16000 / 30) ** ((i + 1) / COLS)) / hz)));
     let v = 0;
     for (let b = lo; b <= hi; b++) v = Math.max(v, ear.spectrum[b]);
     // Bent down a little, so the loudest bins don't sit pinned at the top.
@@ -273,287 +239,14 @@ function heardSpectrum(ear: Ear, out: Uint8Array) {
 
 /** Without an analyser, a spectrum shaped from the model's bands: the kick low, the snare in the middle, hats high. */
 function modelSpectrum(m: { env: number; kick: number; snare: number; hat: number }, out: Uint8Array) {
-  for (let i = 0; i < SPECTRUM; i++) {
-    const x = i / (SPECTRUM - 1);
+  for (let i = 0; i < COLS; i++) {
+    const x = i / (COLS - 1);
     const v = m.kick * Math.exp(-x * 9) + m.snare * 0.8 * Math.exp(-((x - 0.38) ** 2) / 0.02) + m.hat * 0.6 * Math.max(0, (x - 0.6) / 0.4) + m.env * 0.25 * (1 - x);
-    out[i] = Math.min(255, Math.round(v * (0.75 + 0.25 * grain()) * 255));
+    // Lifted by the square root, as the analyser's decibels are, so the model fills the matrix as music does.
+    out[i] = Math.min(255, Math.round(Math.sqrt(v) * (0.8 + 0.2 * grain()) * 255));
   }
 }
 const grain = () => Math.random();
-
-/* --- The scope: raw WebGL, two passes ------------------------------------------ */
-
-const VERTEX = `
-attribute vec2 aPos;
-void main() { gl_Position = vec4(aPos, 0.0, 1.0); }
-`;
-
-/** Feedback: the last frame, warped and faded, under a fresh trace. One channel of light, in red. */
-const FEEDBACK = `
-precision mediump float;
-uniform sampler2D uPrev;
-uniform vec2 uRes;
-uniform float uTime;
-uniform float uKick;
-uniform float uSnare;
-uniform float uHat;
-uniform float uEnv;
-uniform float uOn;
-uniform float uScene;       // 0 halo, 1 tunnel, 2 spectrum, 3 prism
-uniform float uDrive;       // how far the tunnel has travelled: it surges on the kick
-uniform sampler2D uWave;     // the music's own waveform, 1024 samples across, when an analyser hears it
-uniform float uReal;         // 1 when it does
-uniform sampler2D uSpectrum; // 64 bands, low to high
-
-const float TAU = 6.2831853;
-
-mat2 turn(float a) { float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
-
-// A soft line d from its centre, never thinner than about a pixel and a half.
-float glow(float d, float w) { w = max(w, 1.5 / uRes.y); return exp(-d * d / (w * w)); }
-
-// Folds the plane into six mirrored wedges about the centre.
-vec2 fold(vec2 p) {
-  float sector = TAU / 6.0;
-  float a = mod(atan(p.y, p.x), sector);
-  a = abs(a - sector * 0.5);
-  return vec2(cos(a), sin(a)) * length(p);
-}
-
-// The ring: its radius carries the music, a band per drum at its own count of lobes.
-float ring(vec2 p, float base) {
-  float a = atan(p.y, p.x);
-  float lobes = uKick * 0.06 * sin(3.0 * a + uTime * 1.7)
-              + uSnare * 0.045 * sin(7.0 * a - uTime * 4.3)
-              + uHat * 0.03 * sin(19.0 * a + uTime * 8.1);
-  return glow(length(p) - (base + 0.06 * uEnv + 0.05 * uKick + lobes), 0.006 + 0.006 * uKick);
-}
-
-// The line: the music's own waveform when it is heard, else the bands as a trace in time.
-float scope(vec2 p, float u, float reach) {
-  float y = (uKick * 0.5 * sin(p.x * 5.0 + uTime * 2.0) + uSnare * 0.3 * sin(p.x * 17.0 - uTime * 6.0) + uHat * 0.2 * sin(p.x * 41.0 + uTime * 13.0)) * 0.32;
-  y = mix(y, (texture2D(uWave, vec2(u, 0.5)).r - 0.5) * 0.9, uReal);
-  return glow(p.y - y, 0.005) * 0.6 * smoothstep(reach, reach * 0.4, abs(p.x));
-}
-
-void main() {
-  vec2 uv = gl_FragCoord.xy / uRes;
-  float aspect = uRes.x / uRes.y;
-  vec2 p = (uv - 0.5) * vec2(aspect, 1.0);
-  float r = length(p);
-  vec2 q;
-  float trace;
-
-  if (uScene < 0.5) {
-    // Halo. Reading from nearer the centre carries the trail outward; it turns slowly, a little more on
-    // the snare, wavers, and pumps on the kick.
-    q = turn(0.004 + 0.012 * sin(uTime * 0.21) + 0.05 * uSnare * (r - 0.25)) * p;
-    q *= 0.982 - 0.03 * uKick;
-    q += 0.0025 * vec2(sin(q.y * 11.0 + uTime * 1.1), cos(q.x * 9.0 - uTime * 1.3));
-    trace = ring(p, 0.17) + scope(p, uv.x, aspect * 0.5);
-  } else if (uScene < 1.5) {
-    // Tunnel: nested hexagons, evenly spaced in log radius so they read as depth, streaming outward as
-    // the drive advances (it surges on the kick). Drawn, not grown from feedback: zooming the trail a few
-    // percent a frame smears any outline into a filled shape. The feedback only adds a short trail.
-    q = turn(0.006 + 0.02 * uSnare) * p * 0.985;
-    float side = TAU / 6.0;
-    float a = atan(p.y, p.x) + uTime * 0.15 + uSnare * 0.2;
-    float hex = cos(floor(0.5 + a / side) * side - a) * r; // distance to the centre, in hexagons
-    float depth = fract(log(max(hex, 0.001)) * 2.4 - uDrive);
-    float shells = exp(-pow(min(depth, 1.0 - depth) / 0.05, 2.0)) * smoothstep(0.015, 0.1, hex);
-    trace = shells * (0.3 + 0.9 * uKick) + glow(hex - (0.02 + 0.03 * uKick), 0.004) * uHat;
-  } else if (uScene < 2.5) {
-    // Spectrum: the trail rises, so the bars burn upward; it drifts in a touch toward the middle.
-    q = p;
-    q.y -= 0.012 + 0.025 * uKick;
-    q.x *= 0.996;
-    q.x += 0.002 * sin(q.y * 23.0 + uTime * 2.0);
-    float x = (uv.x - 0.06) / 0.88;
-    float cell = fract(x * 32.0);
-    float level = texture2D(uSpectrum, vec2((floor(x * 32.0) + 0.5) / 32.0, 0.5)).r;
-    float top = 0.06 + level * 0.8;
-    float inside = step(0.0, x) * step(x, 1.0) * step(0.18, cell) * step(cell, 0.82);
-    trace = inside * (step(uv.y, top) * step(0.06, uv.y) * 0.3 + glow(uv.y - top, 0.008) * 0.9);
-  } else {
-    // Prism: everything, history and trace, folded six ways about the centre.
-    vec2 f = fold(p);
-    q = turn(0.01 + 0.03 * uSnare) * f * (0.975 - 0.025 * uKick);
-    vec2 c = 0.22 * vec2(cos(uTime * 0.7), sin(uTime * 0.7));
-    trace = ring(f - c, 0.035) + scope(turn(0.5) * f, f.x / aspect + 0.5, 0.45);
-  }
-
-  float last = texture2D(uPrev, q / vec2(aspect, 1.0) + 0.5).r;
-  // 5% a frame, less a step, so an 8-bit trail fades all the way out instead of sticking at a glow.
-  last = max(0.0, last * 0.95 - 0.006);
-  trace *= uOn * (0.45 + 0.55 * uEnv);
-  gl_FragColor = vec4(min(1.0, last + trace), 0.0, 0.0, 1.0);
-}
-`;
-
-/** Present: the light through the palette, from black, with the tube's falloff toward the corners. */
-const PRESENT = `
-precision mediump float;
-uniform sampler2D uLight;
-uniform vec2 uRes;
-uniform vec3 uFrom[3];
-uniform vec3 uTo[3];
-uniform float uMix;
-uniform float uKick;
-
-void main() {
-  vec2 uv = gl_FragCoord.xy / uRes;
-  float v = texture2D(uLight, uv).r;
-  float m = uMix * uMix * (3.0 - 2.0 * uMix);
-  vec3 c0 = mix(uFrom[0], uTo[0], m);
-  vec3 c1 = mix(uFrom[1], uTo[1], m);
-  vec3 c2 = mix(uFrom[2], uTo[2], m);
-  vec3 col = v < 0.3 ? mix(vec3(0.0), c0, v / 0.3) : v < 0.7 ? mix(c0, c1, (v - 0.3) / 0.4) : mix(c1, c2, (v - 0.7) / 0.3);
-  // The backlight thumps a little with the kick.
-  col += c0 * 0.08 * uKick;
-  vec2 e = (uv - 0.5) * vec2(1.0, 1.7);
-  col *= 1.0 - 0.55 * dot(e, e);
-  gl_FragColor = vec4(col, 1.0);
-}
-`;
-
-type Frame = { time: number; kick: number; snare: number; hat: number; env: number; on: number; from: number[]; to: number[]; mix: number; wave: Uint8Array | null; scene: number; spectrum: Uint8Array; drive: number };
-
-function compile(gl: WebGLRenderingContext, type: number, source: string) {
-  const shader = gl.createShader(type)!;
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  return shader;
-}
-
-function link(gl: WebGLRenderingContext, fragment: string) {
-  const program = gl.createProgram()!;
-  gl.attachShader(program, compile(gl, gl.VERTEX_SHADER, VERTEX));
-  gl.attachShader(program, compile(gl, gl.FRAGMENT_SHADER, fragment));
-  gl.bindAttribLocation(program, 0, "aPos");
-  gl.linkProgram(program);
-  const at = (name: string) => gl.getUniformLocation(program, name);
-  return { program, at };
-}
-
-/**
- * A scope on a canvas the size of its box (up to 1.5× on dense displays). Feedback ping-pongs between two
- * textures; the present pass maps the light to colour. Returns null without WebGL, and the screen stays black.
- */
-function createScope(canvas: HTMLCanvasElement) {
-  const context = canvas.getContext("webgl", { antialias: false, alpha: false, preserveDrawingBuffer: true });
-  if (!context) return null;
-  const gl = context;
-  const feedback = link(gl, FEEDBACK);
-  const present = link(gl, PRESENT);
-  const fb = { prev: feedback.at("uPrev"), res: feedback.at("uRes"), time: feedback.at("uTime"), kick: feedback.at("uKick"), snare: feedback.at("uSnare"), hat: feedback.at("uHat"), env: feedback.at("uEnv"), on: feedback.at("uOn"), wave: feedback.at("uWave"), real: feedback.at("uReal"), scene: feedback.at("uScene"), drive: feedback.at("uDrive"), spectrum: feedback.at("uSpectrum") };
-  const pr = { light: present.at("uLight"), res: present.at("uRes"), from: present.at("uFrom"), to: present.at("uTo"), mix: present.at("uMix"), kick: present.at("uKick") };
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-  gl.enableVertexAttribArray(0);
-  gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-
-  // The waveform, one row of 1024 samples, on its own unit.
-  const waveTexture = gl.createTexture();
-  gl.activeTexture(gl.TEXTURE1);
-  gl.bindTexture(gl.TEXTURE_2D, waveTexture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, 1, 1, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, new Uint8Array([128]));
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  // The spectrum, one row of 64 bands, on a third.
-  const spectrumTexture = gl.createTexture();
-  gl.activeTexture(gl.TEXTURE2);
-  gl.bindTexture(gl.TEXTURE_2D, spectrumTexture);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, 1, 1, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, new Uint8Array([0]));
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.activeTexture(gl.TEXTURE0);
-
-  let targets: { texture: WebGLTexture; buffer: WebGLFramebuffer }[] = [];
-  let read = 0;
-
-  function resize() {
-    const rect = canvas.getBoundingClientRect();
-    const density = Math.min(devicePixelRatio, 1.5);
-    canvas.width = Math.max(1, Math.round(rect.width * density));
-    canvas.height = Math.max(1, Math.round(rect.height * density));
-    targets.forEach((t) => {
-      gl.deleteTexture(t.texture);
-      gl.deleteFramebuffer(t.buffer);
-    });
-    targets = [0, 1].map(() => {
-      const texture = gl.createTexture()!;
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, canvas.width, canvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      const buffer = gl.createFramebuffer()!;
-      gl.bindFramebuffer(gl.FRAMEBUFFER, buffer);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-      gl.clearColor(0, 0, 0, 1);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-      return { texture, buffer };
-    });
-    gl.viewport(0, 0, canvas.width, canvas.height);
-  }
-
-  function frame(f: Frame) {
-    if (!targets.length) return;
-    const write = 1 - read;
-    gl.useProgram(feedback.program);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, targets[write].buffer);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, targets[read].texture);
-    gl.uniform1i(fb.prev, 0);
-    gl.uniform2f(fb.res, canvas.width, canvas.height);
-    gl.uniform1f(fb.time, f.time);
-    gl.uniform1f(fb.kick, f.kick);
-    gl.uniform1f(fb.snare, f.snare);
-    gl.uniform1f(fb.hat, f.hat);
-    gl.uniform1f(fb.env, f.env);
-    gl.uniform1f(fb.on, f.on);
-    gl.uniform1f(fb.real, f.wave ? 1 : 0);
-    gl.uniform1i(fb.wave, 1);
-    gl.uniform1i(fb.spectrum, 2);
-    gl.uniform1f(fb.scene, f.scene);
-    gl.uniform1f(fb.drive, f.drive);
-    gl.activeTexture(gl.TEXTURE2);
-    gl.bindTexture(gl.TEXTURE_2D, spectrumTexture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, f.spectrum.length, 1, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, f.spectrum);
-    gl.activeTexture(gl.TEXTURE0);
-    if (f.wave) {
-      gl.activeTexture(gl.TEXTURE1);
-      gl.bindTexture(gl.TEXTURE_2D, waveTexture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, f.wave.length, 1, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, f.wave);
-      gl.activeTexture(gl.TEXTURE0);
-    }
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-
-    gl.useProgram(present.program);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.bindTexture(gl.TEXTURE_2D, targets[write].texture);
-    gl.uniform1i(pr.light, 0);
-    gl.uniform2f(pr.res, canvas.width, canvas.height);
-    gl.uniform3fv(pr.from, f.from);
-    gl.uniform3fv(pr.to, f.to);
-    gl.uniform1f(pr.mix, f.mix);
-    gl.uniform1f(pr.kick, f.kick);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-    read = write;
-  }
-
-  return {
-    resize,
-    frame,
-    dispose: () => gl.getExtension("WEBGL_lose_context")?.loseContext(),
-  };
-}
 
 /** Focus that follows the hand: no ring, and the keys pick up where the hand left off. */
 const focusOnPress = (e: PointerEvent<HTMLElement>) => {
@@ -574,11 +267,8 @@ function SkipGlyph() {
   );
 }
 
-export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingChange, autoPlay = false, startAt = 0, crossOrigin, defaultScene = "halo", onLoad, className }: NowPlayingProps) {
+export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingChange, autoPlay = false, startAt = 0, crossOrigin, onLoad, className }: NowPlayingProps) {
   const [announcement, setAnnouncement] = useState("");
-  const [scene, setScene] = useState<Scene>(defaultScene);
-  const [naming, setNaming] = useState(false); // the LCD shows the scene's name for a moment
-  const sceneName = SCENES.find((x) => x.id === scene)!.name;
   const ids = useId();
   const current = tracks[track];
   const peaks = peaksOf(current);
@@ -597,9 +287,8 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
   const dragging = useRef<number | null>(null); // the pointer scrubbing the waveform
   const visible = useRef(true);
   const wake = useRef<(() => void) | null>(null); // restarts the frame loop when the strip scrolls back into view
-  const wakeScope = useRef<(() => void) | null>(null); // and the scope's
-  const screenRef = useRef<HTMLSpanElement>(null);
-  const namingTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const wakeMatrix = useRef<(() => void) | null>(null); // and the matrix's
+  const matrixRef = useRef<SVGSVGElement>(null);
   const touched = useRef(false); // a hand has worked it: it may sound while the host is paused
   // Props the loops and the spring read when they fire, rather than when they were made.
   const props = useRef({ tracks, track, onTrackChange, onPlayingChange, startAt });
@@ -821,56 +510,57 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
     };
   }, [playing, track]);
 
-  // The scope. One loop reads the music at the playhead, lets each band fall away as a meter's bar does,
-  // lifts the bar under the playhead, swells its glow and draws the screen. Paused, it runs on with the
-  // trace off until the trail has faded, then stops; a new track's palette sweeps in on the same loop.
+  // The matrix. One loop reads the music at the playhead and gives each column a meter's ballistics; the
+  // same level lifts the bar under the playhead and swells its glow. Paused, the columns fall to rest and
+  // the loop stops. Frames write the dots' attributes, and only where a dot changes.
   const music = useEffectEvent((dt: number) => {
     const { tracks, track } = props.current;
     const a = audioRef.current;
     const ear = a && playing && listenable(tracks[track].src, crossOrigin) ? ears.get(a) : undefined;
-    if (ear?.context.state === "running") return { on: playing, track, ear, wave: ear.wave, ...listen(ear, dt) };
-    return { on: playing, track, ear: null, wave: null, ...bandsAt(position(), duration(), peaksOf(tracks[track]), bpmOf(tracks[track])) };
+    if (ear?.context.state === "running") return { on: playing, ear, ...listen(ear, dt) };
+    return { on: playing, ear: null, ...bandsAt(position(), duration(), peaksOf(tracks[track]), bpmOf(tracks[track])) };
   });
-  const sceneIndex = useEffectEvent(() => SCENES.findIndex((x) => x.id === scene));
   useEffect(() => {
     const root = rootRef.current!;
-    const host = screenRef.current!;
     const bars = [...barsRef.current!.querySelectorAll<HTMLElement>("[data-bar]")];
-    // Made here rather than rendered: the cleanup loses its context for good, so every mount needs its own.
-    const canvas = document.createElement("canvas");
-    // Drawn, the screen keeps a quiet grayscale of its trail, as Gradient Keys' does.
-    canvas.className = "block size-full drawn:opacity-60!";
-    host.append(canvas);
-    const scope = createScope(canvas);
-    scope?.resize();
+    const dots = [...matrixRef.current!.querySelectorAll<SVGCircleElement>("[data-dot]")];
+    const lit = new Uint8Array(dots.length);
+    const spectrum = new Uint8Array(COLS);
+    const level = new Float32Array(COLS);
+    const peak = new Float32Array(COLS);
+    const held = new Float32Array(COLS);
     const still = reduced();
-    const first = music(0);
-    const level = { kick: 0, snare: 0, hat: 0, env: 0, lv: 0 };
-    const palette = { track: first.track, from: paletteOf(props.current.tracks[first.track]).flatMap(rgb), to: [] as number[], mix: 1 };
-    palette.to = palette.from;
-    const spectrum = new Uint8Array(SPECTRUM);
-    let time = 0;
-    let drive = 0; // the tunnel's travel: a steady crawl, surging with the kick
-    let idle = FADE_OUT;
+    let lv = 0;
     let at = -1;
     let raf = 0;
     let last = 0;
 
-    function step(dt: number) {
+    /** One frame of the music; `show` reads it even while paused, for the still. Returns whether to go on. */
+    function step(dt: number, show = false) {
       const m = music(dt);
-      if (m.track !== palette.track) {
-        const shown = palette.from.map((v, i) => v + (palette.to[i] - v) * palette.mix);
-        palette.track = m.track;
-        palette.from = shown;
-        palette.to = paletteOf(props.current.tracks[m.track]).flatMap(rgb);
-        palette.mix = still ? 1 : 0;
+      const on = m.on || show;
+      if (m.ear) heardSpectrum(m.ear, spectrum);
+      else modelSpectrum(m, spectrum);
+      let resting = !on;
+      for (let c = 0; c < COLS; c++) {
+        level[c] = Math.max(on ? spectrum[c] / 255 : 0, level[c] - FALL * dt);
+        if (level[c] >= peak[c]) {
+          peak[c] = level[c];
+          held[c] = 0;
+        } else if ((held[c] += dt) > HOLD) peak[c] = Math.max(level[c], peak[c] - PEAK_FALL * dt);
+        if (peak[c] > 0) resting = false;
+        const top = Math.round(level[c] * ROWS);
+        const dot = Math.min(ROWS - 1, Math.floor(peak[c] * ROWS));
+        for (let r = 0; r < ROWS; r++) {
+          const i = r * COLS + c;
+          const on = r < top || (peak[c] > 0.04 && r === dot) ? 1 : 0;
+          if (on === lit[i]) continue;
+          lit[i] = on;
+          dots[i].toggleAttribute("data-on", !!on);
+        }
       }
-      palette.mix = Math.min(1, palette.mix + dt / RECOLOUR);
-      idle = m.on ? 0 : idle + dt;
-      for (const band of ["kick", "snare", "hat"] as const) level[band] = Math.max(m.on ? m[band] : 0, level[band] - BAND_FALL * dt);
-      level.env = m.on ? m.env : Math.max(0, level.env - BAND_FALL * dt);
-      level.lv = Math.max(m.on ? 0.42 * m.env + 0.5 * Math.max(m.kick, m.snare) : 0, level.lv - BAND_FALL * dt);
-      root.style.setProperty("--lv", Math.min(1, level.lv).toFixed(3));
+      lv = Math.max(m.on ? 0.42 * m.env + 0.5 * Math.max(m.kick, m.snare) : 0, lv - BAND_FALL * dt);
+      root.style.setProperty("--lv", Math.min(1, lv).toFixed(3));
       // The bar the playhead is on: the last one it has reached.
       const next = m.on ? passed(head.current!.value / 1000) - 1 : -1;
       if (next !== at) {
@@ -878,17 +568,12 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
         if (next >= 0) bars[next].dataset.at = "";
         at = next;
       }
-      if (m.ear) heardSpectrum(m.ear, spectrum);
-      else modelSpectrum(m.on ? m : level, spectrum);
-      time += dt;
-      drive += dt * (0.3 + 1.6 * level.kick);
-      scope?.frame({ time, ...level, on: m.on || still ? 1 : 0, from: palette.from, to: palette.to, mix: palette.mix, wave: m.wave, scene: sceneIndex(), spectrum, drive });
-      return m.on || idle < FADE_OUT || palette.mix < 1;
+      return !resting;
     }
 
-    /** Reduced motion: no loop, a still of the music built up over a second. */
+    /** Reduced motion: no loop, a still of the music at the playhead. */
     function hold() {
-      for (let i = 0; i < 60; i++) step(1 / 60);
+      for (let i = 0; i < 20; i++) step(1 / 30, true);
       root.style.setProperty("--lv", "0");
     }
 
@@ -900,25 +585,17 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
       else last = 0;
     }
 
-    wakeScope.current = () => {
+    wakeMatrix.current = () => {
       if (still) hold();
       else if (!raf && visible.current) raf = requestAnimationFrame(frame);
     };
-    const resize = new ResizeObserver(() => {
-      scope?.resize();
-      if (still) hold();
-      else wakeScope.current?.();
-    });
-    resize.observe(canvas);
+    wakeMatrix.current();
     return () => {
       cancelAnimationFrame(raf);
-      resize.disconnect();
-      wakeScope.current = null;
-      scope?.dispose();
-      canvas.remove();
+      wakeMatrix.current = null;
     };
   }, []);
-  useEffect(() => wakeScope.current?.(), [playing, track, scene]);
+  useEffect(() => wakeMatrix.current?.(), [playing, track]);
 
   // Off screen, the frame loop rests; the clock keeps time.
   useEffect(() => {
@@ -926,7 +603,7 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
       visible.current = entry.isIntersecting;
       if (visible.current) {
         wake.current?.();
-        wakeScope.current?.();
+        wakeMatrix.current?.();
       }
     });
     observer.observe(rootRef.current!);
@@ -1017,22 +694,6 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
     if (playing && position() >= duration()) ended();
   }
 
-  /* --- Scenes ------------------------------------------------------------- */
-
-  useEffect(() => () => clearTimeout(namingTimer.current), []);
-
-
-  function nextScene() {
-    const i = SCENES.findIndex((x) => x.id === scene);
-    const to = SCENES[(i + 1) % SCENES.length];
-    play("toggle");
-    setScene(to.id);
-    setNaming(true);
-    clearTimeout(namingTimer.current);
-    namingTimer.current = setTimeout(() => setNaming(false), SHOW_SCENE);
-    setAnnouncement(`Visual: ${to.name}`);
-  }
-
   /* --- Loading ------------------------------------------------------------ */
 
   const [holding, setHolding] = useState(false); // a file is held over the plate
@@ -1080,19 +741,17 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
       <div data-part="plate" className="relative isolate flex animate-enter flex-col gap-[0.7em] overflow-hidden rounded-[1.25em] p-[0.9em] text-[clamp(11px,4cqw,14px)] [background:var(--device-body)] shadow-[var(--device-body-edge),0_1px_2px_rgb(0_0_0/0.06),0_16px_32px_-18px_rgb(0_0_0/0.3)]">
         <div aria-hidden className="device-grain pointer-events-none absolute inset-0 -z-10 rounded-[inherit]" />
 
-        {/* The screen: the scope behind glass, in a black bezel. It is most of the plate. A press steps through its scenes. */}
+        {/* The display: a spectrum on a dot matrix, on the LCD's glass behind a black bezel, as a hi-fi deck's. */}
         <div data-part="bezel" className="rounded-[1.05em] bg-(--device-rim) p-[0.3em] shadow-[0_1px_0_rgb(255_255_255/0.7),inset_0_1px_2px_rgb(0_0_0/0.6)] dark:shadow-[0_1px_0_rgb(255_255_255/0.06),inset_0_1px_2px_rgb(0_0_0/0.6)]">
-          <button
-            type="button"
-            aria-label={`Visual: ${sceneName}. Change visual`}
-            onPointerDown={focusOnPress}
-            onClick={nextScene}
-            data-part="screen"
-            className="relative block aspect-[3/2] w-full cursor-pointer rounded-[0.75em] bg-black outline-offset-2"
-          >
-            <span ref={screenRef} aria-hidden className="absolute inset-0 overflow-hidden rounded-[inherit]" />
-            <span aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 rounded-[inherit] [background:var(--screen-glass)] shadow-(--device-lcd-edge)" />
-          </button>
+          <div data-part="lcd" className="relative overflow-hidden rounded-[0.75em] px-[0.8em] py-[0.75em] [background:var(--device-lcd)] shadow-(--device-lcd-edge)">
+            {/* Drawn, the lit dots are ink and the ghosts the drawing's line. */}
+            <svg ref={matrixRef} aria-hidden data-part="matrix" viewBox={`0 0 ${COLS * 4} ${ROWS * 4}`} className="block aspect-[8/3] w-full">
+              {DOTS.map((d) => (
+                <circle key={`${d.c}-${d.r}`} data-dot cx={d.x} cy={d.y} r={1.25} className="fill-white/[0.08] data-on:fill-(--device-lcd-ink) drawn:fill-(--device-draw-line)! drawn:data-on:fill-(--device-draw-ink)!" />
+              ))}
+            </svg>
+            <div aria-hidden data-part="glass" className="pointer-events-none absolute inset-0 [background:var(--screen-glass)]" />
+          </div>
         </div>
 
         {/* The waveform, pressed into the plate: a slim slider over the track. Bars the playhead has passed are lit. */}
@@ -1158,11 +817,11 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
             </span>
           </button>
 
-          {/* The LCD: the track, then the artist (or, for a moment, the scene) and the clock. The spring writes the clock. */}
+          {/* The LCD: the track, then the artist and the clock. The spring writes the clock. */}
           <div aria-hidden data-part="lcd" className="flex h-[3em] min-w-0 flex-1 flex-col justify-center gap-[0.35em] overflow-hidden rounded-[0.7em] px-[0.7em] text-(--device-lcd-ink) [background:var(--device-lcd)] shadow-(--device-lcd-edge)">
             <span className="truncate text-[0.92em] font-light leading-none tracking-[-0.01em]">{current.title}</span>
             <span className="flex items-baseline gap-[0.5em]">
-              <span className="min-w-0 flex-1 truncate text-[0.66em] leading-none text-(--device-lcd-dim) drawn:text-[color-mix(in_oklab,var(--device-draw-ink)_70%,transparent)]!">{naming ? sceneName : current.artist}</span>
+              <span className="min-w-0 flex-1 truncate text-[0.66em] leading-none text-(--device-lcd-dim) drawn:text-[color-mix(in_oklab,var(--device-draw-ink)_70%,transparent)]!">{current.artist}</span>
               <span ref={clockRef} className="shrink-0 text-[0.66em] font-light leading-none tabular-nums tracking-[-0.02em]">
                 {(["M", "S", "F"] as const).map((unit, i) => (
                   <span key={unit} className={i ? "ml-[0.25em]" : undefined}>
@@ -1239,14 +898,14 @@ export function NowPlaying({ tracks, track, onTrackChange, playing, onPlayingCha
 /* --- Demo: side A, from the last seconds of its first track ----------------- */
 
 const SIDE_A: Track[] = [
-  { title: "Low thock", artist: "The Detents", duration: 211, palette: PALETTES[2] },
-  { title: "Over centre", artist: "The Detents", duration: 178, palette: PALETTES[1] },
-  { title: "Unity gain", artist: "The Detents", duration: 252, palette: PALETTES[0] },
-  { title: "Room tone", artist: "The Detents", duration: 185, palette: PALETTES[3] },
+  { title: "Low thock", artist: "The Detents", duration: 211 },
+  { title: "Over centre", artist: "The Detents", duration: 178 },
+  { title: "Unity gain", artist: "The Detents", duration: 252 },
+  { title: "Room tone", artist: "The Detents", duration: 185 },
 ];
 
 /** A file from this device as a track: its real length and its real waveform, decoded here. */
-async function trackOf(file: File, palette: [string, string, string]): Promise<Track> {
+async function trackOf(file: File): Promise<Track> {
   const src = URL.createObjectURL(file);
   const title = file.name.replace(/\.[^.]+$/, "");
   try {
@@ -1261,9 +920,9 @@ async function trackOf(file: File, palette: [string, string, string]): Promise<T
     });
     const top = Math.max(...raw, 0.001);
     // Lifted by the square root, as the player's covers are, so quiet passages still draw.
-    return { title, artist: "From this device", duration: audio.duration, src, palette, peaks: raw.map((v) => Math.max(0.12, Math.sqrt(v / top))) };
+    return { title, artist: "From this device", duration: audio.duration, src, peaks: raw.map((v) => Math.max(0.12, Math.sqrt(v / top))) };
   } catch {
-    return { title, artist: "From this device", duration: 0, src, palette };
+    return { title, artist: "From this device", duration: 0, src };
   }
 }
 
@@ -1280,7 +939,7 @@ export default function Demo() {
 
   async function load(files: File[]) {
     const at = queue.length;
-    const added = await Promise.all(files.map((file, i) => trackOf(file, PALETTES[(at + i) % PALETTES.length])));
+    const added = await Promise.all(files.map(trackOf));
     urls.current.push(...added.map((t) => t.src!));
     setQueue((q) => [...q, ...added]);
     setTrack(at);
