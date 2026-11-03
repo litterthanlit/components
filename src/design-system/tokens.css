@@ -67,14 +67,11 @@
    * glass sheen; red for the playhead and play. Key shadows keep the same
    * layers pressed and released so they interpolate.
    */
-  --device-frame: linear-gradient(180deg, #c6c9ce 0%, #b9bcc2 55%, #adb0b6 100%);
-  --device-frame-edge: inset 0 1px 0 rgb(255 255 255 / 0.7), inset 0 0 0 1px rgb(0 0 0 / 0.08), 0 0 0 0.5px rgb(0 0 0 / 0.16);
   /* Black, for bezels round LCD cells and a second screen. */
   --device-rim: #0d0d0e;
   --device-rim-edge: inset 0 1px 0 rgb(255 255 255 / 0.18), inset 0 -1px 0 rgb(255 255 255 / 0.06), 0 0 0 0.5px rgb(0 0 0 / 0.6);
   --device-body: linear-gradient(180deg, #d9dce0 0%, #cdd0d5 55%, #c0c3c9 100%);
   --device-body-edge: inset 0 1px 0 rgb(255 255 255 / 0.75), inset 0 0 0 1px rgb(0 0 0 / 0.06);
-  --device-body-shadow: 0 1px 2px rgb(0 0 0 / 0.1), 0 18px 36px -18px rgb(0 0 0 / 0.28), 0 60px 100px -50px rgb(0 0 0 / 0.38);
   --device-grain: 0.3;
   /* Wells pressed into the body. */
   --device-well: #c2c5cb;
@@ -122,6 +119,18 @@
   /* The display: the site's own grounds under glass, and a light that comes on. */
   --screen-glow: rgb(255 255 255 / 0.7);
   --screen-glass: linear-gradient(158deg, rgb(255 255 255 / 0.07) 0%, rgb(255 255 255 / 0.02) 38%, transparent 38.2%);
+  /* The player: a metal casing round one pane of glass, the dial through it in a ring of the casing's metal. */
+
+  --device-casing: radial-gradient(120% 80% at 25% 0%, rgb(255 255 255 / 0.6), transparent 55%), linear-gradient(180deg, #e4e7ea 0%, #d3d7dc 50%, #c3c7cd 100%);
+  --device-casing-shadow: inset 0 1.5px 0 rgb(255 255 255 / 0.95), inset 0 -1.5px 0 rgb(0 0 0 / 0.12), 0 0 0 1px rgb(0 0 0 / 0.16), 0 7px 0 -1px #a7abb2,
+    0 8px 0 -1px rgb(0 0 0 / 0.18), 0 22px 34px -14px rgb(0 0 0 / 0.35), 0 60px 90px -45px rgb(0 0 0 / 0.4);
+  --device-casing-blend: overlay;
+  --device-pane: linear-gradient(180deg, #f6f7f8 0%, #eceef1 100%);
+  --device-pane-panel: #f3f4f6;
+  --device-pane-edge: 0 0 0 1px rgb(0 0 0 / 0.16), 0 1px 0 1px rgb(255 255 255 / 0.7), inset 0 1px 3px rgb(0 0 0 / 0.1);
+  --device-pane-sheen: linear-gradient(160deg, rgb(255 255 255 / 0.55) 0%, rgb(255 255 255 / 0.12) 40%, transparent 40.4%);
+  --device-ring: linear-gradient(180deg, #eef0f2 0%, #b9bec5 100%);
+  --device-ring-edge: 0 0 0 1px rgb(0 0 0 / 0.14), inset 0 1px 2px rgb(0 0 0 / 0.18);
   color-scheme: light;
 }
 
@@ -156,13 +165,10 @@
   --key-primary-engrave: 0 -0.5px 0 rgb(0 0 0 / 0.3), 0 1px 0 rgb(255 255 255 / 0.85);
   --key-primary-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), inset 0 0 0 0 transparent, 0 0 0 1px rgb(0 0 0 / 0.9), 0 2px 0 0 #8a8a8a, 0 3px 6px -2px rgb(0 0 0 / 0.6);
   --key-primary-shadow-pressed: inset 0 1px 0 rgb(255 255 255 / 0), inset 0 1px 3px rgb(0 0 0 / 0.35), 0 0 0 1px rgb(0 0 0 / 0.9), 0 0 0 0 #8a8a8a, 0 1px 1px -1px rgb(0 0 0 / 0.5);
-  --device-frame: linear-gradient(180deg, #484a4f 0%, #3d3f44 55%, #34363a 100%);
-  --device-frame-edge: inset 0 1px 0 rgb(255 255 255 / 0.14), inset 0 0 0 1px rgb(0 0 0 / 0.5), 0 0 0 0.5px rgb(0 0 0 / 0.8);
   --device-rim: #000000;
   --device-rim-edge: inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 0 0 1px rgb(255 255 255 / 0.05), 0 0 0 1px rgb(255 255 255 / 0.05);
   --device-body: linear-gradient(180deg, #36383d 0%, #2f3135 55%, #282a2e 100%);
   --device-body-edge: inset 0 1px 0 rgb(255 255 255 / 0.09), inset 0 0 0 1px rgb(255 255 255 / 0.02);
-  --device-body-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 18px 36px -18px rgb(0 0 0 / 0.7), 0 60px 100px -50px rgb(0 0 0 / 0.9);
   --device-grain: 0.3;
   --device-well: #1d1e22;
   --device-recess: inset 0 1px 2px rgb(0 0 0 / 0.6), inset 0 0 0 1px rgb(0 0 0 / 0.35), 0 1px 0 rgb(255 255 255 / 0.05);
@@ -202,6 +208,18 @@
   --device-draw-ink: rgb(237 237 237 / 0.64);
   --screen-glow: rgb(138 154 242 / 0.35);
   --screen-glass: linear-gradient(158deg, rgb(255 255 255 / 0.06) 0%, rgb(255 255 255 / 0.015) 38%, transparent 38.2%);
+  /* The player: graphite, black glass and a silver dial. */
+
+  --device-casing: radial-gradient(120% 80% at 25% 0%, rgb(255 255 255 / 0.14), transparent 55%), linear-gradient(180deg, #4b4e54 0%, #3d4045 50%, #313338 100%);
+  --device-casing-shadow: inset 0 1.5px 0 rgb(255 255 255 / 0.18), inset 0 -1.5px 0 rgb(0 0 0 / 0.4), 0 0 0 1px rgb(0 0 0 / 0.55), 0 7px 0 -1px #24262a,
+    0 8px 0 -1px rgb(0 0 0 / 0.4), 0 22px 34px -14px rgb(0 0 0 / 0.5), 0 60px 90px -45px rgb(0 0 0 / 0.5);
+  --device-casing-blend: soft-light;
+  --device-pane: linear-gradient(180deg, #0f1012 0%, #08090a 100%);
+  --device-pane-panel: #0d0e10;
+  --device-pane-edge: 0 0 0 1px rgb(0 0 0 / 0.7), inset 0 1px 0 rgb(255 255 255 / 0.1), inset 0 0 0 1px rgb(255 255 255 / 0.04);
+  --device-pane-sheen: linear-gradient(160deg, rgb(255 255 255 / 0.08) 0%, rgb(255 255 255 / 0.02) 40%, transparent 40.4%);
+  --device-ring: linear-gradient(180deg, #5d6067 0%, #3a3d42 100%);
+  --device-ring-edge: 0 0 0 1px rgb(0 0 0 / 0.7), inset 0 1px 2px rgb(0 0 0 / 0.5);
   color-scheme: dark;
 }
 
