@@ -26,7 +26,7 @@ export function ShimmerText({ children, className = "" }: { children: ReactNode;
   );
 }
 
-/** A 3×3 grid of pixels with a diagonal wave, a nod to the dither cards. */
+/** A 3×3 grid of pixels with a diagonal wave, a nod to the Visualizer's dot matrix. */
 export function DotGrid({ label = "Working", size = 4, className = "" }: { label?: string; size?: number; className?: string }) {
   return (
     <span role="status" aria-label={label} className={`inline-grid grid-cols-3 gap-[3px] ${className}`}>

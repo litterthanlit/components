@@ -23,6 +23,17 @@ export type RegistryEntry = {
 
 export const registry: RegistryEntry[] = [
   {
+    slug: "visualizer",
+    title: "Visualizer",
+    description:
+      "A visualizer on a dot matrix, filling the plate behind a black bezel: round dots of the LCD's ink, each lit or not against an ordered dither, over a grid of ghosts. Behind them, raw WebGL feedback warps and fades each frame under a fresh trace of a beat it plays itself. A press steps through three scenes, a pumping ring, a tunnel of hexagons and a six-way prism, each at its own tempo; a hand backlights the dots and quickens the beat.",
+    tagline: "A visualizer in dots, behind glass.",
+    tags: ["surface", "pointer", "sound", "webgl"],
+    date: "2026-11-03",
+    status: "new",
+    background: "plain",
+  },
+  {
     slug: "file-browser",
     title: "File Browser",
     description:
@@ -208,17 +219,6 @@ export const registry: RegistryEntry[] = [
     date: "2026-10-02",
     status: "new",
     background: "grid",
-  },
-  {
-    slug: "dither-card",
-    title: "Dither Card",
-    description:
-      "Project links as keys with a screen in each face, after a launcher's LCD keys. Each screen runs a creature in three-tone ordered dither: a butterfly that flaps, a jellyfish that pulses, a flower that turns. A hand lights the screen under it and quickens it; a press sinks the key 2px with a click and sends a ring through the dots; keyboard focus lights it from the centre. Raw WebGL at half resolution, scaled up pixel for pixel.",
-    tagline: "Project keys with a dithered creature on every screen.",
-    tags: ["surface", "pointer", "sound", "webgl"],
-    date: "2026-10-02",
-    status: "new",
-    background: "plain",
   },
   {
     slug: "spotlight-card",
